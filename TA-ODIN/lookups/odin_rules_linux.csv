@@ -187,4 +187,3 @@ file,chkrootkit,/var/log/chkrootkit.log,,,Chkrootkit log
 file,chkrootkit,/var/log/chkrootkit/,,*.log,Chkrootkit logs
 file,openscap,/var/log/oscap/,,*.log,OpenSCAP logs
 file,openscap,/var/lib/oscap/,,*.xml,OpenSCAP results
- 
