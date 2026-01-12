@@ -1,0 +1,48 @@
+detection_type,category,check_path,check_service,file_pattern,description
+file,syslog,/var/log/syslog,,,Syslog main log (Debian/Ubuntu)
+file,syslog,/var/log/messages,,,Syslog messages (RHEL/CentOS)
+file,auth,/var/log/auth.log,,,Authentication log (Debian/Ubuntu)
+file,auth,/var/log/secure,,,Authentication log (RHEL/CentOS)
+file,apache,/var/log/apache2/,,*.log,Apache logs (Debian/Ubuntu)
+file,apache,/var/log/httpd/,,*.log,Apache logs (RHEL/CentOS)
+file,nginx,/var/log/nginx/,,*.log,Nginx web server logs
+file,mysql,/var/log/mysql/,,*.log,MySQL database logs
+file,postgresql,/var/log/postgresql/,,*.log,PostgreSQL database logs
+file,audit,/var/log/audit/,,audit.log,Linux audit logs
+file,dpkg,/var/log/dpkg.log,,,Debian package manager log
+file,apt,/var/log/apt/,,*.log,APT package manager logs
+file,yum,/var/log/yum.log,,,YUM package manager log
+file,dnf,/var/log/dnf/,,*.log,DNF package manager logs
+file,cron,/var/log/cron,,,Cron job log (RHEL/CentOS)
+file,mail,/var/log/mail.log,,,Mail server log (Debian/Ubuntu)
+file,mail,/var/log/maillog,,,Mail server log (RHEL/CentOS)
+file,kern,/var/log/kern.log,,,Kernel log
+file,boot,/var/log/boot.log,,,Boot log
+file,docker,/var/log/docker.log,,,Docker daemon log
+file,containers,/var/log/containers/,,*.log,Kubernetes container logs
+file,pods,/var/log/pods/,,*.log,Kubernetes pod logs
+file,journal,/var/log/journal/,,,Systemd journal directory
+file,fail2ban,/var/log/fail2ban.log,,,Fail2ban intrusion prevention log
+file,ufw,/var/log/ufw.log,,,UFW firewall log
+file,firewalld,/var/log/firewalld,,,Firewalld log
+file,dmesg,/var/log/dmesg,,,Kernel ring buffer log
+file,lastlog,/var/log/lastlog,,,Last login records
+file,wtmp,/var/log/wtmp,,,Login records
+file,btmp,/var/log/btmp,,,Failed login records
+service,apache,,apache2,,Apache HTTP Server (Debian/Ubuntu)
+service,apache,,httpd,,Apache HTTP Server (RHEL/CentOS)
+service,nginx,,nginx,,Nginx web server
+service,mysql,,mysql,,MySQL database
+service,mysql,,mysqld,,MySQL database (RHEL)
+service,mysql,,mariadb,,MariaDB database
+service,postgresql,,postgresql,,PostgreSQL database
+service,docker,,docker,,Docker daemon
+service,sshd,,sshd,,SSH daemon
+service,sshd,,ssh,,SSH daemon (alternative)
+service,cron,,cron,,Cron scheduler (Debian/Ubuntu)
+service,cron,,crond,,Cron scheduler (RHEL/CentOS)
+service,auditd,,auditd,,Linux audit daemon
+service,rsyslog,,rsyslog,,Rsyslog daemon
+service,fail2ban,,fail2ban,,Fail2ban service
+service,firewalld,,firewalld,,Firewalld service
+service,ufw,,ufw,,UFW firewall
