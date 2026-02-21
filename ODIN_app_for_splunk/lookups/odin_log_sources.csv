@@ -7,11 +7,11 @@ service,httpd,web_server,apache_access,apache:access,Splunk_TA_apache,/var/log/h
 service,httpd,web_server,apache_error,apache:error,Splunk_TA_apache,/var/log/httpd/error_log,Apache HTTP error logs (RHEL)
 service,caddy,web_server,caddy_access,caddy:access,none,/var/log/caddy/access.log,Caddy HTTP access logs
 service,lighttpd,web_server,lighttpd_access,lighttpd:access,none,/var/log/lighttpd/access.log,Lighttpd HTTP access logs
-port,80/tcp,web_server,http_traffic,,,HTTP traffic on port 80
-port,443/tcp,web_server,https_traffic,,,HTTPS traffic on port 443
-port,8080/tcp,web_server,http_alt_traffic,,,HTTP alternate traffic on port 8080
-port,8443/tcp,web_server,https_alt_traffic,,,HTTPS alternate traffic on port 8443
-port,8000/tcp,web_server,http_alt_traffic,,,HTTP alternate traffic on port 8000
+port,80/tcp,web_server,http_traffic,,,,HTTP traffic on port 80
+port,443/tcp,web_server,https_traffic,,,,HTTPS traffic on port 443
+port,8080/tcp,web_server,http_alt_traffic,,,,HTTP alternate traffic on port 8080
+port,8443/tcp,web_server,https_alt_traffic,,,,HTTPS alternate traffic on port 8443
+port,8000/tcp,web_server,http_alt_traffic,,,,HTTP alternate traffic on port 8000
 package,nginx,web_server,nginx_access,nginx:plus:access,Splunk_TA_nginx,/var/log/nginx/access.log,Nginx package installed
 package,apache2,web_server,apache_access,apache:access,Splunk_TA_apache,/var/log/apache2/access.log,Apache package installed (Debian)
 package,httpd,web_server,apache_access,apache:access,Splunk_TA_apache,/var/log/httpd/access_log,Apache package installed (RHEL)
@@ -32,14 +32,14 @@ service,cassandra,database_server,cassandra_log,cassandra:system,none,/var/log/c
 service,couchdb,database_server,couchdb_log,couchdb,none,/var/log/couchdb/couchdb.log,CouchDB server log
 service,influxdb,database_server,influxdb_log,influxdb,none,/var/log/influxdb/influxd.log,InfluxDB server log
 service,neo4j,database_server,neo4j_log,neo4j,none,/var/log/neo4j/neo4j.log,Neo4j graph database log
-port,3306/tcp,database_server,mysql_traffic,,,MySQL traffic on port 3306
-port,5432/tcp,database_server,postgresql_traffic,,,PostgreSQL traffic on port 5432
-port,27017/tcp,database_server,mongodb_traffic,,,MongoDB traffic on port 27017
-port,1433/tcp,database_server,mssql_traffic,,,MSSQL traffic on port 1433
-port,1521/tcp,database_server,oracle_traffic,,,Oracle traffic on port 1521
-port,9042/tcp,database_server,cassandra_traffic,,,Cassandra CQL on port 9042
-port,8086/tcp,database_server,influxdb_traffic,,,InfluxDB HTTP on port 8086
-port,7474/tcp,database_server,neo4j_traffic,,,Neo4j HTTP on port 7474
+port,3306/tcp,database_server,mysql_traffic,,,,MySQL traffic on port 3306
+port,5432/tcp,database_server,postgresql_traffic,,,,PostgreSQL traffic on port 5432
+port,27017/tcp,database_server,mongodb_traffic,,,,MongoDB traffic on port 27017
+port,1433/tcp,database_server,mssql_traffic,,,,MSSQL traffic on port 1433
+port,1521/tcp,database_server,oracle_traffic,,,,Oracle traffic on port 1521
+port,9042/tcp,database_server,cassandra_traffic,,,,Cassandra CQL on port 9042
+port,8086/tcp,database_server,influxdb_traffic,,,,InfluxDB HTTP on port 8086
+port,7474/tcp,database_server,neo4j_traffic,,,,Neo4j HTTP on port 7474
 package,mysql-server,database_server,mysql_error,mysql:errorLog,Splunk_TA_mysql,,MySQL server package installed
 package,mariadb-server,database_server,mysql_error,mysql:errorLog,Splunk_TA_mysql,,MariaDB server package installed
 package,postgresql,database_server,postgresql_log,postgresql:csv:log,Splunk_TA_postgresql,,PostgreSQL package installed
@@ -56,11 +56,11 @@ port,6514/tcp,syslog_receiver,syslog_tls,syslog,,tcp:6514,Syslog TLS receiver on
 service,redis,cache_server,redis_log,redis,none,/var/log/redis/redis-server.log,Redis server log
 service,redis-server,cache_server,redis_log,redis,none,/var/log/redis/redis-server.log,Redis server log
 service,memcached,cache_server,memcached_log,memcached,none,/var/log/memcached.log,Memcached server log
-port,6379/tcp,cache_server,redis_traffic,,,Redis traffic on port 6379
-port,11211/tcp,cache_server,memcached_traffic,,,Memcached traffic on port 11211
+port,6379/tcp,cache_server,redis_traffic,,,,Redis traffic on port 6379
+port,11211/tcp,cache_server,memcached_traffic,,,,Memcached traffic on port 11211
 service,elasticsearch,search_server,elasticsearch_log,elasticsearch:elasticsearch,Splunk_TA_elasticsearch,/var/log/elasticsearch/*.log,Elasticsearch server logs
 service,opensearch,search_server,opensearch_log,opensearch,none,/var/log/opensearch/*.log,OpenSearch server logs
-port,9200/tcp,search_server,elasticsearch_traffic,,,Elasticsearch REST API on port 9200
+port,9200/tcp,search_server,elasticsearch_traffic,,,,Elasticsearch REST API on port 9200
 service,docker,container_host,docker_log,docker,Splunk_TA_docker,/var/log/docker.log,Docker daemon logs
 service,containerd,container_host,containerd_log,containerd,Splunk_TA_docker,,containerd runtime logs
 service,podman,container_host,podman_log,podman,none,,Podman container runtime logs
@@ -70,8 +70,8 @@ service,kube-controller-manager,kubernetes_master,kube_controller_log,kube:conta
 service,kube-scheduler,kubernetes_master,kube_scheduler_log,kube:container:controller,Splunk_TA_kubernetes,,Kubernetes scheduler logs
 service,etcd,kubernetes_master,etcd_log,etcd,Splunk_TA_kubernetes,,etcd distributed key-value store logs
 service,k3s,kubernetes_node,k3s_log,k3s,none,/var/log/syslog,K3s lightweight Kubernetes logs
-port,6443/tcp,kubernetes_master,kube_api_traffic,,,Kubernetes API server on port 6443
-port,10250/tcp,kubernetes_node,kubelet_api_traffic,,,Kubernetes Kubelet API on port 10250
+port,6443/tcp,kubernetes_master,kube_api_traffic,,,,Kubernetes API server on port 6443
+port,10250/tcp,kubernetes_node,kubelet_api_traffic,,,,Kubernetes Kubelet API on port 10250
 service,falcon-sensor,security_endpoint,crowdstrike_log,crowdstrike:events,Splunk_TA_crowdstrike,,CrowdStrike Falcon EDR events
 service,mdatp,security_endpoint,defender_log,ms:defender:atp,Splunk_TA_microsoft_defender,,Microsoft Defender for Endpoint logs
 service,cbagentd,security_endpoint,carbonblack_log,carbonblack:defense,Splunk_TA_carbonblack,,Carbon Black EDR events
@@ -85,10 +85,10 @@ service,suricata,ids_host,suricata_log,suricata,Splunk_TA_suricata,/var/log/suri
 service,snort,ids_host,snort_log,snort,Splunk_TA_snort,/var/log/snort/alert,Snort IDS alerts
 service,fail2ban,security_host,fail2ban_log,fail2ban,none,/var/log/fail2ban.log,Fail2ban intrusion prevention logs
 service,vault,secrets_server,vault_audit,hashicorp:vault,none,/var/log/vault/audit.log,HashiCorp Vault audit logs
-port,8200/tcp,secrets_server,vault_traffic,,,HashiCorp Vault on port 8200
+port,8200/tcp,secrets_server,vault_traffic,,,,HashiCorp Vault on port 8200
 service,splunkd,splunk_server,splunk_internal,splunkd,none,$SPLUNK_HOME/var/log/splunk/splunkd.log,Splunk daemon internal logs
 service,SplunkForwarder,splunk_forwarder,splunk_internal,splunkd,none,$SPLUNK_HOME/var/log/splunk/splunkd.log,Splunk forwarder internal logs
-port,9997/tcp,splunk_receiver,splunk_forwarding,,,Splunk receiving port for forwarded data
+port,9997/tcp,splunk_receiver,splunk_forwarding,,,,Splunk receiving port for forwarded data
 service,logstash,logstash_server,logstash_log,logstash:log,none,/var/log/logstash/logstash-plain.log,Logstash pipeline logs
 service,filebeat,log_shipper,filebeat_log,filebeat,none,/var/log/filebeat/filebeat,Filebeat log shipper logs
 service,fluent-bit,log_shipper,fluentbit_log,fluentbit,none,,Fluent Bit log processor logs
@@ -100,16 +100,16 @@ service,named,dns_server,dns_query_log,dns,Splunk_TA_bind,/var/log/named/query.l
 service,bind9,dns_server,dns_query_log,dns,Splunk_TA_bind,/var/log/named/query.log,BIND9 DNS query logs
 service,unbound,dns_server,dns_query_log,dns,none,/var/log/unbound/unbound.log,Unbound DNS resolver logs
 service,dnsmasq,dns_server,dnsmasq_log,dnsmasq,none,/var/log/dnsmasq.log,Dnsmasq DNS/DHCP logs
-port,53/tcp,dns_server,dns_traffic,,,DNS traffic on port 53/tcp
-port,53/udp,dns_server,dns_traffic,,,DNS traffic on port 53/udp
+port,53/tcp,dns_server,dns_traffic,,,,DNS traffic on port 53/tcp
+port,53/udp,dns_server,dns_traffic,,,,DNS traffic on port 53/udp
 service,postfix,mail_server,mail_log,maillog,Splunk_TA_nix,/var/log/mail.log,Postfix mail transfer logs
 service,sendmail,mail_server,mail_log,maillog,Splunk_TA_nix,/var/log/maillog,Sendmail mail transfer logs
 service,exim4,mail_server,mail_log,maillog,none,/var/log/exim4/mainlog,Exim mail transfer logs
 service,dovecot,mail_server,dovecot_log,dovecot,none,/var/log/dovecot.log,Dovecot IMAP/POP3 logs
-port,25/tcp,mail_server,smtp_traffic,,,SMTP traffic on port 25
-port,587/tcp,mail_server,smtp_submission,,,SMTP submission traffic on port 587
-port,993/tcp,mail_server,imaps_traffic,,,IMAPS traffic on port 993
-port,110/tcp,mail_server,pop3_traffic,,,POP3 traffic on port 110
+port,25/tcp,mail_server,smtp_traffic,,,,SMTP traffic on port 25
+port,587/tcp,mail_server,smtp_submission,,,,SMTP submission traffic on port 587
+port,993/tcp,mail_server,imaps_traffic,,,,IMAPS traffic on port 993
+port,110/tcp,mail_server,pop3_traffic,,,,POP3 traffic on port 110
 service,prometheus,monitoring_server,prometheus_log,prometheus,none,/var/log/prometheus/prometheus.log,Prometheus metrics server logs
 service,grafana-server,monitoring_server,grafana_log,grafana,none,/var/log/grafana/grafana.log,Grafana dashboard server logs
 service,alertmanager,monitoring_server,alertmanager_log,alertmanager,none,,Prometheus Alertmanager logs
@@ -121,15 +121,15 @@ service,nagios,monitoring_server,nagios_log,nagios,none,/var/log/nagios/nagios.l
 service,icinga2,monitoring_server,icinga_log,icinga,none,/var/log/icinga2/icinga2.log,Icinga 2 monitoring logs
 service,netdata,monitoring_server,netdata_log,netdata,none,/var/log/netdata/error.log,Netdata monitoring logs
 service,datadog-agent,monitoring_agent,datadog_log,datadog,none,/var/log/datadog/agent.log,Datadog agent logs
-port,9090/tcp,monitoring_server,prometheus_traffic,,,Prometheus metrics on port 9090
-port,3000/tcp,monitoring_server,grafana_traffic,,,Grafana dashboard on port 3000
-port,9093/tcp,monitoring_server,alertmanager_traffic,,,Alertmanager on port 9093
-port,19999/tcp,monitoring_server,netdata_traffic,,,Netdata dashboard on port 19999
+port,9090/tcp,monitoring_server,prometheus_traffic,,,,Prometheus metrics on port 9090
+port,3000/tcp,monitoring_server,grafana_traffic,,,,Grafana dashboard on port 3000
+port,9093/tcp,monitoring_server,alertmanager_traffic,,,,Alertmanager on port 9093
+port,19999/tcp,monitoring_server,netdata_traffic,,,,Netdata dashboard on port 19999
 service,openvpn,vpn_server,openvpn_log,openvpn,none,/var/log/openvpn/openvpn.log,OpenVPN server logs
 service,wireguard,vpn_server,wireguard_log,wireguard,none,,WireGuard VPN logs
 service,strongswan,vpn_server,strongswan_log,strongswan,none,/var/log/syslog,strongSwan IPsec logs
-port,1194/udp,vpn_server,openvpn_traffic,,,OpenVPN traffic on port 1194
-port,51820/udp,vpn_server,wireguard_traffic,,,WireGuard traffic on port 51820
+port,1194/udp,vpn_server,openvpn_traffic,,,,OpenVPN traffic on port 1194
+port,51820/udp,vpn_server,wireguard_traffic,,,,WireGuard traffic on port 51820
 service,squid,proxy_server,squid_access,squid:access,none,/var/log/squid/access.log,Squid proxy access logs
 service,dhcpd,dhcp_server,dhcp_log,dhcpd,Splunk_TA_nix,/var/log/dhcpd.log,ISC DHCP server logs
 service,kea-dhcp4,dhcp_server,kea_dhcp_log,kea:dhcp,none,/var/log/kea/kea-dhcp4.log,Kea DHCPv4 server logs
@@ -138,27 +138,27 @@ service,kafka,message_broker,kafka_log,kafka,none,/var/log/kafka/server.log,Apac
 service,activemq,message_broker,activemq_log,activemq,none,/opt/activemq/data/activemq.log,ActiveMQ broker logs
 service,mosquitto,message_broker,mosquitto_log,mosquitto,none,/var/log/mosquitto/mosquitto.log,Mosquitto MQTT broker logs
 service,nats-server,message_broker,nats_log,nats,none,,NATS messaging server logs
-port,5672/tcp,message_broker,amqp_traffic,,,RabbitMQ AMQP traffic on port 5672
-port,9092/tcp,message_broker,kafka_traffic,,,Kafka broker traffic on port 9092
-port,1883/tcp,message_broker,mqtt_traffic,,,MQTT traffic on port 1883
+port,5672/tcp,message_broker,amqp_traffic,,,,RabbitMQ AMQP traffic on port 5672
+port,9092/tcp,message_broker,kafka_traffic,,,,Kafka broker traffic on port 9092
+port,1883/tcp,message_broker,mqtt_traffic,,,,MQTT traffic on port 1883
 service,jenkins,cicd_server,jenkins_log,jenkins,none,/var/log/jenkins/jenkins.log,Jenkins automation server logs
 service,gitlab-runner,cicd_server,gitlab_runner_log,gitlab:runner,none,,GitLab CI runner logs
 service,gitlab,cicd_server,gitlab_log,gitlab,none,/var/log/gitlab/gitlab-rails/production.log,GitLab application logs
 service,gitea,cicd_server,gitea_log,gitea,none,/var/lib/gitea/log/gitea.log,Gitea Git server logs
 service,sshd,ssh_server,auth_log,linux_secure,Splunk_TA_nix,/var/log/auth.log,SSH authentication logs
-port,22/tcp,ssh_server,ssh_traffic,,,SSH traffic on port 22
+port,22/tcp,ssh_server,ssh_traffic,,,,SSH traffic on port 22
 service,nfs-server,nfs_server,nfs_log,nfs,none,/var/log/syslog,NFS server logs
 service,smbd,file_server,samba_log,samba,none,/var/log/samba/log.smbd,Samba SMB file server logs
 service,minio,file_server,minio_log,minio,none,,MinIO S3-compatible object storage logs
-port,445/tcp,file_server,smb_traffic,,,SMB file sharing on port 445
-port,2049/tcp,nfs_server,nfs_traffic,,,NFS traffic on port 2049
+port,445/tcp,file_server,smb_traffic,,,,SMB file sharing on port 445
+port,2049/tcp,nfs_server,nfs_traffic,,,,NFS traffic on port 2049
 service,slapd,directory_server,ldap_log,openldap,none,/var/log/slapd.log,OpenLDAP directory server logs
 service,krb5kdc,directory_server,kerberos_log,kerberos,none,/var/log/krb5kdc.log,Kerberos KDC logs
 service,sssd,directory_server,sssd_log,sssd,none,/var/log/sssd/sssd.log,SSSD authentication logs
 service,freeradius,directory_server,radius_log,freeradius,none,/var/log/freeradius/radius.log,FreeRADIUS authentication logs
-port,389/tcp,directory_server,ldap_traffic,,,LDAP traffic on port 389
-port,636/tcp,directory_server,ldaps_traffic,,,LDAPS traffic on port 636
-port,88/tcp,directory_server,kerberos_traffic,,,Kerberos traffic on port 88
+port,389/tcp,directory_server,ldap_traffic,,,,LDAP traffic on port 389
+port,636/tcp,directory_server,ldaps_traffic,,,,LDAPS traffic on port 636
+port,88/tcp,directory_server,kerberos_traffic,,,,Kerberos traffic on port 88
 service,tomcat,application_server,tomcat_log,tomcat:access,none,/var/log/tomcat*/catalina.out,Tomcat application server logs
 service,wildfly,application_server,wildfly_log,wildfly,none,/opt/wildfly/standalone/log/server.log,WildFly application server logs
 service,jetty,application_server,jetty_log,jetty,none,/var/log/jetty/*.log,Jetty application server logs
@@ -168,8 +168,8 @@ service,php-fpm,application_server,phpfpm_log,php:fpm,none,/var/log/php*-fpm.log
 service,pm2,application_server,pm2_log,pm2,none,~/.pm2/logs/*.log,PM2 Node.js process manager logs
 service,consul,orchestration_server,consul_log,consul,none,/var/log/consul/consul.log,HashiCorp Consul logs
 service,nomad,orchestration_server,nomad_log,nomad,none,/var/log/nomad/nomad.log,HashiCorp Nomad logs
-port,8500/tcp,orchestration_server,consul_traffic,,,Consul HTTP on port 8500
-port,4646/tcp,orchestration_server,nomad_traffic,,,Nomad HTTP on port 4646
+port,8500/tcp,orchestration_server,consul_traffic,,,,Consul HTTP on port 8500
+port,4646/tcp,orchestration_server,nomad_traffic,,,,Nomad HTTP on port 4646
 service,corosync,ha_cluster,corosync_log,corosync,none,/var/log/cluster/corosync.log,Corosync cluster engine logs
 service,pacemaker,ha_cluster,pacemaker_log,pacemaker,none,/var/log/pacemaker/pacemaker.log,Pacemaker cluster resource logs
 service,bacula-dir,backup_server,bacula_log,bacula,none,/var/log/bacula/bacula.log,Bacula backup director logs
@@ -177,17 +177,17 @@ service,bareos-dir,backup_server,bareos_log,bareos,none,/var/log/bareos/bareos.l
 service,libvirtd,virtualization_host,libvirt_log,libvirt,none,/var/log/libvirt/libvirtd.log,libvirt virtualization daemon logs
 service,vmtoolsd,virtualization_guest,vmtools_log,vmware:tools,none,/var/log/vmware-vmsvc.log,VMware Tools guest logs
 service,cupsd,print_server,cups_log,cups:access,none,/var/log/cups/access_log,CUPS print server access logs
-port,631/tcp,print_server,cups_traffic,,,CUPS/IPP print on port 631
+port,631/tcp,print_server,cups_traffic,,,,CUPS/IPP print on port 631
 service,asterisk,telephony_server,asterisk_log,asterisk:messages,none,/var/log/asterisk/messages,Asterisk PBX logs
 service,freeswitch,telephony_server,freeswitch_log,freeswitch,none,/var/log/freeswitch/freeswitch.log,FreeSWITCH communications logs
-port,5060/tcp,telephony_server,sip_traffic,,,SIP voice/video on port 5060
+port,5060/tcp,telephony_server,sip_traffic,,,,SIP voice/video on port 5060
 service,snmpd,network_infrastructure,snmp_log,snmp,none,/var/log/snmpd.log,SNMP agent logs
-port,161/udp,network_infrastructure,snmp_traffic,,,SNMP monitoring on port 161
+port,161/udp,network_infrastructure,snmp_traffic,,,,SNMP monitoring on port 161
 service,glusterd,storage_server,gluster_log,glusterfs,none,/var/log/glusterfs/glusterd.log,GlusterFS management logs
 service,ceph-mon,storage_server,ceph_log,ceph,none,/var/log/ceph/ceph.log,Ceph monitor logs
-port,24007/tcp,storage_server,gluster_traffic,,,GlusterFS management on port 24007
-port,3260/tcp,storage_server,iscsi_traffic,,,iSCSI target on port 3260
-port,8834/tcp,security_scanner,nessus_traffic,,,Nessus scanner on port 8834
+port,24007/tcp,storage_server,gluster_traffic,,,,GlusterFS management on port 24007
+port,3260/tcp,storage_server,iscsi_traffic,,,,iSCSI target on port 3260
+port,8834/tcp,security_scanner,nessus_traffic,,,,Nessus scanner on port 8834
 service,nessus,security_scanner,nessus_log,nessus,none,/opt/nessus/var/nessus/logs/nessusd.messages,Nessus vulnerability scanner logs
 service,kong,api_gateway,kong_access,kong:access,none,/usr/local/kong/logs/access.log,Kong API gateway access logs
 service,kong,api_gateway,kong_error,kong:error,none,/usr/local/kong/logs/error.log,Kong API gateway error logs
@@ -195,20 +195,20 @@ service,pgbouncer,database_server,pgbouncer_log,pgbouncer,none,/var/log/postgres
 service,proxysql,database_server,proxysql_log,proxysql,none,/var/lib/proxysql/proxysql.log,ProxySQL proxy logs
 service,clickhouse-server,database_server,clickhouse_query,clickhouse:query,none,/var/log/clickhouse-server/clickhouse-server.log,ClickHouse query log
 service,tidb,database_server,tidb_log,tidb,none,/var/log/tidb/tidb.log,TiDB distributed SQL logs
-port,8529/tcp,database_server,arangodb_traffic,,,ArangoDB HTTP on port 8529
-port,5984/tcp,database_server,couchdb_traffic,,,CouchDB HTTP on port 5984
-port,28015/tcp,database_server,rethinkdb_traffic,,,RethinkDB on port 28015
+port,8529/tcp,database_server,arangodb_traffic,,,,ArangoDB HTTP on port 8529
+port,5984/tcp,database_server,couchdb_traffic,,,,CouchDB HTTP on port 5984
+port,28015/tcp,database_server,rethinkdb_traffic,,,,RethinkDB on port 28015
 service,coredns,dns_server,coredns_log,coredns,none,,CoreDNS server logs
 service,powerdns,dns_server,powerdns_log,powerdns,none,/var/log/pdns.log,PowerDNS server logs
 service,pihole-FTL,dns_server,pihole_log,pihole,none,/var/log/pihole/pihole.log,Pi-hole DNS sinkhole logs
 service,zeek,ids_host,zeek_log,bro:json,none,/opt/zeek/logs/current/*.log,Zeek network security monitor logs
 service,graylog-server,log_aggregator,graylog_log,graylog:server,none,/var/log/graylog-server/server.log,Graylog log management logs
 service,jaeger,monitoring_server,jaeger_log,jaeger,none,,Jaeger distributed tracing logs
-port,16686/tcp,monitoring_server,jaeger_traffic,,,Jaeger UI on port 16686
+port,16686/tcp,monitoring_server,jaeger_traffic,,,,Jaeger UI on port 16686
 service,thanos,monitoring_server,thanos_log,thanos,none,,Thanos Prometheus HA logs
 service,otel-collector,monitoring_server,otel_log,otel,none,,OpenTelemetry Collector logs
-port,4317/tcp,monitoring_server,otlp_grpc_traffic,,,OpenTelemetry gRPC on port 4317
-port,4318/tcp,monitoring_server,otlp_http_traffic,,,OpenTelemetry HTTP on port 4318
+port,4317/tcp,monitoring_server,otlp_grpc_traffic,,,,OpenTelemetry gRPC on port 4317
+port,4318/tcp,monitoring_server,otlp_http_traffic,,,,OpenTelemetry HTTP on port 4318
 service,ntopng,monitoring_server,ntopng_log,ntopng,none,/var/log/ntopng/ntopng.log,ntopng network traffic logs
 service,airflow,data_pipeline,airflow_log,airflow,none,/var/log/airflow/*.log,Apache Airflow workflow logs
 service,nifi,data_pipeline,nifi_log,nifi,none,/var/log/nifi/nifi-app.log,Apache NiFi data integration logs
@@ -217,24 +217,24 @@ service,freeipa,identity_server,freeipa_log,freeipa,none,/var/log/ipaserver-inst
 service,nexus,cicd_server,nexus_log,nexus,none,/var/log/nexus/nexus.log,Nexus artifact repository logs
 service,argocd,kubernetes_master,argocd_log,argocd,none,,ArgoCD GitOps controller logs
 service,zookeeper,infrastructure,zookeeper_log,zookeeper,none,/var/log/zookeeper/zookeeper.log,Apache ZooKeeper logs
-port,2181/tcp,infrastructure,zookeeper_traffic,,,ZooKeeper on port 2181
+port,2181/tcp,infrastructure,zookeeper_traffic,,,,ZooKeeper on port 2181
 service,mattermost,collaboration_server,mattermost_log,mattermost,none,/var/log/mattermost/mattermost.log,Mattermost messaging logs
 service,nextcloud,collaboration_server,nextcloud_log,nextcloud,none,/var/www/nextcloud/data/nextcloud.log,Nextcloud file sharing logs
 service,cockpit,management_server,cockpit_log,cockpit,none,/var/log/cockpit/,Cockpit web admin logs
 service,webmin,management_server,webmin_log,webmin,none,/var/webmin/miniserv.log,Webmin admin panel logs
-port,10000/tcp,management_server,webmin_traffic,,,Webmin on port 10000
-port,9090/tcp,management_server,cockpit_traffic,,,Cockpit on port 9090 (also Prometheus)
+port,10000/tcp,management_server,webmin_traffic,,,,Webmin on port 10000
+port,9090/tcp,management_server,cockpit_traffic,,,,Cockpit on port 9090 (also Prometheus)
 service,tailscaled,vpn_server,tailscale_log,tailscale,none,,Tailscale VPN logs
-port,8088/tcp,splunk_server,splunk_hec_traffic,,,Splunk HTTP Event Collector on port 8088
-port,8089/tcp,splunk_server,splunk_mgmt_traffic,,,Splunk management on port 8089
+port,8088/tcp,splunk_server,splunk_hec_traffic,,,,Splunk HTTP Event Collector on port 8088
+port,8089/tcp,splunk_server,splunk_mgmt_traffic,,,,Splunk management on port 8089
 service,W3SVC,web_server,iis_access,iis,Splunk_TA_windows,%SystemDrive%\inetpub\logs\LogFiles\,IIS web server access logs (Windows)
 service,W3SVC,web_server,iis_error,iis:error,Splunk_TA_windows,%SystemDrive%\inetpub\logs\FailedReqLogFiles\,IIS web server error logs (Windows)
-port,5985/tcp,windows_management,winrm_traffic,,,WinRM HTTP on port 5985 (Windows)
-port,5986/tcp,windows_management,winrm_tls_traffic,,,WinRM HTTPS on port 5986 (Windows)
+port,5985/tcp,windows_management,winrm_traffic,,,,WinRM HTTP on port 5985 (Windows)
+port,5986/tcp,windows_management,winrm_tls_traffic,,,,WinRM HTTPS on port 5986 (Windows)
 service,MSSQLSERVER,database_server,mssql_error,mssql:errorlog,Splunk_TA_microsoft_sqlserver,%ProgramFiles%\Microsoft SQL Server\MSSQL*\MSSQL\Log\ERRORLOG,SQL Server error log (Windows)
 service,MSSQLSERVER,database_server,mssql_audit,mssql:audit,Splunk_TA_microsoft_sqlserver,,SQL Server audit log (Windows)
 service,SQLSERVERAGENT,database_server,sqlagent_log,mssql:sqlagent,Splunk_TA_microsoft_sqlserver,,SQL Server Agent log (Windows)
-port,1433/tcp,database_server,mssql_traffic_win,,,MSSQL traffic on port 1433 (Windows)
+port,1433/tcp,database_server,mssql_traffic_win,,,,MSSQL traffic on port 1433 (Windows)
 service,NTDS,domain_controller,ad_security,WinEventLog:Security,Splunk_TA_windows,,Active Directory security events (Windows)
 service,NTDS,domain_controller,ad_directory,WinEventLog:Directory Service,Splunk_TA_windows,,Active Directory directory service events (Windows)
 service,Netlogon,domain_controller,netlogon_log,WinEventLog:System,Splunk_TA_windows,,Netlogon authentication events (Windows)
@@ -258,7 +258,7 @@ service,EventLog,windows_host,windows_application,WinEventLog:Application,Splunk
 service,EventLog,windows_host,windows_powershell,WinEventLog:Microsoft-Windows-PowerShell/Operational,Splunk_TA_windows,,Windows PowerShell event log
 service,EventLog,windows_host,windows_sysmon,WinEventLog:Microsoft-Windows-Sysmon/Operational,Splunk_TA_microsoft_sysmon,,Sysmon event log (Windows)
 service,TermService,rdp_server,rdp_log,WinEventLog:Microsoft-Windows-TerminalServices-LocalSessionManager/Operational,Splunk_TA_windows,,Remote Desktop session logs (Windows)
-port,3389/tcp,rdp_server,rdp_traffic,,,RDP traffic on port 3389 (Windows)
+port,3389/tcp,rdp_server,rdp_traffic,,,,RDP traffic on port 3389 (Windows)
 service,Spooler,print_server,print_log_win,WinEventLog:Microsoft-Windows-PrintService/Operational,Splunk_TA_windows,,Windows Print Spooler logs
 service,LanmanServer,file_server,smb_log_win,WinEventLog:Microsoft-Windows-SMBServer/Operational,Splunk_TA_windows,,Windows SMB file server logs
 service,ClusSvc,ha_cluster,failover_log,WinEventLog:Microsoft-Windows-FailoverClustering/Operational,Splunk_TA_windows,,Windows Failover Cluster logs
@@ -269,6 +269,6 @@ service,MpsSvc,windows_host,firewall_log_win,WinEventLog:Microsoft-Windows-Windo
 service,wuauserv,windows_host,wsus_log,WinEventLog:Microsoft-Windows-WindowsUpdateClient/Operational,Splunk_TA_windows,,Windows Update logs
 service,Schedule,windows_host,task_scheduler_log,WinEventLog:Microsoft-Windows-TaskScheduler/Operational,Splunk_TA_windows,,Windows Task Scheduler logs
 service,SplunkForwarder,splunk_forwarder,splunk_internal_win,splunkd,none,%SPLUNK_HOME%\var\log\splunk\splunkd.log,Splunk forwarder internal logs (Windows)
-port,47001/tcp,windows_management,winrm_compat_traffic,,,WinRM compatibility on port 47001 (Windows)
-port,3268/tcp,domain_controller,gc_traffic,,,AD Global Catalog on port 3268 (Windows)
-port,3269/tcp,domain_controller,gc_ssl_traffic,,,AD Global Catalog SSL on port 3269 (Windows)
+port,47001/tcp,windows_management,winrm_compat_traffic,,,,WinRM compatibility on port 47001 (Windows)
+port,3268/tcp,domain_controller,gc_traffic,,,,AD Global Catalog on port 3268 (Windows)
+port,3269/tcp,domain_controller,gc_ssl_traffic,,,,AD Global Catalog SSL on port 3269 (Windows)
