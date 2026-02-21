@@ -4,8 +4,11 @@
 # Enumerates crontabs, cron directories, systemd timers, and anacron jobs.
 #
 # Output fields:
-#   event_type=cron cron_source= cron_user= cron_schedule= cron_command= cron_file=
+#   type=cron cron_source= cron_user= cron_schedule= cron_command= cron_file=
 #
+
+# Force C locale for consistent command output parsing
+export LC_ALL=C
 
 # Use orchestrator functions if available, otherwise define standalone versions
 if ! declare -f emit &>/dev/null; then
@@ -20,9 +23,7 @@ fi
 # Helper: escape double quotes in a value and wrap if it contains spaces
 safe_val() {
     local val="$1"
-    # Replace double quotes with escaped quotes
     val="${val//\"/\\\"}"
-    # If value contains spaces, wrap in quotes
     if [[ "$val" == *" "* ]]; then
         echo "\"$val\""
     else
@@ -30,7 +31,7 @@ safe_val() {
     fi
 }
 
-# Parse a crontab-format line into schedule and command
+# Parse a crontab-format line into schedule and command (user crontabs, no user field)
 # Standard cron: min hour dom month dow command
 # Supports @reboot, @daily etc.
 parse_cron_line() {
@@ -48,22 +49,53 @@ parse_cron_line() {
     local command=""
 
     if [[ "$line" =~ ^[[:space:]]*@ ]]; then
-        # Special schedule: @reboot, @daily, etc.
-        schedule=$(echo "$line" | awk '{print $1}')
-        command=$(echo "$line" | awk '{for(i=2;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+        # Special schedule: @reboot command...
+        read -r schedule command <<< "$line"
     else
-        # Standard 5-field schedule
-        schedule=$(echo "$line" | awk '{printf "%s %s %s %s %s", $1, $2, $3, $4, $5}')
-        command=$(echo "$line" | awk '{for(i=6;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+        # Standard 5-field schedule: min hour dom month dow command...
+        read -r f1 f2 f3 f4 f5 command <<< "$line"
+        schedule="$f1 $f2 $f3 $f4 $f5"
     fi
 
     [[ -z "$command" ]] && return
 
-    local out="event_type=cron cron_source=$source"
+    local out="type=cron cron_source=$source"
     [[ -n "$user" ]] && out="$out cron_user=$user"
     [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
     [[ -n "$command" ]] && out="$out cron_command=$(safe_val "$command")"
     [[ -n "$file" ]] && out="$out cron_file=$file"
+    emit "$out"
+    emitted=1
+}
+
+# Parse a system crontab line (has user field between schedule and command)
+# Format: min hour dom month dow user command
+parse_system_cron_line() {
+    local line="$1"
+    local source="$2"
+    local file="$3"
+
+    # Skip empty lines, comments, and variable assignments
+    [[ -z "$line" ]] && return
+    [[ "$line" =~ ^[[:space:]]*# ]] && return
+    [[ "$line" =~ ^[[:space:]]*[A-Za-z_][A-Za-z_0-9]*= ]] && return
+
+    local schedule=""
+    local user=""
+    local command=""
+
+    if [[ "$line" =~ ^[[:space:]]*@ ]]; then
+        # Special schedule: @reboot user command...
+        read -r schedule user command <<< "$line"
+    else
+        # Standard: min hour dom month dow user command...
+        read -r f1 f2 f3 f4 f5 user command <<< "$line"
+        schedule="$f1 $f2 $f3 $f4 $f5"
+    fi
+
+    [[ -z "$command" ]] && return
+
+    local out="type=cron cron_source=$source cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$file"
     emit "$out"
     emitted=1
 }
@@ -73,28 +105,7 @@ emitted=0
 # --- /etc/crontab (system crontab, has user field) ---
 if [[ -f /etc/crontab ]]; then
     while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
-        [[ "$line" =~ ^[[:space:]]*# ]] && continue
-        [[ "$line" =~ ^[[:space:]]*[A-Za-z_][A-Za-z_0-9]*= ]] && continue
-
-        if [[ "$line" =~ ^[[:space:]]*@ ]]; then
-            user=$(echo "$line" | awk '{print $2}')
-            command=$(echo "$line" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
-            schedule=$(echo "$line" | awk '{print $1}')
-            [[ -z "$command" ]] && continue
-            out="event_type=cron cron_source=system_crontab cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=/etc/crontab"
-            emit "$out"
-            emitted=1
-        else
-            # Standard 5-field + user + command
-            schedule=$(echo "$line" | awk '{printf "%s %s %s %s %s", $1, $2, $3, $4, $5}')
-            user=$(echo "$line" | awk '{print $6}')
-            command=$(echo "$line" | awk '{for(i=7;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
-            [[ -z "$command" ]] && continue
-            out="event_type=cron cron_source=system_crontab cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=/etc/crontab"
-            emit "$out"
-            emitted=1
-        fi
+        parse_system_cron_line "$line" "system_crontab" "/etc/crontab"
     done < /etc/crontab
 fi
 
@@ -103,29 +114,12 @@ if [[ -d /etc/cron.d ]]; then
     for cronfile in /etc/cron.d/*; do
         [[ ! -f "$cronfile" ]] && continue
         while IFS= read -r line; do
-            [[ -z "$line" ]] && continue
-            [[ "$line" =~ ^[[:space:]]*# ]] && continue
-            [[ "$line" =~ ^[[:space:]]*[A-Za-z_][A-Za-z_0-9]*= ]] && continue
-
-            if [[ "$line" =~ ^[[:space:]]*@ ]]; then
-                user=$(echo "$line" | awk '{print $2}')
-                command=$(echo "$line" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
-                schedule=$(echo "$line" | awk '{print $1}')
-            else
-                schedule=$(echo "$line" | awk '{printf "%s %s %s %s %s", $1, $2, $3, $4, $5}')
-                user=$(echo "$line" | awk '{print $6}')
-                command=$(echo "$line" | awk '{for(i=7;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
-            fi
-            [[ -z "$command" ]] && continue
-            out="event_type=cron cron_source=cron.d cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$cronfile"
-            emit "$out"
-            emitted=1
+            parse_system_cron_line "$line" "cron.d" "$cronfile"
         done < "$cronfile"
     done
 fi
 
 # --- User crontabs ---
-# Try to read crontabs for all users via /var/spool/cron or crontab -l -u
 if [[ -d /var/spool/cron/crontabs ]]; then
     crontab_dir="/var/spool/cron/crontabs"
 elif [[ -d /var/spool/cron ]]; then
@@ -151,9 +145,8 @@ for period in hourly daily weekly monthly; do
     for script in "$dir"/*; do
         [[ ! -f "$script" ]] && continue
         script_name=$(basename "$script")
-        # Skip common non-script files
         [[ "$script_name" == .placeholder ]] && continue
-        emit "event_type=cron cron_source=cron.$period cron_schedule=@$period cron_command=$script_name cron_file=$script"
+        emit "type=cron cron_source=cron.$period cron_schedule=@$period cron_command=$script_name cron_file=$script"
         emitted=1
     done
 done
@@ -161,9 +154,15 @@ done
 # --- Systemd timers ---
 if command -v systemctl &>/dev/null; then
     while IFS= read -r line; do
-        # list-timers output: NEXT LEFT LAST PASSED UNIT ACTIVATES
-        timer_unit=$(echo "$line" | awk '{print $(NF-1)}')
-        activated_unit=$(echo "$line" | awk '{print $NF}')
+        [[ -z "$line" ]] && continue
+
+        # Timer unit and activated unit are the last two fields
+        # list-timers has variable-width date/time columns, so use array indexing
+        words=($line)
+        len=${#words[@]}
+        [[ $len -lt 2 ]] && continue
+        timer_unit="${words[$((len-2))]}"
+        activated_unit="${words[$((len-1))]}"
 
         [[ -z "$timer_unit" || "$timer_unit" == "UNIT" ]] && continue
 
@@ -173,7 +172,7 @@ if command -v systemctl &>/dev/null; then
             schedule=$(systemctl show "$timer_unit" -p TimersMonotonic 2>/dev/null | sed 's/TimersMonotonic=//')
         fi
 
-        out="event_type=cron cron_source=systemd_timer cron_command=$activated_unit"
+        out="type=cron cron_source=systemd_timer cron_command=$activated_unit"
         [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
         out="$out cron_file=$timer_unit"
         emit "$out"
@@ -189,20 +188,17 @@ if [[ -f /etc/anacrontab ]]; then
         [[ "$line" =~ ^[[:space:]]*[A-Za-z_][A-Za-z_0-9]*= ]] && continue
 
         # Format: period delay job-identifier command
-        period=$(echo "$line" | awk '{print $1}')
-        delay=$(echo "$line" | awk '{print $2}')
-        job_id=$(echo "$line" | awk '{print $3}')
-        command=$(echo "$line" | awk '{for(i=4;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+        read -r period delay job_id command <<< "$line"
 
         [[ -z "$command" ]] && continue
-        emit "event_type=cron cron_source=anacron cron_schedule=\"period=${period}d delay=${delay}m\" cron_command=$(safe_val "$command") cron_file=/etc/anacrontab"
+        emit "type=cron cron_source=anacron cron_schedule=\"period=${period}d delay=${delay}m\" cron_command=$(safe_val "$command") cron_file=/etc/anacrontab"
         emitted=1
     done < /etc/anacrontab
 fi
 
 # Emit none_found if no scheduled tasks were discovered
 if [[ $emitted -eq 0 ]]; then
-    emit "event_type=none_found module=cron message=\"No scheduled tasks found\""
+    emit "type=none_found module=cron message=\"No scheduled tasks found\""
 fi
 
 exit 0

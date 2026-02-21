@@ -4,8 +4,11 @@
 # Enumerates all services on the host using systemctl, service, or init.d fallback.
 #
 # Output fields:
-#   event_type=service service_name= service_status= service_enabled= service_type=
+#   type=service service_name= service_status= service_enabled= service_type=
 #
+
+# Force C locale for consistent command output parsing
+export LC_ALL=C
 
 # Use orchestrator functions if available, otherwise define standalone versions
 if ! declare -f emit &>/dev/null; then
@@ -17,6 +20,17 @@ if ! declare -f emit &>/dev/null; then
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
 
+# Helper: escape double quotes and wrap values containing spaces
+safe_val() {
+    local val="$1"
+    val="${val//\"/\\\"}"
+    if [[ "$val" == *" "* ]]; then
+        echo "\"$val\""
+    else
+        echo "$val"
+    fi
+}
+
 # Track whether we emitted anything
 emitted=0
 
@@ -24,9 +38,7 @@ emitted=0
 if command -v systemctl &>/dev/null; then
     while IFS= read -r line; do
         # Parse systemctl list-units output: UNIT LOAD ACTIVE SUB DESCRIPTION...
-        unit=$(echo "$line" | awk '{print $1}')
-        active=$(echo "$line" | awk '{print $3}')
-        sub=$(echo "$line" | awk '{print $4}')
+        read -r unit _ active sub _ <<< "$line"
 
         # Skip empty or invalid lines
         [[ -z "$unit" ]] && continue
@@ -52,7 +64,7 @@ if command -v systemctl &>/dev/null; then
             *)        service_status="$active" ;;
         esac
 
-        out="event_type=service service_name=$service_name service_status=$service_status service_enabled=$enabled"
+        out="type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=$enabled"
         [[ -n "$service_type" ]] && out="$out service_type=$service_type"
         emit "$out"
         emitted=1
@@ -78,7 +90,7 @@ if command -v service &>/dev/null; then
             *) service_status="unknown" ;;
         esac
 
-        emit "event_type=service service_name=$service_name service_status=$service_status service_enabled=unknown"
+        emit "type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=unknown"
         emitted=1
     done < <(service --status-all 2>/dev/null)
 
@@ -103,14 +115,14 @@ if [[ -d /etc/init.d ]]; then
             service_status="unknown"
         fi
 
-        emit "event_type=service service_name=$service_name service_status=$service_status service_enabled=unknown"
+        emit "type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=unknown"
         emitted=1
     done
 fi
 
 # Emit none_found if no services were discovered
 if [[ $emitted -eq 0 ]]; then
-    emit "event_type=none_found module=services message=\"No services discovered\""
+    emit "type=none_found module=services message=\"No services discovered\""
 fi
 
 exit 0

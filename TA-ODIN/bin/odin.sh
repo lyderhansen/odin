@@ -10,9 +10,12 @@
 
 # Verify bash is available (scripts require bash features)
 if [[ -z "$BASH_VERSION" ]]; then
-    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=2.0.0 event_type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
+    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=2.0.0 type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
     exit 1
 fi
+
+# Force C locale for consistent command output parsing across all locales
+export LC_ALL=C
 
 # Find script directory (works even with symlinks)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,7 +43,7 @@ export -f get_timestamp
 export -f emit
 
 # --- Start event ---
-emit "event_type=odin_start message=\"TA-ODIN enumeration started\""
+emit "type=odin_start message=\"TA-ODIN enumeration started\""
 
 # --- Discover and run modules ---
 module_count=0
@@ -48,8 +51,8 @@ module_success=0
 module_fail=0
 
 if [[ ! -d "$MODULES_DIR" ]]; then
-    emit "event_type=odin_error message=\"Modules directory not found: $MODULES_DIR\""
-    emit "event_type=odin_complete modules_total=0 modules_success=0 modules_failed=0 message=\"TA-ODIN enumeration completed with errors\""
+    emit "type=odin_error message=\"Modules directory not found: $MODULES_DIR\""
+    emit "type=odin_complete modules_total=0 modules_success=0 modules_failed=0 message=\"TA-ODIN enumeration completed with errors\""
     exit 1
 fi
 
@@ -68,9 +71,13 @@ for module in "$MODULES_DIR"/*.sh; do
         module_success=$((module_success + 1))
     else
         module_fail=$((module_fail + 1))
-        emit "event_type=odin_error module=$module_name exit_code=$rc message=\"Module $module_name failed with exit code $rc\""
+        emit "type=odin_error module=$module_name exit_code=$rc message=\"Module $module_name failed with exit code $rc\""
     fi
 done
 
 # --- Completion event ---
-emit "event_type=odin_complete modules_total=$module_count modules_success=$module_success modules_failed=$module_fail message=\"TA-ODIN enumeration completed\""
+emit "type=odin_complete modules_total=$module_count modules_success=$module_success modules_failed=$module_fail message=\"TA-ODIN enumeration completed\""
+
+# Exit non-zero if any module failed
+[[ $module_fail -gt 0 ]] && exit 1
+exit 0

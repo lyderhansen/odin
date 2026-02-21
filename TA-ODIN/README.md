@@ -70,7 +70,7 @@ cp TA-ODIN/default/indexes.conf $SPLUNK_HOME/etc/apps/TA-ODIN/local/
 After deployment, check that events are arriving:
 ```spl
 index=odin_discovery sourcetype=odin:enumeration
-| stats count by event_type
+| stats count by type
 | sort - count
 ```
 
@@ -84,32 +84,32 @@ timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 od
 
 ### Service Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=service service_name=nginx service_status=running service_enabled=enabled service_type=forking
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=service service_name=nginx service_status=running service_enabled=enabled service_type=forking
 ```
 
 ### Port Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=port transport=tcp listen_address=0.0.0.0 listen_port=443 process_name=nginx process_pid=1234
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=port transport=tcp listen_address=0.0.0.0 listen_port=443 process_name=nginx process_pid=1234
 ```
 
 ### Package Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=package package_name=nginx package_version=1.24.0-1 package_arch=amd64 package_manager=dpkg
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=package package_name=nginx package_version=1.24.0-1 package_arch=amd64 package_manager=dpkg
 ```
 
 ### Cron Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=cron cron_source=user_crontab cron_user=root cron_schedule="0 2 * * *" cron_command="/usr/local/bin/backup.sh"
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=cron cron_source=user_crontab cron_user=root cron_schedule="0 2 * * *" cron_command="/usr/local/bin/backup.sh"
 ```
 
 ### Process Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=process process_pid=1234 process_ppid=1 process_user=www-data process_state=Ss process_cpu=0.1 process_mem=2.3 process_elapsed=10-05:23:15 process_name=nginx process_command="nginx: master process /usr/sbin/nginx"
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=process process_pid=1234 process_ppid=1 process_user=www-data process_state=Ss process_cpu=0.1 process_mem=2.3 process_elapsed=10-05:23:15 process_name=nginx process_command="nginx: master process /usr/sbin/nginx"
 ```
 
 ### Mount Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=mount mount_device=/dev/sda1 mount_point=/ mount_type=ext4 mount_size_kb=20511312 mount_used_kb=8234560 mount_avail_kb=11213304 mount_use_pct=42
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=mount mount_device=/dev/sda1 mount_point=/ mount_type=ext4 mount_size_kb=20511312 mount_used_kb=8234560 mount_avail_kb=11213304 mount_use_pct=42
 ```
 
 ## Classification Lookups
@@ -149,7 +149,7 @@ Maps package names to host roles:
 
 ### Example: Classify hosts by role
 ```spl
-index=odin_discovery sourcetype=odin:enumeration event_type=service
+index=odin_discovery sourcetype=odin:enumeration type=service
 | lookup odin_classify_services service_name AS service_name OUTPUT role AS service_role
 | where isnotnull(service_role)
 | stats values(service_role) AS roles by hostname
@@ -173,7 +173,7 @@ if ! declare -f emit &>/dev/null; then
 fi
 
 # Your enumeration logic here
-emit "event_type=custom_type field1=value1 field2=value2"
+emit "type=custom_type field1=value1 field2=value2"
 ```
 
 ### Adding Classification Rules
@@ -206,20 +206,20 @@ frozenTimePeriodInSecs = 63072000
 ### Event type distribution
 ```spl
 index=odin_discovery sourcetype=odin:enumeration
-| stats count by event_type
+| stats count by type
 | sort - count
 ```
 
 ### Hosts with most services
 ```spl
-index=odin_discovery sourcetype=odin:enumeration event_type=service service_status=running
+index=odin_discovery sourcetype=odin:enumeration type=service service_status=running
 | stats dc(service_name) AS service_count by hostname
 | sort - service_count
 ```
 
 ### Find hosts listening on unusual ports
 ```spl
-index=odin_discovery sourcetype=odin:enumeration event_type=port
+index=odin_discovery sourcetype=odin:enumeration type=port
 | lookup odin_classify_ports listen_port AS port, transport OUTPUT expected_service
 | where isnull(expected_service) AND listen_port>1024
 | stats values(listen_port) AS unknown_ports by hostname
@@ -227,7 +227,7 @@ index=odin_discovery sourcetype=odin:enumeration event_type=port
 
 ### Host role summary
 ```spl
-index=odin_discovery sourcetype=odin:enumeration event_type=service
+index=odin_discovery sourcetype=odin:enumeration type=service
 | lookup odin_classify_services service_name OUTPUT role
 | where isnotnull(role)
 | stats values(role) AS roles, dc(service_name) AS service_count by hostname

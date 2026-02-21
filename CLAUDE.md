@@ -16,37 +16,69 @@ TA-ODIN (Organized Discovery and Identification of eNdpoints) is a Splunk Techno
 
 Named after the Norse god Odin and his ravens Hugin and Munin who reported back everything they observed.
 
+## Deployment Architecture (Two Apps)
+
+The project consists of **two separate Splunk apps** with different deployment targets:
+
+### TA-ODIN (Forwarder App - Collection)
+- **Deployed to**: Universal Forwarders via Deployment Server (`deployment_apps/`)
+- **Purpose**: Runs enumeration scripts on endpoints, collects and forwards data
+- **Contains**: Orchestrator, modules, inputs.conf, props.conf (parsing), transforms.conf
+- **Does NOT contain**: indexes.conf, dashboards, saved searches, reports
+
+### ODIN (Search Head / Indexer App - Visualization & Reporting) — TODO
+- **Deployed to**: Indexers and Search Heads (installed directly or via Cluster Manager)
+- **Purpose**: Index definition, dashboards, reports, saved searches, classification lookups
+- **Should contain**:
+  - `indexes.conf` — odin_discovery index definition (indexers)
+  - `props.conf` + `transforms.conf` — search-time lookup definitions (search heads)
+  - `lookups/` — classification CSV files (search heads)
+  - `default/data/ui/views/` — dashboards for visualizing enumeration data (search heads)
+  - `default/savedsearches.conf` — scheduled reports and alerts (search heads)
+  - `metadata/` — permissions and export settings
+
+**Important**: `indexes.conf` must NEVER be deployed to forwarders. It belongs in the indexer/search head app only.
+
 ## Repository Structure
 
 ```
 odin/
 ├── CLAUDE.md                             # Project guide (this file)
 ├── DOCS/
-│   └── CHANGEHISTORY.md                  # Change history with CET timestamps
-└── TA-ODIN/                              # Splunk app package
-    ├── bin/
-    │   ├── odin.sh                       # Orchestrator script (autodiscovers modules)
-    │   ├── odin.ps1                      # Windows orchestrator (placeholder/TODO)
-    │   └── modules/                      # Discovery modules (auto-loaded by odin.sh)
-    │       ├── services.sh               # Service enumeration
-    │       ├── ports.sh                  # Listening port enumeration
-    │       ├── packages.sh               # Package enumeration
-    │       ├── cron.sh                   # Scheduled task enumeration
-    │       ├── processes.sh              # Process enumeration
-    │       └── mounts.sh                 # Filesystem mount enumeration
+│   ├── CHANGEHISTORY.md                  # Change history with CET timestamps
+│   └── ARCHITECTURE.md                   # ASCII architecture diagrams and file reference
+├── TA-ODIN/                              # FORWARDER APP (deploy to UFs via deployment_apps/)
+│   ├── bin/
+│   │   ├── odin.sh                       # Orchestrator script (autodiscovers modules)
+│   │   ├── odin.ps1                      # Windows orchestrator (placeholder/TODO)
+│   │   └── modules/                      # Discovery modules (auto-loaded by odin.sh)
+│   │       ├── services.sh               # Service enumeration
+│   │       ├── ports.sh                  # Listening port enumeration
+│   │       ├── packages.sh               # Package enumeration
+│   │       ├── cron.sh                   # Scheduled task enumeration
+│   │       ├── processes.sh              # Process enumeration
+│   │       └── mounts.sh                 # Filesystem mount enumeration
+│   ├── default/
+│   │   ├── app.conf                      # App metadata, version 2.0.1
+│   │   ├── inputs.conf                   # Scripted inputs (30-day interval, 120s timeout)
+│   │   └── props.conf                    # Event line-breaking and timestamp parsing
+│   ├── local/                            # Customer overrides (empty by default)
+│   ├── static/                           # Empty
+│   └── README.md                         # User documentation
+└── ODIN/                                 # INDEXER/SEARCH HEAD APP (TODO)
     ├── default/
-    │   ├── app.conf                      # App metadata, version 2.0.0
-    │   ├── inputs.conf                   # Scripted inputs (30-day interval, 120s timeout)
-    │   ├── props.conf                    # Event parsing for odin:enumeration
+    │   ├── app.conf                      # App metadata
+    │   ├── indexes.conf                  # odin_discovery index definition
+    │   ├── props.conf                    # Search-time field extractions
     │   ├── transforms.conf               # Classification lookup transforms
-    │   └── indexes.conf                  # odin_discovery index (deploy to INDEXERS only)
-    ├── local/                            # Customer overrides (empty by default)
+    │   ├── savedsearches.conf            # Reports and scheduled searches
+    │   └── data/ui/views/                # Dashboards
     ├── lookups/
     │   ├── odin_classify_services.csv    # Service-to-role classification
     │   ├── odin_classify_ports.csv       # Port-to-service classification
-    │   ├── odin_classify_packages.csv    # Package-to-role classification
-    │   └── odin_rules_windows.csv        # Windows rules (placeholder)
-    ├── static/                           # Empty
+    │   └── odin_classify_packages.csv    # Package-to-role classification
+    ├── metadata/
+    │   └── default.meta                  # Permissions and export scope
     └── README.md                         # User documentation
 ```
 
@@ -74,7 +106,7 @@ odin/
 
 ### Output Format (v2.0)
 - Space-separated key=value pairs (changed from comma-separated in v1)
-- All events include: `timestamp=`, `hostname=`, `os=`, `run_id=`, `event_type=`
+- All events include: `timestamp=`, `hostname=`, `os=`, `run_id=`, `type=`
 - String values with spaces are double-quoted
 - Empty fields are omitted
 
@@ -92,15 +124,27 @@ odin/
 - Default scan interval: 2592000 seconds (30 days)
 - Script timeout: 120 seconds
 - Default retention: 1 year (31536000 seconds)
-- Search-time lookups for automatic classification enrichment
-- CIM aliases: hostname -> dest, hostname -> dvc
+- Search-time lookups for automatic classification enrichment (ODIN app)
+- CIM aliases: hostname -> dest, hostname -> dvc (ODIN app)
+
+**Config split between apps:**
+| Config | TA-ODIN (Forwarders) | ODIN (Indexers/SH) |
+|--------|---------------------|-------------------|
+| `inputs.conf` | Scripted input | - |
+| `props.conf` | Line-breaking, timestamp | Search-time lookups, KV_MODE |
+| `transforms.conf` | - | Lookup definitions |
+| `indexes.conf` | - | Index definition |
+| `savedsearches.conf` | - | Reports, alerts |
+| `lookups/` | - | Classification CSVs |
 
 ## Development Status
 
-- **Linux enumeration**: Complete (v2.0 - full enumeration via modules)
+- **TA-ODIN (forwarder app)**: Complete (v2.0.1 - full Linux enumeration with portability and hardening)
+- **ODIN (indexer/SH app)**: Not started - needs to be created with indexes.conf, lookups, dashboards
+- **Linux enumeration**: Complete (6 modules: services, ports, packages, cron, processes, mounts)
 - **Windows enumeration**: Not implemented (odin.ps1 is a placeholder)
-- **Windows rules CSV**: Empty (header only)
-- **Classification lookups**: Implemented for services, ports, and packages
+- **Classification lookups**: Implemented for services, ports, and packages (currently in TA-ODIN, needs to move to ODIN app)
+- **Dashboards**: Not started (will live in ODIN app)
 - **Phase 2 planned**: Host classification, automatic server class assignment via Deployment Server
 
 ## Architecture Decisions (v2.0)
@@ -110,13 +154,16 @@ odin/
 3. **Space-separated key=value format**: Simpler parsing, works with Splunk KV_MODE=auto without custom regex.
 4. **Classification at search time**: Lookup tables map raw data to categories/roles. Updates to classification don't require re-scanning hosts.
 5. **ODIN_* environment variables**: Modules receive shared context without argument parsing or config file reading.
+6. **Two-app split (TA-ODIN + ODIN)**: Forwarders only need the collection scripts and basic parsing. Indexers/search heads need the index definition, lookups, dashboards, and reports. Keeps forwarder deployments lightweight and follows Splunk best practices for separating collection from knowledge.
 
 ## Conventions
 
-- Discovery modules go in `bin/modules/` - the orchestrator auto-discovers them
-- Classification mappings go in CSV files under `lookups/`
+- Discovery modules go in `TA-ODIN/bin/modules/` - the orchestrator auto-discovers them
+- Classification mappings go in CSV files under `ODIN/lookups/`
 - Default config in `default/`, customer overrides in `local/`
-- `indexes.conf` must be deployed to indexers, not forwarders
+- `indexes.conf` belongs in the ODIN app (indexers/SH), NEVER in TA-ODIN (forwarders)
+- `inputs.conf` belongs in TA-ODIN (forwarders), NEVER in the ODIN app
+- Search-time props/transforms/lookups belong in the ODIN app (search heads)
 - Output format is always space-separated key=value pairs with ISO 8601 UTC timestamps
 - Script outputs start and completion marker events for each scan
 - All change history entries use ISO 8601 CET timestamps
@@ -146,13 +193,13 @@ bash TA-ODIN/bin/modules/services.sh
 ### Verifying events in Splunk
 ```spl
 index=odin_discovery sourcetype=odin:enumeration
-| stats count by event_type
+| stats count by type
 | sort - count
 ```
 
 ### Verifying classification enrichment
 ```spl
-index=odin_discovery sourcetype=odin:enumeration event_type=service
+index=odin_discovery sourcetype=odin:enumeration type=service
 | lookup odin_classify_services service_name OUTPUT category, role
 | stats count by hostname, role
 ```

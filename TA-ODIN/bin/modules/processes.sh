@@ -4,9 +4,12 @@
 # Enumerates all running processes via ps.
 #
 # Output fields:
-#   event_type=process process_pid= process_ppid= process_user= process_state=
+#   type=process process_pid= process_ppid= process_user= process_state=
 #   process_cpu= process_mem= process_elapsed= process_name= process_command=
 #
+
+# Force C locale for consistent command output parsing
+export LC_ALL=C
 
 # Use orchestrator functions if available, otherwise define standalone versions
 if ! declare -f emit &>/dev/null; then
@@ -38,40 +41,26 @@ if ps -eo pid,ppid,user,stat,%cpu,%mem,etime,comm,args --no-headers >/dev/null 2
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
 
-        pid=$(echo "$line" | awk '{print $1}')
-        ppid=$(echo "$line" | awk '{print $2}')
-        user=$(echo "$line" | awk '{print $3}')
-        stat=$(echo "$line" | awk '{print $4}')
-        cpu=$(echo "$line" | awk '{print $5}')
-        mem=$(echo "$line" | awk '{print $6}')
-        elapsed=$(echo "$line" | awk '{print $7}')
-        comm=$(echo "$line" | awk '{print $8}')
-        args=$(echo "$line" | awk '{for(i=9;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+        read -r pid ppid user stat cpu mem elapsed comm args <<< "$line"
 
         [[ -z "$pid" ]] && continue
 
-        out="event_type=process process_pid=$pid process_ppid=$ppid process_user=$user process_state=$stat process_cpu=$cpu process_mem=$mem process_elapsed=$elapsed process_name=$comm"
+        out="type=process process_pid=$pid process_ppid=$ppid process_user=$user process_state=$stat process_cpu=$cpu process_mem=$mem process_elapsed=$elapsed process_name=$comm"
         [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
         emit "$out"
         emitted=1
     done < <(ps -eo pid,ppid,user,stat,%cpu,%mem,etime,comm,args --no-headers 2>/dev/null)
 else
     # BusyBox/minimal ps fallback: limited fields available
-    # BusyBox ps -o may support: pid,ppid,user,stat,comm,args (but not %cpu,%mem,etime)
     if ps -o pid,ppid,user,stat,comm,args 2>/dev/null | head -1 >/dev/null 2>&1; then
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
 
-            pid=$(echo "$line" | awk '{print $1}')
-            ppid=$(echo "$line" | awk '{print $2}')
-            user=$(echo "$line" | awk '{print $3}')
-            stat=$(echo "$line" | awk '{print $4}')
-            comm=$(echo "$line" | awk '{print $5}')
-            args=$(echo "$line" | awk '{for(i=6;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+            read -r pid ppid user stat comm args <<< "$line"
 
             [[ -z "$pid" || "$pid" == "PID" ]] && continue
 
-            out="event_type=process process_pid=$pid process_ppid=$ppid process_user=$user process_state=$stat process_name=$comm"
+            out="type=process process_pid=$pid process_ppid=$ppid process_user=$user process_state=$stat process_name=$comm"
             [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
             emit "$out"
             emitted=1
@@ -81,17 +70,15 @@ else
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
 
-            pid=$(echo "$line" | awk '{print $1}')
-            user=$(echo "$line" | awk '{print $2}')
-            args=$(echo "$line" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+            read -r pid user args <<< "$line"
 
             [[ -z "$pid" || "$pid" == "PID" ]] && continue
 
-            # Extract process name from command
-            comm=$(echo "$args" | awk '{print $1}')
+            # Extract process name as basename of first word in args
+            comm="${args%% *}"
             comm="${comm##*/}"
 
-            out="event_type=process process_pid=$pid process_user=$user process_name=$comm"
+            out="type=process process_pid=$pid process_user=$user process_name=$comm"
             [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
             emit "$out"
             emitted=1
@@ -101,7 +88,7 @@ fi
 
 # Emit none_found if no processes were discovered
 if [[ $emitted -eq 0 ]]; then
-    emit "event_type=none_found module=processes message=\"No running processes found\""
+    emit "type=none_found module=processes message=\"No running processes found\""
 fi
 
 exit 0
