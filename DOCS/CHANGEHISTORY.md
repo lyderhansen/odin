@@ -27,6 +27,31 @@ All entries use ISO 8601 timestamps in CET timezone.
 [2026-02-21T22:00:00+01:00] - Updated ARCHITECTURE.md with Phase 2 classification layer and data flow
 [2026-02-21T22:00:00+01:00] - Updated CLAUDE.md with Phase 2 status, log source lookup docs, and verification queries
 
+### Lookup expansion — comprehensive coverage + Windows
+[2026-02-21T23:00:00+01:00] - odin_classify_services.csv: 209 → 331 rows (+122)
+[2026-02-21T23:00:00+01:00] - odin_classify_ports.csv: 128 → 205 rows (+77)
+[2026-02-21T23:00:00+01:00] - odin_classify_packages.csv: 204 → 273 rows (+69)
+[2026-02-21T23:00:00+01:00] - odin_log_sources.csv: 190 → 273 rows (+83)
+[2026-02-21T23:00:00+01:00] - Windows services: IIS (W3SVC), MSSQL, Active Directory (NTDS, Netlogon, ADFS, CertSvc), Exchange (Transport, IS), Hyper-V (vmms, vmcompute), RDP (TermService), Print Spooler, Failover Cluster (ClusSvc), Windows Firewall (MpsSvc), Event Log, Task Scheduler, WinRM, WSUS, SMB (LanmanServer), DFS/DFSR, Windows Update, BITS, Group Policy
+[2026-02-21T23:00:00+01:00] - Windows security agents: Windows Defender (WinDefend), MsSense (MDE), CSFalconService (CrowdStrike), CbDefense (Carbon Black), SentinelAgent, SEPMasterService (Symantec), McAfeeFramework/mcshield, CylanceSvc, TaniumClient, QualysAgent, OssecSvc (Wazuh)
+[2026-02-21T23:00:00+01:00] - Windows log sources: WinEventLog Security/System/Application/PowerShell/Sysmon, IIS access/error, MSSQL errorlog/audit, AD DS directory service, DNS Server, DHCP, Exchange transport/store, Hyper-V, Firewall, Windows Update, Task Scheduler, RDP sessions, Print, SMB, Failover Cluster
+[2026-02-21T23:00:00+01:00] - Windows ports: WinRM (5985/5986/47001), AD Global Catalog (3268/3269), DCOM (49152)
+[2026-02-21T23:00:00+01:00] - API gateways: Kong, Apache APISIX, Tyk, Gravitee
+[2026-02-21T23:00:00+01:00] - Database proxies/HA: PgBouncer, ProxySQL, MaxScale, Patroni, Vitess, TiDB, YugabyteDB, QuestDB, TimescaleDB
+[2026-02-21T23:00:00+01:00] - Service mesh / GitOps: Istio, Linkerd, ArgoCD, Flux
+[2026-02-21T23:00:00+01:00] - Data pipeline: Apache Airflow, NiFi, Spark, Flink
+[2026-02-21T23:00:00+01:00] - Identity: Keycloak, FreeIPA, Shibboleth, Authentik
+[2026-02-21T23:00:00+01:00] - Observability: Jaeger, Thanos, Mimir, Tempo, Cortex, OpenTelemetry Collector, Grafana Agent/Alloy
+[2026-02-21T23:00:00+01:00] - Network monitoring: Zeek, ntopng, Cacti, LibreNMS
+[2026-02-21T23:00:00+01:00] - DNS: CoreDNS, PowerDNS, Knot, Pi-hole
+[2026-02-21T23:00:00+01:00] - VPN: Tailscale, Nebula, ZeroTier, Pritunl
+[2026-02-21T23:00:00+01:00] - Logging: Graylog, Grafana Loki
+[2026-02-21T23:00:00+01:00] - Collaboration: Mattermost, Rocket.Chat, Nextcloud
+[2026-02-21T23:00:00+01:00] - CI/CD: Nexus, Artifactory, Drone, Concourse, SonarQube
+[2026-02-21T23:00:00+01:00] - Automation: AWX, Rundeck, StackStorm, Packer, Vagrant
+[2026-02-21T23:00:00+01:00] - Storage: DRBD, iSCSI (open-iscsi, targetcli), multipath-tools, LVM2
+[2026-02-21T23:00:00+01:00] - Ports: OpenTelemetry (4317/4318), Splunk HEC/mgmt (8088/8089), MQTT TLS (8883), AMQP TLS (5671), DNS-over-TLS (853), Kubernetes NodePort (30000-32767), Docker Swarm (7946), Istio (15010/15014/15021), Envoy admin (15000), Jaeger (14250/14268/16686), Webmin (10000), and many more
+
 ---
 
 ## v2.1.0 - Two-App Split & Script Guardrails
