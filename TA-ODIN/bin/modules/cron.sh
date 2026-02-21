@@ -65,7 +65,10 @@ parse_cron_line() {
     [[ -n "$command" ]] && out="$out cron_command=$(safe_val "$command")"
     [[ -n "$file" ]] && out="$out cron_file=$file"
     emit "$out"
+    emitted=1
 }
+
+emitted=0
 
 # --- /etc/crontab (system crontab, has user field) ---
 if [[ -f /etc/crontab ]]; then
@@ -81,6 +84,7 @@ if [[ -f /etc/crontab ]]; then
             [[ -z "$command" ]] && continue
             out="event_type=cron cron_source=system_crontab cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=/etc/crontab"
             emit "$out"
+            emitted=1
         else
             # Standard 5-field + user + command
             schedule=$(echo "$line" | awk '{printf "%s %s %s %s %s", $1, $2, $3, $4, $5}')
@@ -89,6 +93,7 @@ if [[ -f /etc/crontab ]]; then
             [[ -z "$command" ]] && continue
             out="event_type=cron cron_source=system_crontab cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=/etc/crontab"
             emit "$out"
+            emitted=1
         fi
     done < /etc/crontab
 fi
@@ -114,6 +119,7 @@ if [[ -d /etc/cron.d ]]; then
             [[ -z "$command" ]] && continue
             out="event_type=cron cron_source=cron.d cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$cronfile"
             emit "$out"
+            emitted=1
         done < "$cronfile"
     done
 fi
@@ -148,6 +154,7 @@ for period in hourly daily weekly monthly; do
         # Skip common non-script files
         [[ "$script_name" == .placeholder ]] && continue
         emit "event_type=cron cron_source=cron.$period cron_schedule=@$period cron_command=$script_name cron_file=$script"
+        emitted=1
     done
 done
 
@@ -170,6 +177,7 @@ if command -v systemctl &>/dev/null; then
         [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
         out="$out cron_file=$timer_unit"
         emit "$out"
+        emitted=1
     done < <(systemctl list-timers --all --no-pager --no-legend 2>/dev/null)
 fi
 
@@ -188,7 +196,13 @@ if [[ -f /etc/anacrontab ]]; then
 
         [[ -z "$command" ]] && continue
         emit "event_type=cron cron_source=anacron cron_schedule=\"period=${period}d delay=${delay}m\" cron_command=$(safe_val "$command") cron_file=/etc/anacrontab"
+        emitted=1
     done < /etc/anacrontab
+fi
+
+# Emit none_found if no scheduled tasks were discovered
+if [[ $emitted -eq 0 ]]; then
+    emit "event_type=none_found module=cron message=\"No scheduled tasks found\""
 fi
 
 exit 0

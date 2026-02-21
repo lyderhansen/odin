@@ -125,4 +125,9 @@ if command -v netstat &>/dev/null; then
     done < <(netstat -tulpn 2>/dev/null | grep -E '^(tcp|udp)')
 fi
 
+# Emit none_found if no listening ports were discovered
+if [[ $emitted -eq 0 ]]; then
+    emit "event_type=none_found module=ports message=\"No listening ports discovered\""
+fi
+
 exit 0

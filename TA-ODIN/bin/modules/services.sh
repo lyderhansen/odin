@@ -108,4 +108,9 @@ if [[ -d /etc/init.d ]]; then
     done
 fi
 
+# Emit none_found if no services were discovered
+if [[ $emitted -eq 0 ]]; then
+    emit "event_type=none_found module=services message=\"No services discovered\""
+fi
+
 exit 0

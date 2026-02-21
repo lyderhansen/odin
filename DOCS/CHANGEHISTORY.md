@@ -4,6 +4,29 @@ All entries use ISO 8601 timestamps in CET timezone.
 
 ---
 
+## v2.0.1 - Portability & Observability Improvements
+
+### none_found events - All modules now report when nothing is discovered
+[2026-02-21T22:00:00+01:00] - Added event_type=none_found to all modules when no results are discovered
+[2026-02-21T22:00:00+01:00] - cron.sh: Added emitted tracking and none_found event (No scheduled tasks found)
+[2026-02-21T22:00:00+01:00] - services.sh: Added none_found event when no services discovered
+[2026-02-21T22:00:00+01:00] - ports.sh: Added none_found event when no listening ports discovered
+[2026-02-21T22:00:00+01:00] - packages.sh: Added none_found event when no packages found, replaced package_error with none_found for consistency
+[2026-02-21T22:00:00+01:00] - processes.sh: Added none_found event when no processes found
+[2026-02-21T22:00:00+01:00] - mounts.sh: Added none_found event when no mounts found
+
+### Portability fixes - Compatibility across Linux distros and minimal installs
+[2026-02-21T22:00:00+01:00] - odin.sh: Added bash availability check with clear error event if bash is not installed
+[2026-02-21T22:00:00+01:00] - packages.sh: Replaced grep -oP (PCRE) with POSIX-compatible sed for /etc/os-release parsing
+[2026-02-21T22:00:00+01:00] - packages.sh: Fixed apk package name parsing for packages with multiple hyphens (e.g. perl-test-warn-0.32-r0)
+[2026-02-21T22:00:00+01:00] - packages.sh: Added apk list --installed support as preferred method with apk info -v fallback
+[2026-02-21T22:00:00+01:00] - processes.sh: Added three-tier ps fallback (GNU ps -eo → BusyBox ps -o → basic ps -ef/aux)
+[2026-02-21T22:00:00+01:00] - mounts.sh: Added df flag detection with fallback chain (df -PT → df -P → df) for BusyBox/minimal systems
+[2026-02-21T22:00:00+01:00] - mounts.sh: Added timeout command detection - skips timeout gracefully if not available
+[2026-02-21T22:00:00+01:00] - processes.sh, mounts.sh, packages.sh: Changed pipe-based while loops to process substitution to fix variable scoping
+
+---
+
 ## v2.0.0 - Full Enumeration Restructure
 
 [2026-02-21T15:00:00+01:00] - Restructured TA-ODIN from CSV-rule-based detection to full host enumeration architecture

@@ -8,6 +8,12 @@
 # Never aborts on module failure.
 #
 
+# Verify bash is available (scripts require bash features)
+if [[ -z "$BASH_VERSION" ]]; then
+    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=2.0.0 event_type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
+    exit 1
+fi
+
 # Find script directory (works even with symlinks)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
