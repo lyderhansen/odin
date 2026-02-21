@@ -1,36 +1,57 @@
-# TA-ODIN - Discovery Add-on for Splunk
+# TA-ODIN - Endpoint Enumeration Add-on for Splunk
+
+## ODIN - Organized Discovery and Identification of eNdpoints
+
+In Norse mythology, Odin was the all-seeing god who sacrificed his eye for wisdom and knowledge. He had two ravens, Hugin (thought) and Munin (memory), who flew across the world each day and reported back everything they observed. This mirrors exactly what TA-ODIN does: it sends out enumeration scripts to endpoints across your infrastructure, and they report back what they find.
+
+---
 
 ## Overview
 
-TA-ODIN is a Technology Add-on for Splunk that automatically discovers log files and services on endpoints. It is designed to be deployed via Deployment Server to all forwarders in your environment.
+TA-ODIN is a Splunk Technology Add-on that performs **full enumeration** of everything running on endpoints. Unlike traditional approaches that only find predefined items, TA-ODIN discovers all services, listening ports, installed packages, scheduled tasks, running processes, and filesystem mounts - giving you complete visibility without relying on incomplete CMDB data.
 
 **Key Features:**
-- Discovers log files and running services without ingesting actual log data
-- Reports only metadata (file existence, size, service status)
-- Rule-based detection using CSV configuration files
-- Supports both Linux and Windows (Windows coming soon)
-- Enables rapid identification of data sources during onboarding
+- Full enumeration of services, ports, packages, cron jobs, processes, and mounts
+- Reports only metadata - never the actual log content
+- Modular architecture - easy to extend with new discovery modules
+- Classification lookups map raw data to host roles at search time
+- Supports any Linux distribution (systemd, SysV init, or init.d)
+- Deploys via Splunk Deployment Server to Universal Forwarders
 
 ## Architecture
 
 ```
 TA-ODIN/
 ├── bin/
-│   ├── odin.sh              # Linux discovery script
-│   └── odin.ps1             # Windows discovery script (placeholder)
+│   ├── odin.sh                       # Orchestrator (autodiscovers modules)
+│   ├── odin.ps1                      # Windows orchestrator (placeholder)
+│   └── modules/                      # Discovery modules
+│       ├── services.sh               # Service enumeration
+│       ├── ports.sh                  # Listening port enumeration
+│       ├── packages.sh               # Installed package enumeration
+│       ├── cron.sh                   # Scheduled task enumeration
+│       ├── processes.sh              # Running process enumeration
+│       └── mounts.sh                 # Filesystem mount enumeration
 ├── default/
-│   ├── app.conf             # App metadata
-│   ├── inputs.conf          # Scripted input configuration
-│   ├── props.conf           # Event parsing
-│   ├── transforms.conf      # Field extractions
-│   └── indexes.conf         # Index definition (deploy to indexers)
-├── local/
-│   └── inputs.conf          # Customer-specific overrides
+│   ├── app.conf                      # App metadata (v2.0.0)
+│   ├── inputs.conf                   # Scripted inputs (30-day interval)
+│   ├── props.conf                    # Event parsing + classification lookups
+│   ├── transforms.conf               # Lookup transform definitions
+│   └── indexes.conf                  # Index definition (deploy to indexers)
+├── local/                            # Customer-specific overrides
 ├── lookups/
-│   ├── odin_rules_linux.csv   # Linux detection rules
-│   └── odin_rules_windows.csv # Windows detection rules
+│   ├── odin_classify_services.csv    # Service -> category/role mapping
+│   ├── odin_classify_ports.csv       # Port -> expected service mapping
+│   └── odin_classify_packages.csv    # Package -> category/role mapping
 └── README.md
 ```
+
+### How It Works
+
+1. **Orchestrator** (`odin.sh`) sets shared context via environment variables and autodiscovers all modules in `bin/modules/`
+2. **Modules** each enumerate one domain (services, ports, packages, etc.) and emit space-separated key=value events
+3. **Splunk** indexes the raw enumeration data with sourcetype `odin:enumeration`
+4. **Classification lookups** enrich events at search time, mapping service names, ports, and packages to categories and host roles
 
 ## Installation
 
@@ -46,54 +67,123 @@ cp TA-ODIN/default/indexes.conf $SPLUNK_HOME/etc/apps/TA-ODIN/local/
 3. Deploy the app
 
 ### Verification
-After deployment, search for discovery events:
+After deployment, check that events are arriving:
 ```spl
-index=odin_discovery sourcetype=odin:discovery
-| stats count by hostname, category, detection_type
+index=odin_discovery sourcetype=odin:enumeration
+| stats count by event_type
+| sort - count
 ```
 
 ## Output Format
 
-### File Detection
-```
-timestamp=2025-01-09T10:00:00, hostname=server01, os=linux, detection_type=file, 
-category=apache, path=/var/log/apache2/, file=access.log, exists=true, 
-empty=false, size_bytes=1048576, description="Apache logs (Debian/Ubuntu)"
-```
+All events are space-separated key=value pairs. Every event includes common fields:
 
-### Service Detection
 ```
-timestamp=2025-01-09T10:00:00, hostname=server01, os=linux, detection_type=service, 
-category=apache, service_name=apache2, status=running, description="Apache HTTP Server"
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0
 ```
 
-## Customizing Rules
+### Service Events
+```
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=service service_name=nginx service_status=running service_enabled=enabled service_type=forking
+```
 
-### Adding New Detection Rules
+### Port Events
+```
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=port transport=tcp listen_address=0.0.0.0 listen_port=443 process_name=nginx process_pid=1234
+```
 
-Edit the appropriate CSV file in `lookups/`:
+### Package Events
+```
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=package package_name=nginx package_version=1.24.0-1 package_arch=amd64 package_manager=dpkg
+```
 
-**odin_rules_linux.csv columns:**
+### Cron Events
+```
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=cron cron_source=user_crontab cron_user=root cron_schedule="0 2 * * *" cron_command="/usr/local/bin/backup.sh"
+```
+
+### Process Events
+```
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=process process_pid=1234 process_ppid=1 process_user=www-data process_state=Ss process_cpu=0.1 process_mem=2.3 process_elapsed=10-05:23:15 process_name=nginx process_command="nginx: master process /usr/sbin/nginx"
+```
+
+### Mount Events
+```
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 event_type=mount mount_device=/dev/sda1 mount_point=/ mount_type=ext4 mount_size_kb=20511312 mount_used_kb=8234560 mount_avail_kb=11213304 mount_use_pct=42
+```
+
+## Classification Lookups
+
+Classification happens at **search time** using Splunk lookup tables. This means you can update classification rules without re-scanning hosts.
+
+### Service Classification (`odin_classify_services.csv`)
+Maps service names to categories and roles:
 | Column | Description |
 |--------|-------------|
-| detection_type | `file` or `service` |
-| category | Category name (e.g., apache, mysql, nginx) |
-| check_path | Path to check (supports wildcards) |
-| check_service | Service name(s) to check (comma-separated) |
-| file_pattern | File pattern to match (e.g., *.log) |
+| service_pattern | Service name pattern (supports wildcards) |
+| category | Category (e.g., web_server, database, security) |
+| subcategory | Subcategory (e.g., reverse_proxy, relational) |
+| vendor | Vendor name |
+| role | Host role indicator |
 | description | Human-readable description |
 
-**Example - Adding Redis detection:**
-```csv
-file,redis,/var/log/redis/,,*.log,Redis cache server logs
-service,redis,,redis-server,,Redis cache server
+### Port Classification (`odin_classify_ports.csv`)
+Maps well-known ports to expected services:
+| Column | Description |
+|--------|-------------|
+| port | Port number |
+| transport | Protocol (tcp/udp) |
+| expected_service | Expected service name |
+| category | Service category |
+| description | Human-readable description |
+
+### Package Classification (`odin_classify_packages.csv`)
+Maps package names to host roles:
+| Column | Description |
+|--------|-------------|
+| package_pattern | Package name pattern (supports wildcards) |
+| category | Category |
+| vendor | Vendor name |
+| role | Host role indicator |
+| description | Human-readable description |
+
+### Example: Classify hosts by role
+```spl
+index=odin_discovery sourcetype=odin:enumeration event_type=service
+| lookup odin_classify_services service_name AS service_name OUTPUT role AS service_role
+| where isnotnull(service_role)
+| stats values(service_role) AS roles by hostname
 ```
 
+## Customization
+
+### Adding a New Discovery Module
+Create a new `.sh` file in `bin/modules/`. The orchestrator will auto-discover it:
+
+```bash
+#!/bin/bash
+# Module template
+if ! declare -f emit &>/dev/null; then
+    ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
+    ODIN_OS="${ODIN_OS:-linux}"
+    ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
+    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
+    emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
+fi
+
+# Your enumeration logic here
+emit "event_type=custom_type field1=value1 field2=value2"
+```
+
+### Adding Classification Rules
+Add rows to the appropriate CSV in `lookups/`:
+- `odin_classify_services.csv` - Service-to-role mappings
+- `odin_classify_ports.csv` - Port-to-service mappings
+- `odin_classify_packages.csv` - Package-to-role mappings
+
 ### Changing Scan Frequency
-
-By default, the scan runs once at deployment, then every 30 days.
-
-To change this, create `local/inputs.conf`:
+Create `local/inputs.conf`:
 ```ini
 [script://./bin/odin.sh]
 interval = 86400  # Run daily
@@ -111,36 +201,76 @@ Default retention is 1 year. To change, edit `indexes.conf`:
 frozenTimePeriodInSecs = 63072000
 ```
 
-## Phase 2 - Automatic Host Classification (Coming Soon)
+## Useful Searches
+
+### Event type distribution
+```spl
+index=odin_discovery sourcetype=odin:enumeration
+| stats count by event_type
+| sort - count
+```
+
+### Hosts with most services
+```spl
+index=odin_discovery sourcetype=odin:enumeration event_type=service service_status=running
+| stats dc(service_name) AS service_count by hostname
+| sort - service_count
+```
+
+### Find hosts listening on unusual ports
+```spl
+index=odin_discovery sourcetype=odin:enumeration event_type=port
+| lookup odin_classify_ports listen_port AS port, transport OUTPUT expected_service
+| where isnull(expected_service) AND listen_port>1024
+| stats values(listen_port) AS unknown_ports by hostname
+```
+
+### Host role summary
+```spl
+index=odin_discovery sourcetype=odin:enumeration event_type=service
+| lookup odin_classify_services service_name OUTPUT role
+| where isnotnull(role)
+| stats values(role) AS roles, dc(service_name) AS service_count by hostname
+| sort - service_count
+```
+
+## Phase 2 - Automatic Host Classification (Planned)
 
 Future versions will include:
-- Scheduled searches to categorize hosts by role
-- Automatic server class assignment
-- CSV output for Deployment Server integration
+- Scheduled searches to categorize hosts by role based on enumeration data
+- Automatic server class generation for Deployment Server
+- CSV output for automated app deployment
 
 ## Troubleshooting
 
 ### Script Not Running
-Check the script is executable:
 ```bash
 ls -la $SPLUNK_HOME/etc/apps/TA-ODIN/bin/odin.sh
 chmod +x $SPLUNK_HOME/etc/apps/TA-ODIN/bin/odin.sh
+chmod +x $SPLUNK_HOME/etc/apps/TA-ODIN/bin/modules/*.sh
 ```
 
 ### No Events in Index
-1. Verify index exists on indexers
-2. Check forwarder outputs.conf points to correct indexers
+1. Verify the `odin_discovery` index exists on indexers
+2. Check forwarder `outputs.conf` points to correct indexers
 3. Check `$SPLUNK_HOME/var/log/splunk/splunkd.log` for errors
 
-### Rules File Not Found
-Ensure the lookups directory exists and contains CSV files:
+### Testing Locally
+Run the full orchestrator:
 ```bash
-ls -la $SPLUNK_HOME/etc/apps/TA-ODIN/lookups/
+cd TA-ODIN && bash bin/odin.sh
+```
+
+Test a single module:
+```bash
+export ODIN_HOSTNAME=test ODIN_OS=linux ODIN_RUN_ID=test-001 ODIN_VERSION=2.0.0
+bash TA-ODIN/bin/modules/services.sh
 ```
 
 ## Version History
 
-- **1.0.0** - Initial release with Linux file/service discovery
+- **2.0.0** - Full enumeration restructure: modular architecture, 6 discovery modules, classification lookups
+- **1.0.0** - Initial release with CSV-rule-based Linux file/service discovery
 
 ## Support
 

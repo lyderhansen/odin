@@ -1,0 +1,122 @@
+service_pattern,category,subcategory,vendor,role,description
+nginx,web_server,reverse_proxy,NGINX Inc,web,Nginx web server
+apache2,web_server,http_server,Apache,web,Apache HTTP Server (Debian/Ubuntu)
+httpd,web_server,http_server,Apache,web,Apache HTTP Server (RHEL/CentOS)
+lighttpd,web_server,http_server,Lighttpd,web,Lighttpd web server
+caddy,web_server,http_server,Caddy,web,Caddy web server
+haproxy,web_server,load_balancer,HAProxy,load_balancer,HAProxy load balancer
+traefik,web_server,reverse_proxy,Traefik Labs,load_balancer,Traefik reverse proxy
+envoy,web_server,service_mesh,Envoy,load_balancer,Envoy service proxy
+varnish,web_server,cache,Varnish,cache,Varnish HTTP accelerator
+mysql,database,relational,Oracle,database,MySQL database
+mysqld,database,relational,Oracle,database,MySQL database (RHEL)
+mariadb,database,relational,MariaDB,database,MariaDB database
+postgresql,database,relational,PostgreSQL,database,PostgreSQL database
+mongod,database,nosql,MongoDB,database,MongoDB database
+redis-server,database,key_value,Redis,cache,Redis cache/database
+redis,database,key_value,Redis,cache,Redis cache/database
+memcached,database,key_value,Memcached,cache,Memcached cache
+elasticsearch,search,search_engine,Elastic,search,Elasticsearch search engine
+opensearch,search,search_engine,OpenSearch,search,OpenSearch search engine
+solr,search,search_engine,Apache,search,Apache Solr search
+clickhouse-server,database,columnar,ClickHouse,database,ClickHouse analytics database
+cassandra,database,nosql,Apache,database,Apache Cassandra database
+couchdb,database,nosql,Apache,database,Apache CouchDB database
+influxdb,database,time_series,InfluxData,database,InfluxDB time series database
+docker,container,runtime,Docker,container,Docker container runtime
+containerd,container,runtime,CNCF,container,containerd container runtime
+crio,container,runtime,CNCF,container,CRI-O container runtime
+kubelet,container,orchestration,CNCF,kubernetes,Kubernetes kubelet
+kube-proxy,container,orchestration,CNCF,kubernetes,Kubernetes kube-proxy
+kube-apiserver,container,orchestration,CNCF,kubernetes,Kubernetes API server
+kube-scheduler,container,orchestration,CNCF,kubernetes,Kubernetes scheduler
+kube-controller-manager,container,orchestration,CNCF,kubernetes,Kubernetes controller manager
+etcd,container,distributed_kv,CNCF,kubernetes,etcd distributed key-value store
+sshd,remote_access,ssh,OpenSSH,infrastructure,SSH daemon
+ssh,remote_access,ssh,OpenSSH,infrastructure,SSH daemon (alternative)
+vsftpd,remote_access,ftp,vsftpd,file_server,vsftpd FTP server
+proftpd,remote_access,ftp,ProFTPD,file_server,ProFTPD FTP server
+pure-ftpd,remote_access,ftp,Pure-FTPd,file_server,Pure-FTPd FTP server
+xrdp,remote_access,rdp,xrdp,infrastructure,xRDP remote desktop
+vnc,remote_access,vnc,VNC,infrastructure,VNC remote desktop
+rsyslog,logging,syslog,Rsyslog,logging,Rsyslog daemon
+syslog-ng,logging,syslog,Syslog-ng,logging,Syslog-ng daemon
+fluentd,logging,log_shipper,Fluentd,logging,Fluentd log collector
+fluent-bit,logging,log_shipper,Fluent Bit,logging,Fluent Bit log processor
+filebeat,logging,log_shipper,Elastic,logging,Filebeat log shipper
+logstash,logging,log_pipeline,Elastic,logging,Logstash log pipeline
+splunkd,logging,siem,Splunk,logging,Splunk daemon
+SplunkForwarder,logging,log_shipper,Splunk,logging,Splunk Universal Forwarder
+promtail,logging,log_shipper,Grafana,logging,Promtail log shipper for Loki
+prometheus,monitoring,metrics,Prometheus,monitoring,Prometheus metrics
+grafana-server,monitoring,visualization,Grafana,monitoring,Grafana dashboard
+node_exporter,monitoring,metrics_exporter,Prometheus,monitoring,Prometheus node exporter
+zabbix_agentd,monitoring,agent,Zabbix,monitoring,Zabbix monitoring agent
+zabbix_server,monitoring,server,Zabbix,monitoring,Zabbix monitoring server
+nagios,monitoring,server,Nagios,monitoring,Nagios monitoring
+telegraf,monitoring,metrics,InfluxData,monitoring,Telegraf metrics collector
+collectd,monitoring,metrics,collectd,monitoring,collectd metrics daemon
+falcon-sensor,security,edr,CrowdStrike,security,CrowdStrike Falcon sensor
+mdatp,security,edr,Microsoft,security,Microsoft Defender for Endpoint
+cbagentd,security,edr,Carbon Black,security,Carbon Black agent
+cbdaemon,security,edr,Carbon Black,security,Carbon Black daemon
+sentinelone,security,edr,SentinelOne,security,SentinelOne agent
+ds_agent,security,edr,Trend Micro,security,Trend Micro Deep Security agent
+sophos-av,security,antivirus,Sophos,security,Sophos Antivirus
+clamd,security,antivirus,ClamAV,security,ClamAV daemon
+clamav-daemon,security,antivirus,ClamAV,security,ClamAV daemon (Debian)
+wazuh-agent,security,hids,Wazuh,security,Wazuh agent
+wazuh-manager,security,hids,Wazuh,security,Wazuh manager
+ossec,security,hids,OSSEC,security,OSSEC HIDS
+fail2ban,security,ips,Fail2ban,security,Fail2ban intrusion prevention
+suricata,security,ids,Suricata,security,Suricata IDS/IPS
+snort,security,ids,Snort,security,Snort IDS
+auditd,security,audit,Linux,security,Linux audit daemon
+apparmor,security,mac,Linux,security,AppArmor mandatory access control
+vault,security,secrets,HashiCorp,security,HashiCorp Vault secrets management
+firewalld,network,firewall,Firewalld,firewall,Firewalld firewall
+ufw,network,firewall,UFW,firewall,UFW firewall
+nftables,network,firewall,nftables,firewall,nftables firewall
+iptables,network,firewall,iptables,firewall,iptables firewall
+named,network,dns,ISC,dns,BIND DNS server
+bind9,network,dns,ISC,dns,BIND9 DNS server
+unbound,network,dns,NLnet Labs,dns,Unbound DNS resolver
+dnsmasq,network,dns,Dnsmasq,dns,Dnsmasq DNS/DHCP
+dhcpd,network,dhcp,ISC,dhcp,ISC DHCP server
+isc-dhcp-server,network,dhcp,ISC,dhcp,ISC DHCP server (Debian)
+keepalived,network,ha,Keepalived,load_balancer,Keepalived VRRP/LVS
+squid,network,proxy,Squid,proxy,Squid proxy server
+privoxy,network,proxy,Privoxy,proxy,Privoxy privacy proxy
+openvpn,network,vpn,OpenVPN,vpn,OpenVPN server
+wireguard,network,vpn,WireGuard,vpn,WireGuard VPN
+strongswan,network,vpn,strongSwan,vpn,strongSwan IPsec VPN
+postfix,mail,mta,Postfix,mail,Postfix mail server
+sendmail,mail,mta,Sendmail,mail,Sendmail mail server
+exim4,mail,mta,Exim,mail,Exim mail server
+dovecot,mail,mda,Dovecot,mail,Dovecot IMAP/POP3 server
+cron,scheduler,cron,Linux,infrastructure,Cron scheduler (Debian/Ubuntu)
+crond,scheduler,cron,Linux,infrastructure,Cron scheduler (RHEL/CentOS)
+atd,scheduler,at,Linux,infrastructure,at daemon
+anacron,scheduler,anacron,Linux,infrastructure,Anacron scheduler
+smbd,file_server,smb,Samba,file_server,Samba SMB server
+nmbd,file_server,smb,Samba,file_server,Samba NetBIOS name server
+nfs-server,file_server,nfs,Linux,file_server,NFS server
+rpcbind,file_server,rpc,Linux,file_server,RPC bind service
+slapd,directory,ldap,OpenLDAP,directory,OpenLDAP server
+sssd,directory,auth,SSSD,directory,SSSD authentication service
+freeradius,directory,radius,FreeRADIUS,directory,FreeRADIUS server
+rabbitmq-server,messaging,amqp,RabbitMQ,messaging,RabbitMQ message broker
+kafka,messaging,streaming,Apache,messaging,Apache Kafka
+activemq,messaging,jms,Apache,messaging,Apache ActiveMQ
+mosquitto,messaging,mqtt,Eclipse,messaging,Mosquitto MQTT broker
+jenkins,ci_cd,automation,Jenkins,ci_cd,Jenkins automation server
+gitlab-runner,ci_cd,runner,GitLab,ci_cd,GitLab CI runner
+tomcat,application,java,Apache,application,Apache Tomcat
+wildfly,application,java,Red Hat,application,WildFly application server
+gunicorn,application,python,Gunicorn,application,Gunicorn Python WSGI server
+uwsgi,application,python,uWSGI,application,uWSGI application server
+pm2,application,nodejs,PM2,application,PM2 Node.js process manager
+php-fpm,application,php,PHP,application,PHP FastCGI Process Manager
+ntpd,time,ntp,NTP,infrastructure,NTP daemon
+chronyd,time,ntp,Chrony,infrastructure,Chrony NTP daemon
+systemd-timesyncd,time,ntp,systemd,infrastructure,systemd time sync
