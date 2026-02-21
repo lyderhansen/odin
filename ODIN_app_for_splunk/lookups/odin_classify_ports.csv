@@ -127,3 +127,80 @@ port,transport,expected_service,category,description
 28015,tcp,rethinkdb,database,RethinkDB client
 50000,tcp,jenkins,ci_cd,Jenkins agent
 51820,udp,wireguard,network,WireGuard VPN
+88,udp,kerberos,directory,Kerberos authentication (UDP)
+443,udp,quic,web_server,QUIC/HTTP3
+546,udp,dhcpv6-client,network,DHCPv6 client
+547,udp,dhcpv6-server,network,DHCPv6 server
+830,tcp,netconf,network,NETCONF management
+853,tcp,dns-over-tls,network,DNS over TLS
+1194,tcp,openvpn,network,OpenVPN (TCP)
+1270,tcp,scom,monitoring,SCOM agent
+1433,udp,mssql,database,Microsoft SQL Server (UDP)
+1883,tcp,mqtt,messaging,MQTT messaging
+2049,udp,nfs,file_server,NFS file system (UDP)
+3268,tcp,gc,directory,Active Directory Global Catalog
+3269,tcp,gc-ssl,directory,Active Directory Global Catalog SSL
+3478,udp,stun,telephony,STUN/TURN NAT traversal
+3551,tcp,apcupsd,management,APC UPS daemon
+4149,tcp,nrpe,monitoring,Nagios NRPE (alt)
+4317,tcp,otlp-grpc,monitoring,OpenTelemetry gRPC
+4318,tcp,otlp-http,monitoring,OpenTelemetry HTTP
+5000,tcp,docker-registry,container,Docker registry / Flask dev
+5355,udp,llmnr,network,Link-Local Multicast Name Resolution
+5432,udp,postgresql,database,PostgreSQL (UDP)
+5671,tcp,amqps,messaging,AMQP over TLS
+5985,tcp,winrm-http,remote_access,WinRM HTTP (Windows)
+5986,tcp,winrm-https,remote_access,WinRM HTTPS (Windows)
+6514,udp,syslog-tls,logging,Syslog over DTLS
+6660,tcp,irc,messaging,IRC (alt)
+6783,tcp,weave,container,Weave Net mesh
+7443,tcp,https-alt,web_server,HTTPS alternate (Oracle/misc)
+7946,tcp,docker-swarm,container,Docker Swarm gossip
+8000,tcp,http-alt,web_server,HTTP alternate (common)
+8001,tcp,http-alt,web_server,HTTP alternate (Kong admin)
+8082,tcp,http-alt,web_server,HTTP alternate (Nexus/misc)
+8088,tcp,splunk-hec,logging,Splunk HTTP Event Collector
+8089,tcp,splunk-mgmt,logging,Splunk management port
+8181,tcp,http-alt,web_server,HTTP alternate (misc)
+8291,tcp,mikrotik,network,MikroTik Winbox
+8333,tcp,bitcoin,blockchain,Bitcoin P2P
+8444,tcp,https-alt,web_server,HTTPS alternate
+8529,tcp,arangodb,database,ArangoDB HTTP
+8761,tcp,eureka,container,Netflix Eureka service registry
+8800,tcp,http-alt,web_server,HTTP alternate (Terraform)
+8880,tcp,http-alt,web_server,HTTP alternate
+8883,tcp,mqtts,messaging,MQTT over TLS
+9000,udp,sonarqube,ci_cd,SonarQube / misc
+9001,tcp,supervisord,management,Supervisord XML-RPC
+9003,tcp,phpfpm-xdebug,application,PHP-FPM / Xdebug
+9009,tcp,mimir,monitoring,Grafana Mimir gRPC
+9094,tcp,kafka-tls,messaging,Apache Kafka broker TLS
+9100,udp,node-exporter,monitoring,Prometheus node exporter (UDP)
+9115,tcp,blackbox-exporter,monitoring,Prometheus blackbox exporter
+9150,tcp,tor,network,Tor SOCKS proxy
+9187,tcp,pg-exporter,monitoring,PostgreSQL Prometheus exporter
+9216,tcp,mongodb-exporter,monitoring,MongoDB Prometheus exporter
+9308,tcp,clickhouse-exporter,monitoring,ClickHouse Prometheus exporter
+9411,tcp,zipkin,monitoring,Zipkin distributed tracing
+9443,udp,https-alt,web_server,HTTPS alternate (UDP)
+9500,tcp,splunk-kv,logging,Splunk KV Store
+9631,tcp,habitat,automation,Chef Habitat supervisor
+9696,tcp,neutron,container,OpenStack Neutron
+10000,tcp,webmin,management,Webmin admin panel
+10443,tcp,https-alt,web_server,HTTPS alternate
+11211,udp,memcached,database,Memcached (UDP)
+14250,tcp,jaeger-grpc,monitoring,Jaeger gRPC collector
+14268,tcp,jaeger-http,monitoring,Jaeger HTTP collector
+15000,tcp,envoy-admin,container,Envoy admin interface
+15010,tcp,istio-grpc,container,Istio Pilot gRPC
+15014,tcp,istio-http,container,Istio control plane monitoring
+15021,tcp,istio-health,container,Istio health check
+17000,tcp,consul-dns,orchestration,Consul DNS (alt)
+27018,udp,mongodb-shard,database,MongoDB shard (UDP)
+28017,tcp,mongodb-http,database,MongoDB HTTP status (legacy)
+30000,tcp,nodeport,container,Kubernetes NodePort range start
+32767,tcp,nodeport,container,Kubernetes NodePort range end
+41641,udp,tailscale,network,Tailscale WireGuard
+43594,tcp,runescape,application,RuneScape / custom app
+47001,tcp,winrm-compat,remote_access,WinRM compatibility (Windows)
+49152,tcp,dcom,network,DCOM / RPC dynamic (Windows)

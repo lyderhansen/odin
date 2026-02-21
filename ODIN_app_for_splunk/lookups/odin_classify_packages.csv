@@ -203,3 +203,72 @@ webmin,management,Webmin,infrastructure,Webmin web admin panel
 glusterfs-server,storage,GlusterFS,storage,GlusterFS distributed filesystem
 ceph,storage,Ceph,storage,Ceph distributed storage
 ceph-common,storage,Ceph,storage,Ceph common utilities
+kong,web_server,Kong,api_gateway,Kong API gateway
+apisix,web_server,Apache,api_gateway,Apache APISIX API gateway
+tyk-gateway,web_server,Tyk,api_gateway,Tyk API gateway
+pgbouncer,database,PgBouncer,database,PgBouncer connection pooler
+pgpool2,database,Pgpool,database,Pgpool-II PostgreSQL middleware
+proxysql,database,ProxySQL,database,ProxySQL MySQL proxy
+maxscale,database,MariaDB,database,MariaDB MaxScale proxy
+patroni,database,Patroni,database,Patroni PostgreSQL HA
+tidb,database,PingCAP,database,TiDB distributed SQL
+yugabyte,database,Yugabyte,database,YugabyteDB distributed SQL
+timescaledb,database,Timescale,database,TimescaleDB time series
+questdb,database,QuestDB,database,QuestDB time series
+couchbase-server,database,Couchbase,database,Couchbase NoSQL database
+cockroachdb,database,Cockroach Labs,database,CockroachDB distributed SQL
+mssql-tools,database,Microsoft,database,SQL Server CLI tools
+msodbcsql*,database,Microsoft,database,Microsoft ODBC Driver for SQL Server
+oracle-database-*,database,Oracle,database,Oracle Database (versioned)
+oracle-xe-*,database,Oracle,database,Oracle Express Edition (versioned)
+meilisearch,search,Meilisearch,search,Meilisearch search engine
+manticoresearch,search,Manticore,search,Manticore Search engine
+argocd,container,Argo,kubernetes,ArgoCD GitOps controller
+istio,container,Istio,kubernetes,Istio service mesh
+linkerd,container,Linkerd,kubernetes,Linkerd service mesh
+harbor,container,Harbor,container,Harbor container registry
+cri-o,container,CNCF,container,CRI-O container runtime
+nerdctl,container,CNCF,container,nerdctl Docker-compatible CLI
+coredns,network,CoreDNS,dns,CoreDNS DNS server
+powerdns,network,PowerDNS,dns,PowerDNS authoritative DNS
+pdns-recursor,network,PowerDNS,dns,PowerDNS Recursor
+knot,network,Knot,dns,Knot DNS server
+tailscale,network,Tailscale,vpn,Tailscale mesh VPN
+zerotier-one,network,ZeroTier,vpn,ZeroTier virtual network
+nebula,network,Nebula,vpn,Nebula overlay network
+pritunl,network,Pritunl,vpn,Pritunl enterprise VPN
+zeek,security,Zeek,security,Zeek network security monitor
+ntopng,monitoring,ntopng,monitoring,ntopng network traffic monitor
+cacti,monitoring,Cacti,monitoring,Cacti network monitoring
+graylog-server,logging,Graylog,logging,Graylog log management
+graylog-sidecar,logging,Graylog,logging,Graylog Sidecar
+jaeger,monitoring,Jaeger,monitoring,Jaeger distributed tracing
+thanos,monitoring,Thanos,monitoring,Thanos Prometheus HA
+grafana-agent,monitoring,Grafana,monitoring,Grafana Agent
+otel-collector,monitoring,OpenTelemetry,monitoring,OpenTelemetry Collector
+apache-airflow,data_pipeline,Apache,data_pipeline,Apache Airflow workflow
+nifi,data_pipeline,Apache,data_pipeline,Apache NiFi data integration
+spark,data_pipeline,Apache,data_pipeline,Apache Spark data processing
+flink,data_pipeline,Apache,data_pipeline,Apache Flink stream processing
+keycloak,directory,Red Hat,directory,Keycloak identity management
+freeipa-server,directory,Red Hat,directory,FreeIPA identity management
+freeipa-client,directory,Red Hat,directory,FreeIPA client
+nexus,ci_cd,Sonatype,ci_cd,Nexus artifact repository
+artifactory,ci_cd,JFrog,ci_cd,JFrog Artifactory repository
+sonarqube,ci_cd,SonarSource,ci_cd,SonarQube code quality
+awx,automation,AWX,automation,AWX Ansible automation
+rundeck,automation,Rundeck,automation,Rundeck runbook automation
+packer,automation,HashiCorp,automation,Packer image builder
+vagrant,automation,HashiCorp,automation,Vagrant VM management
+mattermost,collaboration,Mattermost,collaboration,Mattermost team messaging
+nextcloud,collaboration,Nextcloud,collaboration,Nextcloud file sharing
+zookeeper,container,Apache,infrastructure,Apache ZooKeeper
+node-red,iot,Node-RED,iot,Node-RED flow-based programming
+asterisk,telephony,Asterisk,telephony,Asterisk PBX
+freeswitch,telephony,FreeSWITCH,telephony,FreeSWITCH communications
+cups-server,print,CUPS,print,CUPS print server (alt)
+drbd-utils,storage,DRBD,storage,DRBD distributed replicated block device
+open-iscsi,storage,Linux,storage,iSCSI initiator
+targetcli-fb,storage,Linux,storage,iSCSI target management
+multipath-tools,storage,Linux,storage,Device mapper multipath
+lvm2,storage,Linux,storage,LVM2 logical volume manager
