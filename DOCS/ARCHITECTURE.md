@@ -155,6 +155,62 @@ The `odin_log_sources.csv` lookup matches on `(signal_type, signal_value)`:
 Multiple signals can map to the same `host_role`, providing multi-signal reinforcement
 (e.g., both `service=syslog-ng` and `port=514/udp` produce `host_role=syslog_receiver`).
 
+### End-to-End Classification Flow
+
+```
+                        ┌─────────────────────┐
+                        │  odin.sh → modules/  │
+                        │  services, ports,    │
+                        │  packages, cron,     │
+                        │  processes, mounts   │
+                        └──────────┬──────────┘
+                                   │ raw key=value events
+                                   ▼
+                        ┌─────────────────────┐
+                        │  index=odin_discovery │
+                        │  (indexer)           │
+                        └──────────┬──────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    ▼                              ▼
+        Layer 2: Per-event                Layer 3: Log source
+        odin_classify_*.csv               odin_log_sources.csv
+        ┌───────────────────┐             ┌───────────────────┐
+        │ nginx → web_server│             │ nginx → host_role │
+        │ 3306  → database  │             │   = web_server    │
+        │ dpkg  → packaging │             │   ta = TA_nginx   │
+        └───────────────────┘             │   log = access    │
+          (per-event enrichment)          └─────────┬─────────┘
+                                                    │
+                                                    ▼
+                                    Layer 4: Saved searches (daily)
+                                    ┌───────────────────────────┐
+                                    │ ODIN - Host Inventory     │
+                                    │ ┌───────────────────────┐ │
+                                    │ │ web01:                │ │
+                                    │ │   roles: web_server,  │ │
+                                    │ │          syslog_recv  │ │
+                                    │ │   tas:  TA_nginx,     │ │
+                                    │ │         TA_syslog     │ │
+                                    │ └───────────────────────┘ │
+                                    │ → odin_host_inventory.csv │
+                                    └─────────────┬─────────────┘
+                                                  │
+                                                  ▼
+                                    ┌───────────────────────────┐
+                                    │ ODIN - TA Deployment      │
+                                    │ Matrix                    │
+                                    │                           │
+                                    │ Splunk_TA_nginx  → 12 h. │
+                                    │ Splunk_TA_nix    → 47 h. │
+                                    │ Splunk_TA_mysql  →  5 h. │
+                                    │                           │
+                                    │ → deploy via DS serverclass│
+                                    └───────────────────────────┘
+```
+
+**Flow:** Scan everything → enrich per event → map to roles and TAs → aggregate per host → "deploy this there".
+
 ## Script Guardrails
 
 | Guardrail | Where | Value | Purpose |
