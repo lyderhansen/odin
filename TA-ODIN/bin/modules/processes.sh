@@ -7,6 +7,10 @@
 #   type=process process_pid= process_ppid= process_user= process_state=
 #   process_cpu= process_mem= process_elapsed= process_name= process_command=
 #
+# Guardrails:
+#   - timeout 30s on ps commands
+#   - Single ps invocation (capture once, parse from output)
+#
 
 # Force C locale for consistent command output parsing
 export LC_ALL=C
@@ -16,7 +20,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
@@ -32,11 +36,12 @@ safe_val() {
     fi
 }
 
-# Try GNU ps first (full output), fall back to basic ps for BusyBox/minimal systems
 emitted=0
 
-# Test if GNU ps -eo is supported
-if ps -eo pid,ppid,user,stat,%cpu,%mem,etime,comm,args --no-headers >/dev/null 2>&1; then
+# Try GNU ps first — capture output once, then parse
+ps_output=$(timeout 30 ps -eo pid,ppid,user,stat,%cpu,%mem,etime,comm,args --no-headers 2>/dev/null)
+
+if [[ $? -eq 0 && -n "$ps_output" ]]; then
     # GNU ps: PID PPID USER STAT %CPU %MEM ELAPSED COMM ARGS
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
@@ -49,10 +54,12 @@ if ps -eo pid,ppid,user,stat,%cpu,%mem,etime,comm,args --no-headers >/dev/null 2
         [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
         emit "$out"
         emitted=1
-    done < <(ps -eo pid,ppid,user,stat,%cpu,%mem,etime,comm,args --no-headers 2>/dev/null)
+    done <<< "$ps_output"
 else
     # BusyBox/minimal ps fallback: limited fields available
-    if ps -o pid,ppid,user,stat,comm,args 2>/dev/null | head -1 >/dev/null 2>&1; then
+    ps_output=$(timeout 30 ps -o pid,ppid,user,stat,comm,args 2>/dev/null)
+
+    if [[ $? -eq 0 && -n "$ps_output" ]]; then
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
 
@@ -64,25 +71,30 @@ else
             [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
             emit "$out"
             emitted=1
-        done < <(ps -o pid,ppid,user,stat,comm,args 2>/dev/null)
+        done <<< "$ps_output"
     else
         # Absolute fallback: basic ps with default output
-        while IFS= read -r line; do
-            [[ -z "$line" ]] && continue
+        ps_output=$(timeout 30 ps -ef 2>/dev/null)
+        [[ -z "$ps_output" ]] && ps_output=$(timeout 30 ps aux 2>/dev/null)
 
-            read -r pid user args <<< "$line"
+        if [[ -n "$ps_output" ]]; then
+            while IFS= read -r line; do
+                [[ -z "$line" ]] && continue
 
-            [[ -z "$pid" || "$pid" == "PID" ]] && continue
+                read -r pid user args <<< "$line"
 
-            # Extract process name as basename of first word in args
-            comm="${args%% *}"
-            comm="${comm##*/}"
+                [[ -z "$pid" || "$pid" == "PID" ]] && continue
 
-            out="type=process process_pid=$pid process_user=$user process_name=$comm"
-            [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
-            emit "$out"
-            emitted=1
-        done < <(ps -ef 2>/dev/null || ps aux 2>/dev/null)
+                # Extract process name as basename of first word in args
+                comm="${args%% *}"
+                comm="${comm##*/}"
+
+                out="type=process process_pid=$pid process_user=$user process_name=$comm"
+                [[ -n "$args" ]] && out="$out process_command=$(safe_val "$args")"
+                emit "$out"
+                emitted=1
+            done <<< "$ps_output"
+        fi
     fi
 fi
 

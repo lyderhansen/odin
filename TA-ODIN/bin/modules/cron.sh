@@ -6,6 +6,10 @@
 # Output fields:
 #   type=cron cron_source= cron_user= cron_schedule= cron_command= cron_file=
 #
+# Guardrails:
+#   - timeout 30s on systemctl list-timers
+#   - Batch systemctl show for timer schedules (single call instead of per-timer)
+#
 
 # Force C locale for consistent command output parsing
 export LC_ALL=C
@@ -15,7 +19,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
@@ -129,13 +133,18 @@ else
 fi
 
 if [[ -n "$crontab_dir" ]]; then
-    for userfile in "$crontab_dir"/*; do
-        [[ ! -f "$userfile" ]] && continue
-        user=$(basename "$userfile")
-        while IFS= read -r line; do
-            parse_cron_line "$line" "$user" "user_crontab" "$userfile"
-        done < "$userfile" 2>/dev/null
-    done
+    if [[ -r "$crontab_dir" ]]; then
+        for userfile in "$crontab_dir"/*; do
+            [[ ! -f "$userfile" ]] && continue
+            user=$(basename "$userfile")
+            while IFS= read -r line; do
+                parse_cron_line "$line" "$user" "user_crontab" "$userfile"
+            done < "$userfile" 2>/dev/null
+        done
+    else
+        # Directory exists but is not readable (non-root)
+        emit "type=privilege_warning module=cron message=\"Cannot read $crontab_dir (permission denied). User crontabs not enumerated. Run as root for full visibility.\""
+    fi
 fi
 
 # --- cron.daily/hourly/weekly/monthly ---
@@ -151,33 +160,78 @@ for period in hourly daily weekly monthly; do
     done
 done
 
-# --- Systemd timers ---
+# --- Systemd timers (batch query) ---
 if command -v systemctl &>/dev/null; then
+    # Collect timer unit names first
+    timer_units=()
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-
-        # Timer unit and activated unit are the last two fields
-        # list-timers has variable-width date/time columns, so use array indexing
         words=($line)
         len=${#words[@]}
         [[ $len -lt 2 ]] && continue
         timer_unit="${words[$((len-2))]}"
         activated_unit="${words[$((len-1))]}"
-
         [[ -z "$timer_unit" || "$timer_unit" == "UNIT" ]] && continue
+        timer_units+=("$timer_unit:$activated_unit")
+    done < <(timeout 30 systemctl list-timers --all --no-pager --no-legend 2>/dev/null)
 
-        # Get the timer's schedule from the unit file
-        schedule=$(systemctl show "$timer_unit" -p TimersCalendar 2>/dev/null | sed 's/TimersCalendar=//')
-        if [[ -z "$schedule" || "$schedule" == "" ]]; then
-            schedule=$(systemctl show "$timer_unit" -p TimersMonotonic 2>/dev/null | sed 's/TimersMonotonic=//')
+    if [[ ${#timer_units[@]} -gt 0 ]]; then
+        # Batch query: get all timer properties in one call
+        unit_names=()
+        for entry in "${timer_units[@]}"; do
+            unit_names+=("${entry%%:*}")
+        done
+
+        # Single systemctl show for all timers at once
+        batch_output=$(timeout 30 systemctl show "${unit_names[@]}" \
+            --property=Id,TimersCalendar,TimersMonotonic --no-pager 2>/dev/null)
+
+        # Build associative-like lookup from batch output
+        declare -A timer_schedules
+        current_id=""
+        current_cal=""
+        current_mono=""
+
+        while IFS= read -r line; do
+            if [[ -z "$line" ]]; then
+                if [[ -n "$current_id" ]]; then
+                    if [[ -n "$current_cal" ]]; then
+                        timer_schedules["$current_id"]="$current_cal"
+                    elif [[ -n "$current_mono" ]]; then
+                        timer_schedules["$current_id"]="$current_mono"
+                    fi
+                fi
+                current_id="" current_cal="" current_mono=""
+                continue
+            fi
+            case "$line" in
+                Id=*)              current_id="${line#Id=}" ;;
+                TimersCalendar=*)  current_cal="${line#TimersCalendar=}" ;;
+                TimersMonotonic=*) current_mono="${line#TimersMonotonic=}" ;;
+            esac
+        done <<< "$batch_output"
+        # Handle last block
+        if [[ -n "$current_id" ]]; then
+            if [[ -n "$current_cal" ]]; then
+                timer_schedules["$current_id"]="$current_cal"
+            elif [[ -n "$current_mono" ]]; then
+                timer_schedules["$current_id"]="$current_mono"
+            fi
         fi
 
-        out="type=cron cron_source=systemd_timer cron_command=$activated_unit"
-        [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
-        out="$out cron_file=$timer_unit"
-        emit "$out"
-        emitted=1
-    done < <(systemctl list-timers --all --no-pager --no-legend 2>/dev/null)
+        # Emit events using collected data
+        for entry in "${timer_units[@]}"; do
+            timer_unit="${entry%%:*}"
+            activated_unit="${entry##*:}"
+            schedule="${timer_schedules[$timer_unit]:-}"
+
+            out="type=cron cron_source=systemd_timer cron_command=$activated_unit"
+            [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
+            out="$out cron_file=$timer_unit"
+            emit "$out"
+            emitted=1
+        done
+    fi
 fi
 
 # --- Anacron ---

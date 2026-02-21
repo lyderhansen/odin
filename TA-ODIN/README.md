@@ -14,36 +14,36 @@ TA-ODIN is a Splunk Technology Add-on that performs **full enumeration** of ever
 - Full enumeration of services, ports, packages, cron jobs, processes, and mounts
 - Reports only metadata - never the actual log content
 - Modular architecture - easy to extend with new discovery modules
-- Classification lookups map raw data to host roles at search time
+- Script guardrails: per-module timeouts, event caps, and batch queries
 - Supports any Linux distribution (systemd, SysV init, or init.d)
 - Deploys via Splunk Deployment Server to Universal Forwarders
+
+**Companion App:** Install **ODIN_app_for_splunk** on your indexers and search heads for the index definition, classification lookups, and search-time enrichment.
 
 ## Architecture
 
 ```
-TA-ODIN/
+TA-ODIN/                             (Deploy to UFs via Deployment Server)
 ├── bin/
-│   ├── odin.sh                       # Orchestrator (autodiscovers modules)
+│   ├── odin.sh                       # Orchestrator (per-module timeout, MAX_EVENTS)
 │   ├── odin.ps1                      # Windows orchestrator (placeholder)
 │   └── modules/                      # Discovery modules
-│       ├── services.sh               # Service enumeration
+│       ├── services.sh               # Service enumeration (batch systemctl)
 │       ├── ports.sh                  # Listening port enumeration
 │       ├── packages.sh               # Installed package enumeration
 │       ├── cron.sh                   # Scheduled task enumeration
 │       ├── processes.sh              # Running process enumeration
 │       └── mounts.sh                 # Filesystem mount enumeration
 ├── default/
-│   ├── app.conf                      # App metadata (v2.0.0)
+│   ├── app.conf                      # App metadata (v2.1.0)
 │   ├── inputs.conf                   # Scripted inputs (30-day interval)
-│   ├── props.conf                    # Event parsing + classification lookups
-│   ├── transforms.conf               # Lookup transform definitions
-│   └── indexes.conf                  # Index definition (deploy to indexers)
-├── local/                            # Customer-specific overrides
-├── lookups/
-│   ├── odin_classify_services.csv    # Service -> category/role mapping
-│   ├── odin_classify_ports.csv       # Port -> expected service mapping
-│   └── odin_classify_packages.csv    # Package -> category/role mapping
-└── README.md
+│   └── props.conf                    # Line-breaking and timestamp (forwarder)
+└── local/                            # Customer-specific overrides
+
+ODIN_app_for_splunk/                  (Deploy to Indexers + Search Heads)
+├── indexes.conf                      # odin_discovery index definition
+├── props.conf + transforms.conf      # Search-time enrichment, CIM aliases
+└── lookups/                          # Classification CSVs
 ```
 
 ### How It Works
@@ -51,15 +51,21 @@ TA-ODIN/
 1. **Orchestrator** (`odin.sh`) sets shared context via environment variables and autodiscovers all modules in `bin/modules/`
 2. **Modules** each enumerate one domain (services, ports, packages, etc.) and emit space-separated key=value events
 3. **Splunk** indexes the raw enumeration data with sourcetype `odin:enumeration`
-4. **Classification lookups** enrich events at search time, mapping service names, ports, and packages to categories and host roles
+4. **Classification lookups** (in ODIN_app_for_splunk) enrich events at search time, mapping service names, ports, and packages to categories and host roles
+
+### Script Guardrails
+
+| Guardrail | Value | Purpose |
+|-----------|-------|---------|
+| Per-module timeout | 90s | Prevents any module from exceeding Splunk's 120s input timeout |
+| MAX_EVENTS cap | 50,000/module | Prevents hosts with 100K+ items from flooding Splunk |
+| Command timeouts | 5-30s | Prevents hangs on broken services, dpkg locks, hung NFS |
+| Batch systemctl | 1 call | Replaces thousands of per-unit subprocess calls |
 
 ## Installation
 
-### On Indexers
-Deploy `indexes.conf` to create the `odin_discovery` index:
-```bash
-cp TA-ODIN/default/indexes.conf $SPLUNK_HOME/etc/apps/TA-ODIN/local/
-```
+### On Indexers and Search Heads
+Install **ODIN_app_for_splunk** (the companion app) to create the `odin_discovery` index and enable search-time lookups.
 
 ### On Deployment Server
 1. Copy TA-ODIN to `$SPLUNK_HOME/etc/deployment-apps/`
@@ -79,80 +85,37 @@ index=odin_discovery sourcetype=odin:enumeration
 All events are space-separated key=value pairs. Every event includes common fields:
 
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0
 ```
 
 ### Service Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=service service_name=nginx service_status=running service_enabled=enabled service_type=forking
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0 type=service service_name=nginx service_status=running service_enabled=enabled service_type=forking
 ```
 
 ### Port Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=port transport=tcp listen_address=0.0.0.0 listen_port=443 process_name=nginx process_pid=1234
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0 type=port transport=tcp listen_address=0.0.0.0 listen_port=443 process_name=nginx process_pid=1234
 ```
 
 ### Package Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=package package_name=nginx package_version=1.24.0-1 package_arch=amd64 package_manager=dpkg
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0 type=package package_name=nginx package_version=1.24.0-1 package_arch=amd64 package_manager=dpkg
 ```
 
 ### Cron Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=cron cron_source=user_crontab cron_user=root cron_schedule="0 2 * * *" cron_command="/usr/local/bin/backup.sh"
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0 type=cron cron_source=user_crontab cron_user=root cron_schedule="0 2 * * *" cron_command="/usr/local/bin/backup.sh"
 ```
 
 ### Process Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=process process_pid=1234 process_ppid=1 process_user=www-data process_state=Ss process_cpu=0.1 process_mem=2.3 process_elapsed=10-05:23:15 process_name=nginx process_command="nginx: master process /usr/sbin/nginx"
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0 type=process process_pid=1234 process_ppid=1 process_user=www-data process_state=Ss process_cpu=0.1 process_mem=2.3 process_elapsed=10-05:23:15 process_name=nginx process_command="nginx: master process /usr/sbin/nginx"
 ```
 
 ### Mount Events
 ```
-timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.0.0 type=mount mount_device=/dev/sda1 mount_point=/ mount_type=ext4 mount_size_kb=20511312 mount_used_kb=8234560 mount_avail_kb=11213304 mount_use_pct=42
-```
-
-## Classification Lookups
-
-Classification happens at **search time** using Splunk lookup tables. This means you can update classification rules without re-scanning hosts.
-
-### Service Classification (`odin_classify_services.csv`)
-Maps service names to categories and roles:
-| Column | Description |
-|--------|-------------|
-| service_pattern | Service name pattern (supports wildcards) |
-| category | Category (e.g., web_server, database, security) |
-| subcategory | Subcategory (e.g., reverse_proxy, relational) |
-| vendor | Vendor name |
-| role | Host role indicator |
-| description | Human-readable description |
-
-### Port Classification (`odin_classify_ports.csv`)
-Maps well-known ports to expected services:
-| Column | Description |
-|--------|-------------|
-| port | Port number |
-| transport | Protocol (tcp/udp) |
-| expected_service | Expected service name |
-| category | Service category |
-| description | Human-readable description |
-
-### Package Classification (`odin_classify_packages.csv`)
-Maps package names to host roles:
-| Column | Description |
-|--------|-------------|
-| package_pattern | Package name pattern (supports wildcards) |
-| category | Category |
-| vendor | Vendor name |
-| role | Host role indicator |
-| description | Human-readable description |
-
-### Example: Classify hosts by role
-```spl
-index=odin_discovery sourcetype=odin:enumeration type=service
-| lookup odin_classify_services service_name AS service_name OUTPUT role AS service_role
-| where isnotnull(service_role)
-| stats values(service_role) AS roles by hostname
+timestamp=2026-02-21T10:00:00Z hostname=web01 os=linux run_id=1740100800-1234 odin_version=2.1.0 type=mount mount_device=/dev/sda1 mount_point=/ mount_type=ext4 mount_size_kb=20511312 mount_used_kb=8234560 mount_avail_kb=11213304 mount_use_pct=42
 ```
 
 ## Customization
@@ -167,7 +130,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
@@ -177,7 +140,7 @@ emit "type=custom_type field1=value1 field2=value2"
 ```
 
 ### Adding Classification Rules
-Add rows to the appropriate CSV in `lookups/`:
+Add rows to the appropriate CSV in `ODIN_app_for_splunk/lookups/`:
 - `odin_classify_services.csv` - Service-to-role mappings
 - `odin_classify_ports.csv` - Port-to-service mappings
 - `odin_classify_packages.csv` - Package-to-role mappings
@@ -190,15 +153,6 @@ interval = 86400  # Run daily
 
 # Or for one-time only:
 # interval = -1
-```
-
-## Data Retention
-
-Default retention is 1 year. To change, edit `indexes.conf`:
-```ini
-[odin_discovery]
-# 2 years
-frozenTimePeriodInSecs = 63072000
 ```
 
 ## Useful Searches
@@ -234,13 +188,6 @@ index=odin_discovery sourcetype=odin:enumeration type=service
 | sort - service_count
 ```
 
-## Phase 2 - Automatic Host Classification (Planned)
-
-Future versions will include:
-- Scheduled searches to categorize hosts by role based on enumeration data
-- Automatic server class generation for Deployment Server
-- CSV output for automated app deployment
-
 ## Troubleshooting
 
 ### Script Not Running
@@ -251,7 +198,7 @@ chmod +x $SPLUNK_HOME/etc/apps/TA-ODIN/bin/modules/*.sh
 ```
 
 ### No Events in Index
-1. Verify the `odin_discovery` index exists on indexers
+1. Verify ODIN_app_for_splunk is installed on indexers (creates `odin_discovery` index)
 2. Check forwarder `outputs.conf` points to correct indexers
 3. Check `$SPLUNK_HOME/var/log/splunk/splunkd.log` for errors
 
@@ -263,12 +210,13 @@ cd TA-ODIN && bash bin/odin.sh
 
 Test a single module:
 ```bash
-export ODIN_HOSTNAME=test ODIN_OS=linux ODIN_RUN_ID=test-001 ODIN_VERSION=2.0.0
+export ODIN_HOSTNAME=test ODIN_OS=linux ODIN_RUN_ID=test-001 ODIN_VERSION=2.1.0
 bash TA-ODIN/bin/modules/services.sh
 ```
 
 ## Version History
 
+- **2.1.0** - Two-app split (ODIN_app_for_splunk companion), script guardrails (timeouts, MAX_EVENTS, batch systemctl)
 - **2.0.0** - Full enumeration restructure: modular architecture, 6 discovery modules, classification lookups
 - **1.0.0** - Initial release with CSV-rule-based Linux file/service discovery
 

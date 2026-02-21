@@ -4,6 +4,89 @@ All entries use ISO 8601 timestamps in CET timezone.
 
 ---
 
+## v2.2.0 - Phase 2: Host Role Classification & Log Source Identification
+
+### Log source mapping lookup
+[2026-02-21T22:00:00+01:00] - Created ODIN_app_for_splunk/lookups/odin_log_sources.csv (~95 rows)
+[2026-02-21T22:00:00+01:00] - Maps discovery signals (service, port, package) to host roles, log sources, sourcetypes, and recommended TAs
+[2026-02-21T22:00:00+01:00] - Covers: web servers, load balancers, databases, syslog, cache, search engines, containers/Kubernetes, security tools, logging infrastructure, DNS, mail, monitoring, VPN, proxies, message brokers, CI/CD, SSH, file servers, directory services, secrets management
+[2026-02-21T22:00:00+01:00] - Added odin_log_sources lookup definition to transforms.conf
+
+### Saved searches for host classification
+[2026-02-21T22:00:00+01:00] - Created ODIN_app_for_splunk/default/savedsearches.conf with 3 scheduled searches
+[2026-02-21T22:00:00+01:00] - "ODIN - Host Inventory": Aggregates signals per host into roles/TAs, outputs odin_host_inventory.csv (daily at 01:05)
+[2026-02-21T22:00:00+01:00] - "ODIN - Log Source Details": Per-host breakdown of roles/log sources, outputs odin_log_source_details.csv (daily at 01:10)
+[2026-02-21T22:00:00+01:00] - "ODIN - TA Deployment Matrix": Actionable TA-to-host mapping for Deployment Server planning (daily at 01:15)
+
+### Configuration updates
+[2026-02-21T22:00:00+01:00] - Bumped ODIN_app_for_splunk version to 2.2.0 in app.conf
+[2026-02-21T22:00:00+01:00] - Bumped TA-ODIN version to 2.2.0 in app.conf
+[2026-02-21T22:00:00+01:00] - Added savedsearches export to metadata/default.meta
+
+### Documentation
+[2026-02-21T22:00:00+01:00] - Updated ARCHITECTURE.md with Phase 2 classification layer and data flow
+[2026-02-21T22:00:00+01:00] - Updated CLAUDE.md with Phase 2 status, log source lookup docs, and verification queries
+
+---
+
+## v2.1.0 - Two-App Split & Script Guardrails
+
+### ODIN_app_for_splunk - New indexer/search head app
+[2026-02-22T01:00:00+01:00] - Created ODIN_app_for_splunk as standalone indexer/search head app
+[2026-02-22T01:00:00+01:00] - Moved indexes.conf from TA-ODIN to ODIN_app_for_splunk
+[2026-02-22T01:00:00+01:00] - Moved transforms.conf from TA-ODIN to ODIN_app_for_splunk
+[2026-02-22T01:00:00+01:00] - Moved all classification lookup CSVs from TA-ODIN to ODIN_app_for_splunk
+[2026-02-22T01:00:00+01:00] - Created full props.conf in ODIN_app_for_splunk (parsing + KV_MODE + CIM aliases + lookup bindings)
+[2026-02-22T01:00:00+01:00] - Created metadata/default.meta exporting lookups, props, transforms to system scope
+[2026-02-22T01:00:00+01:00] - Deleted odin_rules_windows.csv (dead v1 artifact)
+
+### TA-ODIN slimmed down - Forwarder-only app
+[2026-02-22T01:00:00+01:00] - Removed indexes.conf from TA-ODIN (now in ODIN_app_for_splunk)
+[2026-02-22T01:00:00+01:00] - Removed transforms.conf from TA-ODIN (now in ODIN_app_for_splunk)
+[2026-02-22T01:00:00+01:00] - Removed lookups/ directory from TA-ODIN (now in ODIN_app_for_splunk)
+[2026-02-22T01:00:00+01:00] - Slimmed props.conf to line-breaking and timestamp only (forwarder-minimal)
+[2026-02-22T01:00:00+01:00] - Updated app.conf to v2.1.0, references ODIN_app_for_splunk as companion app
+
+### Privilege awareness - Non-root warnings
+[2026-02-22T02:00:00+01:00] - odin.sh: Added EUID check, emits type=odin_warning for ports and cron when running as non-root
+[2026-02-22T02:00:00+01:00] - odin.sh: Start event now includes run_as= and euid= fields for audit trail
+[2026-02-22T02:00:00+01:00] - ports.sh: Emits type=privilege_warning with counts when ports are missing process info due to non-root
+[2026-02-22T02:00:00+01:00] - cron.sh: Emits type=privilege_warning when /var/spool/cron/crontabs is unreadable (non-root)
+[2026-02-22T02:00:00+01:00] - Created DOCS/COMMANDS.md: Full command reference with root vs non-root expected output
+
+### Script guardrails - Per-module timeout and MAX_EVENTS
+[2026-02-22T01:00:00+01:00] - odin.sh: Added per-module 90s timeout via `timeout` command (leaves 30s margin within Splunk's 120s)
+[2026-02-22T01:00:00+01:00] - odin.sh: Added MAX_EVENTS cap of 50,000 per module in emit() function
+[2026-02-22T01:00:00+01:00] - odin.sh: Emits type=truncated warning when MAX_EVENTS cap is hit
+[2026-02-22T01:00:00+01:00] - odin.sh: Resets ODIN_EVENT_COUNT and ODIN_EVENTS_TRUNCATED per module run
+
+### Script guardrails - Batch systemctl queries
+[2026-02-22T01:00:00+01:00] - services.sh: Replaced per-unit systemctl is-enabled + systemctl show calls with single batch `systemctl show --type=service --all`
+[2026-02-22T01:00:00+01:00] - services.sh: Parses blank-line-separated property blocks (Id, ActiveState, SubState, Type, UnitFileState)
+[2026-02-22T01:00:00+01:00] - cron.sh: Replaced per-timer systemctl show calls with single batch `systemctl show` for all timer units
+[2026-02-22T01:00:00+01:00] - cron.sh: Collects timer unit names first, then batch queries TimersCalendar/TimersMonotonic
+
+### Script guardrails - Command timeouts
+[2026-02-22T01:00:00+01:00] - services.sh: Added timeout 30 to systemctl show batch query
+[2026-02-22T01:00:00+01:00] - services.sh: Added timeout 30 to `service --status-all` fallback
+[2026-02-22T01:00:00+01:00] - services.sh: Added timeout 5 per init.d script status check (prevents hanging on broken scripts)
+[2026-02-22T01:00:00+01:00] - ports.sh: Added timeout 30 to `ss -tulpn` and `netstat -tulpn`
+[2026-02-22T01:00:00+01:00] - packages.sh: Added timeout 30 to dpkg-query, rpm, apk, and pacman commands
+[2026-02-22T01:00:00+01:00] - processes.sh: Added timeout 30 to all ps invocations
+[2026-02-22T01:00:00+01:00] - cron.sh: Added timeout 30 to systemctl list-timers and batch systemctl show
+
+### Script guardrails - Eliminated redundant subprocess calls
+[2026-02-22T01:00:00+01:00] - processes.sh: Removed double ps invocation (was: test ps then run ps again). Now captures output once and parses from variable.
+
+### Documentation
+[2026-02-22T01:00:00+01:00] - Updated CLAUDE.md: Renamed ODIN → ODIN_app_for_splunk throughout, added guardrails section and environment variables
+[2026-02-22T01:00:00+01:00] - Updated ARCHITECTURE.md: Renamed ODIN → ODIN_app_for_splunk, marked configs as Complete, added guardrails table
+[2026-02-22T01:00:00+01:00] - Updated TA-ODIN/README.md: References ODIN_app_for_splunk, updated version to 2.1.0
+[2026-02-22T01:00:00+01:00] - Created ODIN_app_for_splunk/README.md with installation and usage docs
+[2026-02-22T01:00:00+01:00] - All scripts: Updated ODIN_VERSION fallback to 2.1.0
+
+---
+
 ## v2.0.1 (continued) - Two-App Architecture
 
 ### Architecture decision - Separate forwarder and indexer/search head apps

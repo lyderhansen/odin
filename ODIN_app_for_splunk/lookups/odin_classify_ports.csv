@@ -1,4 +1,5 @@
 port,transport,expected_service,category,description
+21,tcp,ftp,remote_access,FTP file transfer
 22,tcp,ssh,remote_access,SSH secure shell
 23,tcp,telnet,remote_access,Telnet (insecure)
 25,tcp,smtp,mail,SMTP mail transfer
@@ -8,23 +9,37 @@ port,transport,expected_service,category,description
 68,udp,dhcp,network,DHCP client
 69,udp,tftp,file_server,TFTP trivial file transfer
 80,tcp,http,web_server,HTTP web server
+88,tcp,kerberos,directory,Kerberos authentication
 110,tcp,pop3,mail,POP3 mail retrieval
+111,tcp,sunrpc,file_server,Sun RPC portmapper
 123,udp,ntp,time,NTP time synchronization
+135,tcp,msrpc,network,Microsoft RPC endpoint mapper
+137,udp,netbios-ns,file_server,NetBIOS name service
+138,udp,netbios-dgm,file_server,NetBIOS datagram service
+139,tcp,netbios-ssn,file_server,NetBIOS session service
 143,tcp,imap,mail,IMAP mail access
 161,udp,snmp,monitoring,SNMP monitoring
 162,udp,snmptrap,monitoring,SNMP trap receiver
+179,tcp,bgp,network,BGP routing protocol
 389,tcp,ldap,directory,LDAP directory
 443,tcp,https,web_server,HTTPS web server
 445,tcp,smb,file_server,SMB/CIFS file sharing
+464,tcp,kpasswd,directory,Kerberos password change
 465,tcp,smtps,mail,SMTP over SSL
+500,udp,isakmp,network,IKE/IPsec key exchange
 514,udp,syslog,logging,Syslog (UDP)
 514,tcp,syslog,logging,Syslog (TCP)
 515,tcp,lpd,print,LPD print service
 587,tcp,submission,mail,SMTP mail submission
+623,udp,ipmi,management,IPMI remote management
+631,tcp,ipp,print,CUPS/IPP print service
 636,tcp,ldaps,directory,LDAPS secure directory
+749,tcp,kerberos-adm,directory,Kerberos administration
+873,tcp,rsync,file_server,rsync file synchronization
 993,tcp,imaps,mail,IMAP over SSL
 995,tcp,pop3s,mail,POP3 over SSL
 1080,tcp,socks,network,SOCKS proxy
+1194,udp,openvpn,network,OpenVPN
 1433,tcp,mssql,database,Microsoft SQL Server
 1434,udp,mssql,database,Microsoft SQL Server Browser
 1521,tcp,oracle,database,Oracle database
@@ -33,39 +48,82 @@ port,transport,expected_service,category,description
 1883,tcp,mqtt,messaging,MQTT messaging
 2049,tcp,nfs,file_server,NFS file system
 2181,tcp,zookeeper,container,Apache ZooKeeper
+2375,tcp,docker-api,container,Docker API (unencrypted)
+2376,tcp,docker-api-tls,container,Docker API (TLS)
 2379,tcp,etcd-client,container,etcd client
 2380,tcp,etcd-peer,container,etcd peer
 3000,tcp,grafana,monitoring,Grafana dashboard (default)
+3128,tcp,squid,network,Squid proxy
+3260,tcp,iscsi,storage,iSCSI target
 3306,tcp,mysql,database,MySQL/MariaDB database
 3389,tcp,rdp,remote_access,RDP remote desktop
 4243,tcp,docker,container,Docker API (insecure)
+4369,tcp,epmd,messaging,Erlang port mapper (RabbitMQ/RPC)
+4443,tcp,https-alt,web_server,HTTPS alternate
 4505,tcp,salt,automation,SaltStack publisher
 4506,tcp,salt,automation,SaltStack return
+4646,tcp,nomad,orchestration,HashiCorp Nomad HTTP
+4647,tcp,nomad-rpc,orchestration,HashiCorp Nomad RPC
 5000,tcp,docker-registry,container,Docker registry
 5044,tcp,beats,logging,Elastic Beats input
+5060,tcp,sip,telephony,SIP voice/video
+5060,udp,sip,telephony,SIP voice/video (UDP)
+5061,tcp,sips,telephony,SIP over TLS
 5432,tcp,postgresql,database,PostgreSQL database
 5601,tcp,kibana,search,Kibana dashboard
+5666,tcp,nrpe,monitoring,Nagios NRPE
 5672,tcp,amqp,messaging,AMQP messaging (RabbitMQ)
 5900,tcp,vnc,remote_access,VNC remote desktop
+5901,tcp,vnc,remote_access,VNC display :1
+5984,tcp,couchdb,database,CouchDB HTTP
 6379,tcp,redis,database,Redis cache/database
 6443,tcp,kube-api,container,Kubernetes API server
+6514,tcp,syslog-tls,logging,Syslog over TLS
+6660,tcp,irc,messaging,IRC chat
+6667,tcp,irc,messaging,IRC chat
+7474,tcp,neo4j,database,Neo4j HTTP
+7687,tcp,neo4j-bolt,database,Neo4j Bolt protocol
+8000,tcp,http-alt,web_server,HTTP alternate (common app port)
+8006,tcp,proxmox,virtualization,Proxmox VE web console
 8080,tcp,http-alt,web_server,HTTP alternate (common app port)
 8081,tcp,http-alt,web_server,HTTP alternate
+8083,tcp,http-alt,web_server,HTTP alternate (InfluxDB/misc)
+8086,tcp,influxdb,database,InfluxDB HTTP API
+8125,udp,statsd,monitoring,StatsD metrics
+8140,tcp,puppet,automation,Puppet master
+8200,tcp,vault,security,HashiCorp Vault
+8300,tcp,consul-server,orchestration,Consul server RPC
+8301,tcp,consul-lan,orchestration,Consul LAN gossip
 8443,tcp,https-alt,web_server,HTTPS alternate
-8500,tcp,consul,container,HashiCorp Consul
+8500,tcp,consul,container,HashiCorp Consul HTTP
+8834,tcp,nessus,security,Nessus vulnerability scanner
 8888,tcp,http-alt,web_server,HTTP alternate
 8983,tcp,solr,search,Apache Solr
 9000,tcp,php-fpm,application,PHP-FPM (common)
+9042,tcp,cassandra-cql,database,Cassandra CQL native
 9090,tcp,prometheus,monitoring,Prometheus server
 9092,tcp,kafka,messaging,Apache Kafka broker
+9093,tcp,alertmanager,monitoring,Prometheus Alertmanager
 9100,tcp,node-exporter,monitoring,Prometheus node exporter
 9200,tcp,elasticsearch,search,Elasticsearch HTTP
 9300,tcp,elasticsearch,search,Elasticsearch transport
+9418,tcp,git,ci_cd,Git protocol
+9443,tcp,https-alt,web_server,HTTPS alternate
+9600,tcp,logstash-api,logging,Logstash monitoring API
 9997,tcp,splunk-fwd,logging,Splunk forwarder receiving
+9998,tcp,splunk-mgmt,logging,Splunk management
 10050,tcp,zabbix-agent,monitoring,Zabbix agent
 10051,tcp,zabbix-server,monitoring,Zabbix server
+10250,tcp,kubelet-api,container,Kubernetes Kubelet API
 11211,tcp,memcached,database,Memcached
 15672,tcp,rabbitmq-mgmt,messaging,RabbitMQ management
+16686,tcp,jaeger,monitoring,Jaeger tracing UI
+19999,tcp,netdata,monitoring,Netdata monitoring
+24007,tcp,glusterd,storage,GlusterFS management
 25672,tcp,rabbitmq-dist,messaging,RabbitMQ distribution
 27017,tcp,mongodb,database,MongoDB database
+27018,tcp,mongodb-shard,database,MongoDB shard server
+27019,tcp,mongodb-config,database,MongoDB config server
+28015,tcp,rethinkdb,database,RethinkDB client
 50000,tcp,jenkins,ci_cd,Jenkins agent
+51820,udp,wireguard,network,WireGuard VPN

@@ -6,6 +6,9 @@
 # Output fields:
 #   type=port transport= listen_address= listen_port= process_name= process_pid=
 #
+# Guardrails:
+#   - timeout 30s on ss and netstat commands
+#
 
 # Force C locale for consistent command output parsing
 export LC_ALL=C
@@ -15,7 +18,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
@@ -62,6 +65,8 @@ parse_address_port() {
 }
 
 emitted=0
+ports_total=0
+ports_no_process=0
 
 # --- Primary: ss ---
 if command -v ss &>/dev/null; then
@@ -97,9 +102,17 @@ if command -v ss &>/dev/null; then
         [[ -n "$process_pid" ]] && out="$out process_pid=$process_pid"
         emit "$out"
         emitted=1
-    done < <(ss -tulpn 2>/dev/null | tail -n +2)
+        ports_total=$((ports_total + 1))
+        [[ -z "$process_name" ]] && ports_no_process=$((ports_no_process + 1))
+    done < <(timeout 30 ss -tulpn 2>/dev/null | tail -n +2)
 
-    [[ $emitted -eq 1 ]] && exit 0
+    if [[ $emitted -eq 1 ]]; then
+        # Warn if many ports are missing process info (likely non-root)
+        if [[ $ports_no_process -gt 0 && ${ODIN_RUNNING_AS_ROOT:-1} -eq 0 ]]; then
+            emit "type=privilege_warning module=ports missing_process_info=$ports_no_process total_ports=$ports_total message=\"$ports_no_process of $ports_total ports missing process info. Run as root for full visibility.\""
+        fi
+        exit 0
+    fi
 fi
 
 # --- Fallback: netstat ---
@@ -133,7 +146,14 @@ if command -v netstat &>/dev/null; then
         [[ -n "$process_pid" ]] && out="$out process_pid=$process_pid"
         emit "$out"
         emitted=1
-    done < <(netstat -tulpn 2>/dev/null | grep -E '^(tcp|udp)')
+        ports_total=$((ports_total + 1))
+        [[ -z "$process_name" ]] && ports_no_process=$((ports_no_process + 1))
+    done < <(timeout 30 netstat -tulpn 2>/dev/null | grep -E '^(tcp|udp)')
+fi
+
+# Warn if many ports are missing process info (likely non-root, netstat path)
+if [[ $emitted -eq 1 && $ports_no_process -gt 0 && ${ODIN_RUNNING_AS_ROOT:-1} -eq 0 ]]; then
+    emit "type=privilege_warning module=ports missing_process_info=$ports_no_process total_ports=$ports_total message=\"$ports_no_process of $ports_total ports missing process info. Run as root for full visibility.\""
 fi
 
 # Emit none_found if no listening ports were discovered

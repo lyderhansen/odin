@@ -1,16 +1,20 @@
 #!/bin/bash
 #
-# TA-ODIN v2.0 - Orchestrator Script for Linux
+# TA-ODIN v2.1.0 - Orchestrator Script for Linux
 # Autodiscovers and runs all modules in bin/modules/
 #
 # Sets shared context via ODIN_* environment variables and runs each module.
 # Emits start-event, runs modules, emits completion-event with summary.
 # Never aborts on module failure.
 #
+# Guardrails:
+#   - Per-module timeout of 90 seconds (leaves margin within Splunk's 120s input timeout)
+#   - MAX_EVENTS cap of 50,000 per module to prevent output flooding
+#
 
 # Verify bash is available (scripts require bash features)
 if [[ -z "$BASH_VERSION" ]]; then
-    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=2.0.0 type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
+    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=2.1.0 type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
     exit 1
 fi
 
@@ -23,18 +27,41 @@ APP_DIR="$(dirname "$SCRIPT_DIR")"
 MODULES_DIR="$SCRIPT_DIR/modules"
 
 # --- Shared context (exported for modules) ---
-export ODIN_VERSION="2.0.0"
+export ODIN_VERSION="2.1.0"
 export ODIN_HOSTNAME="$(hostname -f 2>/dev/null || hostname)"
 export ODIN_OS="linux"
 export ODIN_RUN_ID="$(date +%s)-$$"
+
+# Per-module timeout in seconds (90s leaves 30s margin within Splunk's 120s input timeout)
+MODULE_TIMEOUT=90
+HAS_TIMEOUT=0
+command -v timeout >/dev/null 2>&1 && HAS_TIMEOUT=1
+
+# Maximum events per module run (prevents output flooding from hosts with 100K+ items)
+export ODIN_MAX_EVENTS=50000
+export ODIN_EVENT_COUNT=0
+export ODIN_EVENTS_TRUNCATED=0
 
 # Get timestamp in ISO 8601 UTC format
 get_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
 
-# Emit a key=value event line
+# Emit a key=value event line with MAX_EVENTS guardrail
 emit() {
+    # If already truncated, silently drop
+    if [[ $ODIN_EVENTS_TRUNCATED -eq 1 ]]; then
+        return
+    fi
+
+    # Check event count limit
+    if [[ $ODIN_EVENT_COUNT -ge $ODIN_MAX_EVENTS ]]; then
+        ODIN_EVENTS_TRUNCATED=1
+        echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION type=truncated message=\"Event limit reached (max=$ODIN_MAX_EVENTS). Remaining events suppressed.\""
+        return
+    fi
+
+    ODIN_EVENT_COUNT=$((ODIN_EVENT_COUNT + 1))
     echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"
 }
 
@@ -42,8 +69,21 @@ emit() {
 export -f get_timestamp
 export -f emit
 
+# --- Privilege check ---
+export ODIN_RUNNING_AS_ROOT=0
+if [[ $EUID -eq 0 ]]; then
+    ODIN_RUNNING_AS_ROOT=1
+fi
+
 # --- Start event ---
-emit "type=odin_start message=\"TA-ODIN enumeration started\""
+run_user=$(id -un 2>/dev/null || echo "unknown")
+emit "type=odin_start run_as=$run_user euid=$EUID message=\"TA-ODIN enumeration started\""
+
+# Warn if not running as root — some modules return limited data
+if [[ $ODIN_RUNNING_AS_ROOT -eq 0 ]]; then
+    emit "type=odin_warning module=ports message=\"Running as non-root (euid=$EUID). Port enumeration will not include process names/PIDs for ports owned by other users.\""
+    emit "type=odin_warning module=cron message=\"Running as non-root (euid=$EUID). User crontabs in /var/spool/cron may be unreadable.\""
+fi
 
 # --- Discover and run modules ---
 module_count=0
@@ -63,15 +103,27 @@ for module in "$MODULES_DIR"/*.sh; do
     module_name="$(basename "$module" .sh)"
     module_count=$((module_count + 1))
 
-    # Run the module and capture its exit code
-    bash "$module"
+    # Reset per-module event counter
+    export ODIN_EVENT_COUNT=0
+    export ODIN_EVENTS_TRUNCATED=0
+
+    # Run the module with timeout (if available) and capture its exit code
+    if [[ $HAS_TIMEOUT -eq 1 ]]; then
+        timeout "$MODULE_TIMEOUT" bash "$module"
+    else
+        bash "$module"
+    fi
     rc=$?
 
-    if [[ $rc -eq 0 ]]; then
-        module_success=$((module_success + 1))
-    else
+    if [[ $rc -eq 124 && $HAS_TIMEOUT -eq 1 ]]; then
+        # timeout returns 124 when the command is killed
+        module_fail=$((module_fail + 1))
+        emit "type=odin_error module=$module_name exit_code=$rc message=\"Module $module_name timed out after ${MODULE_TIMEOUT}s\""
+    elif [[ $rc -ne 0 ]]; then
         module_fail=$((module_fail + 1))
         emit "type=odin_error module=$module_name exit_code=$rc message=\"Module $module_name failed with exit code $rc\""
+    else
+        module_success=$((module_success + 1))
     fi
 done
 

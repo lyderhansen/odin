@@ -16,7 +16,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi

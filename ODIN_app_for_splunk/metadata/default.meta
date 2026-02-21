@@ -1,0 +1,14 @@
+# Application-level permissions for ODIN_app_for_splunk
+# Export lookups, props, transforms, and saved searches to all apps
+
+[lookups]
+export = system
+
+[props]
+export = system
+
+[transforms]
+export = system
+
+[savedsearches]
+export = system

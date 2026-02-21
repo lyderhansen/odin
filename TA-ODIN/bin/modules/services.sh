@@ -6,6 +6,11 @@
 # Output fields:
 #   type=service service_name= service_status= service_enabled= service_type=
 #
+# Guardrails:
+#   - Single batch systemctl query (no per-unit subprocess spawning)
+#   - timeout on all external commands
+#   - timeout 5s per init.d script status check
+#
 
 # Force C locale for consistent command output parsing
 export LC_ALL=C
@@ -15,7 +20,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
@@ -34,41 +39,86 @@ safe_val() {
 # Track whether we emitted anything
 emitted=0
 
-# --- Primary: systemctl ---
+# --- Primary: systemctl (batch query) ---
 if command -v systemctl &>/dev/null; then
-    while IFS= read -r line; do
-        # Parse systemctl list-units output: UNIT LOAD ACTIVE SUB DESCRIPTION...
-        read -r unit _ active sub _ <<< "$line"
+    # Single batch call: get all service properties at once (zero per-unit subprocesses)
+    batch_output=$(timeout 30 systemctl show --type=service --all \
+        --property=Id,ActiveState,SubState,Type,UnitFileState --no-pager 2>/dev/null)
+    batch_rc=$?
 
-        # Skip empty or invalid lines
-        [[ -z "$unit" ]] && continue
+    if [[ $batch_rc -eq 124 ]]; then
+        emit "type=odin_error module=services message=\"systemctl show timed out after 30s\""
+    elif [[ -n "$batch_output" ]]; then
+        # Parse blocks separated by blank lines
+        # Each block has: Id=, ActiveState=, SubState=, Type=, UnitFileState=
+        unit_id="" active_state="" sub_state="" service_type="" unit_file_state=""
 
-        # Strip .service suffix for clean name
-        service_name="${unit%.service}"
+        while IFS= read -r line; do
+            if [[ -z "$line" ]]; then
+                # End of a block — emit if we have data
+                if [[ -n "$unit_id" ]]; then
+                    service_name="${unit_id%.service}"
 
-        # Determine enabled status
-        enabled=$(systemctl is-enabled "$unit" 2>/dev/null || echo "unknown")
+                    # Map active/sub to a status
+                    case "$active_state" in
+                        active)   service_status="$sub_state" ;;
+                        inactive) service_status="stopped" ;;
+                        failed)   service_status="failed" ;;
+                        *)        service_status="$active_state" ;;
+                    esac
 
-        # Determine service type from unit file
-        service_type=""
-        type_line=$(systemctl show "$unit" -p Type 2>/dev/null)
-        if [[ "$type_line" == Type=* ]]; then
-            service_type="${type_line#Type=}"
+                    # Map UnitFileState to enabled/disabled
+                    case "$unit_file_state" in
+                        enabled|enabled-runtime) enabled="enabled" ;;
+                        disabled)                enabled="disabled" ;;
+                        static)                  enabled="static" ;;
+                        masked|masked-runtime)   enabled="masked" ;;
+                        *)                       enabled="$unit_file_state" ;;
+                    esac
+                    [[ -z "$enabled" ]] && enabled="unknown"
+
+                    out="type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=$enabled"
+                    [[ -n "$service_type" ]] && out="$out service_type=$service_type"
+                    emit "$out"
+                    emitted=1
+                fi
+                # Reset for next block
+                unit_id="" active_state="" sub_state="" service_type="" unit_file_state=""
+                continue
+            fi
+
+            case "$line" in
+                Id=*)            unit_id="${line#Id=}" ;;
+                ActiveState=*)   active_state="${line#ActiveState=}" ;;
+                SubState=*)      sub_state="${line#SubState=}" ;;
+                Type=*)          service_type="${line#Type=}" ;;
+                UnitFileState=*) unit_file_state="${line#UnitFileState=}" ;;
+            esac
+        done <<< "$batch_output"
+
+        # Handle last block (no trailing blank line)
+        if [[ -n "$unit_id" ]]; then
+            service_name="${unit_id%.service}"
+            case "$active_state" in
+                active)   service_status="$sub_state" ;;
+                inactive) service_status="stopped" ;;
+                failed)   service_status="failed" ;;
+                *)        service_status="$active_state" ;;
+            esac
+            case "$unit_file_state" in
+                enabled|enabled-runtime) enabled="enabled" ;;
+                disabled)                enabled="disabled" ;;
+                static)                  enabled="static" ;;
+                masked|masked-runtime)   enabled="masked" ;;
+                *)                       enabled="$unit_file_state" ;;
+            esac
+            [[ -z "$enabled" ]] && enabled="unknown"
+            out="type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=$enabled"
+            [[ -n "$service_type" ]] && out="$out service_type=$service_type"
+            emit "$out"
+            emitted=1
         fi
-
-        # Map active/sub to a status
-        case "$active" in
-            active)   service_status="$sub" ;;   # running, exited, waiting, etc.
-            inactive) service_status="stopped" ;;
-            failed)   service_status="failed" ;;
-            *)        service_status="$active" ;;
-        esac
-
-        out="type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=$enabled"
-        [[ -n "$service_type" ]] && out="$out service_type=$service_type"
-        emit "$out"
-        emitted=1
-    done < <(systemctl list-units --type=service --all --no-pager --no-legend 2>/dev/null)
+    fi
 
     # If systemctl worked, we're done
     [[ $emitted -eq 1 ]] && exit 0
@@ -92,7 +142,7 @@ if command -v service &>/dev/null; then
 
         emit "type=service service_name=$(safe_val "$service_name") service_status=$service_status service_enabled=unknown"
         emitted=1
-    done < <(service --status-all 2>/dev/null)
+    done < <(timeout 30 service --status-all 2>/dev/null)
 
     [[ $emitted -eq 1 ]] && exit 0
 fi
@@ -108,8 +158,8 @@ if [[ -d /etc/init.d ]]; then
             README|skeleton|rc|rcS|functions|halt|killall|single|reboot) continue ;;
         esac
 
-        # Try to get status
-        if "$script" status &>/dev/null 2>&1; then
+        # Try to get status (5s timeout per script to prevent hangs)
+        if timeout 5 "$script" status &>/dev/null 2>&1; then
             service_status="running"
         else
             service_status="unknown"

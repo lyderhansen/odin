@@ -7,6 +7,9 @@
 # Output fields:
 #   type=package package_name= package_version= package_arch= package_manager=
 #
+# Guardrails:
+#   - timeout 30s on all package manager commands (dpkg-query can hang on lock)
+#
 
 # Force C locale for consistent command output parsing
 export LC_ALL=C
@@ -16,7 +19,7 @@ if ! declare -f emit &>/dev/null; then
     ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
     ODIN_OS="${ODIN_OS:-linux}"
     ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-2.0.0}"
+    ODIN_VERSION="${ODIN_VERSION:-2.1.0}"
     get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
@@ -66,7 +69,7 @@ case "$pkg_manager" in
             [[ -z "$name" ]] && continue
             emit "type=package package_name=$name package_version=$version package_arch=$arch package_manager=dpkg"
             emitted=1
-        done < <(dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' 2>/dev/null)
+        done < <(timeout 30 dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' 2>/dev/null)
         ;;
     rpm)
         # rpm: Name Version Architecture
@@ -74,12 +77,12 @@ case "$pkg_manager" in
             [[ -z "$name" ]] && continue
             emit "type=package package_name=$name package_version=$version package_arch=$arch package_manager=rpm"
             emitted=1
-        done < <(rpm -qa --queryformat '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\n' 2>/dev/null)
+        done < <(timeout 30 rpm -qa --queryformat '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\n' 2>/dev/null)
         ;;
     apk)
         # apk packages use format: name-VERSION where version starts at first hyphen followed by a digit
         # e.g. "perl-test-warn-0.32-r0" -> name=perl-test-warn version=0.32-r0
-        if apk list --installed >/dev/null 2>&1; then
+        if timeout 30 apk list --installed >/dev/null 2>&1; then
             while IFS= read -r line; do
                 [[ -z "$line" ]] && continue
                 # apk list output: "name-version {arch} {repo} [installed]"
@@ -89,7 +92,7 @@ case "$pkg_manager" in
                 [[ -z "$name" ]] && continue
                 emit "type=package package_name=$name package_version=$version package_manager=apk"
                 emitted=1
-            done < <(apk list --installed 2>/dev/null)
+            done < <(timeout 30 apk list --installed 2>/dev/null)
         else
             while IFS= read -r line; do
                 [[ -z "$line" ]] && continue
@@ -98,7 +101,7 @@ case "$pkg_manager" in
                 [[ -z "$name" ]] && continue
                 emit "type=package package_name=$name package_version=$version package_manager=apk"
                 emitted=1
-            done < <(apk info -v 2>/dev/null)
+            done < <(timeout 30 apk info -v 2>/dev/null)
         fi
         ;;
     pacman)
@@ -107,7 +110,7 @@ case "$pkg_manager" in
             [[ -z "$name" ]] && continue
             emit "type=package package_name=$name package_version=$version package_manager=pacman"
             emitted=1
-        done < <(pacman -Q 2>/dev/null)
+        done < <(timeout 30 pacman -Q 2>/dev/null)
         ;;
     *)
         emit "type=none_found module=packages message=\"No supported package manager detected\""
