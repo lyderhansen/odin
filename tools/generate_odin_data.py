@@ -589,3 +589,86 @@ HOST_PROFILES = {
         "cron": [*BASE_CRON],
     },
 }
+
+
+def generate_scan(
+    hostname: str,
+    profile: dict,
+    scan_timestamp: str,
+    run_id: str,
+) -> list:
+    """Generate all events for one full ODIN scan of a host."""
+    os_name = profile["os"]
+    events = []
+    sec_offset = 0
+
+    def next_ts():
+        nonlocal sec_offset
+        # Increment seconds within the same minute
+        ts = scan_timestamp[:-3] + f"{sec_offset:02d}Z"
+        sec_offset = min(sec_offset + 1, 59)
+        return ts
+
+    # 1. Start event
+    events.append(format_event(
+        timestamp=next_ts(), hostname=hostname, os=os_name,
+        run_id=run_id, version=ODIN_VERSION, type_="odin_start",
+        fields={"run_as": "root", "euid": "0", "message": "TA-ODIN enumeration started"},
+    ))
+
+    # 2. Service events
+    for svc in profile["services"]:
+        events.append(format_event(
+            timestamp=next_ts(), hostname=hostname, os=os_name,
+            run_id=run_id, version=ODIN_VERSION, type_="service", fields=svc,
+        ))
+
+    # 3. Port events
+    for port in profile["ports"]:
+        events.append(format_event(
+            timestamp=next_ts(), hostname=hostname, os=os_name,
+            run_id=run_id, version=ODIN_VERSION, type_="port", fields=port,
+        ))
+
+    # 4. Package events
+    for pkg in profile["packages"]:
+        events.append(format_event(
+            timestamp=next_ts(), hostname=hostname, os=os_name,
+            run_id=run_id, version=ODIN_VERSION, type_="package", fields=pkg,
+        ))
+
+    # 5. Cron events
+    for cron in profile["cron"]:
+        events.append(format_event(
+            timestamp=next_ts(), hostname=hostname, os=os_name,
+            run_id=run_id, version=ODIN_VERSION, type_="cron", fields=cron,
+        ))
+
+    # 6. Process events
+    for proc in profile["processes"]:
+        events.append(format_event(
+            timestamp=next_ts(), hostname=hostname, os=os_name,
+            run_id=run_id, version=ODIN_VERSION, type_="process", fields=proc,
+        ))
+
+    # 7. Mount events
+    for mnt in profile["mounts"]:
+        events.append(format_event(
+            timestamp=next_ts(), hostname=hostname, os=os_name,
+            run_id=run_id, version=ODIN_VERSION, type_="mount", fields=mnt,
+        ))
+
+    # 8. Complete event
+    module_count = sum(1 for k in ["services", "ports", "packages", "cron", "processes", "mounts"] if profile[k])
+    events.append(format_event(
+        timestamp=next_ts(), hostname=hostname, os=os_name,
+        run_id=run_id, version=ODIN_VERSION, type_="odin_complete",
+        fields={
+            "modules_total": "6",
+            "modules_success": str(module_count),
+            "modules_failed": str(6 - module_count),
+            "message": "TA-ODIN enumeration completed",
+        },
+    ))
+
+    return events

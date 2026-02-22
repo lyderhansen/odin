@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from generate_odin_data import format_event, HOST_PROFILES, BASE_SERVICES, BASE_PACKAGES, BASE_MOUNTS
+from generate_odin_data import format_event, HOST_PROFILES, BASE_SERVICES, BASE_PACKAGES, BASE_MOUNTS, ODIN_VERSION
 
 
 def test_format_event_basic():
@@ -123,3 +123,71 @@ def test_classification_coverage():
     }
     missing = expected_services - all_services
     assert not missing, f"Missing services for classification coverage: {missing}"
+
+
+from generate_odin_data import generate_scan
+
+
+def test_generate_scan_returns_events():
+    """A scan for one host returns a list of event strings."""
+    events = generate_scan(
+        hostname="web-prod-01.odin.local",
+        profile=HOST_PROFILES["web-prod-01.odin.local"],
+        scan_timestamp="2026-01-15T02:00:00Z",
+        run_id="1736899200-1234",
+    )
+    assert isinstance(events, list)
+    assert len(events) > 0
+    assert all(isinstance(e, str) for e in events)
+
+
+def test_scan_starts_and_ends_with_control_events():
+    """First event is odin_start, last is odin_complete."""
+    events = generate_scan(
+        hostname="web-prod-01.odin.local",
+        profile=HOST_PROFILES["web-prod-01.odin.local"],
+        scan_timestamp="2026-01-15T02:00:00Z",
+        run_id="1736899200-1234",
+    )
+    assert "type=odin_start" in events[0]
+    assert "type=odin_complete" in events[-1]
+
+
+def test_scan_has_all_event_types():
+    """A scan should produce service, port, package, process, mount, cron events."""
+    events = generate_scan(
+        hostname="web-prod-01.odin.local",
+        profile=HOST_PROFILES["web-prod-01.odin.local"],
+        scan_timestamp="2026-01-15T02:00:00Z",
+        run_id="1736899200-1234",
+    )
+    combined = "\n".join(events)
+    for t in ["type=service", "type=port", "type=package", "type=process", "type=mount", "type=cron"]:
+        assert t in combined, f"Missing event type: {t}"
+
+
+def test_scan_event_count_reasonable():
+    """web-prod-01 should produce between 30 and 100 events."""
+    events = generate_scan(
+        hostname="web-prod-01.odin.local",
+        profile=HOST_PROFILES["web-prod-01.odin.local"],
+        scan_timestamp="2026-01-15T02:00:00Z",
+        run_id="1736899200-1234",
+    )
+    assert 30 <= len(events) <= 100, f"Unexpected event count: {len(events)}"
+
+
+def test_all_events_have_common_header():
+    """Every event must have timestamp, hostname, os, run_id, odin_version, type."""
+    events = generate_scan(
+        hostname="web-prod-01.odin.local",
+        profile=HOST_PROFILES["web-prod-01.odin.local"],
+        scan_timestamp="2026-01-15T02:00:00Z",
+        run_id="1736899200-1234",
+    )
+    for event in events:
+        assert "timestamp=2026-01-15T02:00:" in event
+        assert "hostname=web-prod-01.odin.local" in event
+        assert "os=linux" in event
+        assert "run_id=1736899200-1234" in event
+        assert "odin_version=2.2.0" in event
