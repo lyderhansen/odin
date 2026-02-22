@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from generate_odin_data import format_event
+from generate_odin_data import format_event, HOST_PROFILES, BASE_SERVICES, BASE_PACKAGES, BASE_MOUNTS
 
 
 def test_format_event_basic():
@@ -66,3 +66,60 @@ def test_format_event_omits_empty():
     )
     assert "process_pid" not in result
     assert "listen_port=80" in result
+
+
+def test_host_profiles_exist():
+    """At least 15 host profiles are defined."""
+    assert len(HOST_PROFILES) >= 15
+
+
+def test_all_profiles_have_required_keys():
+    """Every profile has services, ports, packages, processes, mounts, cron."""
+    required = {"os", "services", "ports", "packages", "processes", "mounts", "cron"}
+    for hostname, profile in HOST_PROFILES.items():
+        missing = required - set(profile.keys())
+        assert not missing, f"{hostname} missing keys: {missing}"
+
+
+def test_base_services_on_every_host():
+    """Common services (sshd, crond, auditd) appear on every profile."""
+    for hostname, profile in HOST_PROFILES.items():
+        svc_names = {s["service_name"] for s in profile["services"]}
+        for base in BASE_SERVICES:
+            assert base["service_name"] in svc_names, (
+                f"{hostname} missing base service: {base['service_name']}"
+            )
+
+
+def test_web_server_has_web_signals():
+    """web-prod-01 must have nginx service + port 80 + port 443."""
+    p = HOST_PROFILES["web-prod-01.odin.local"]
+    svc_names = {s["service_name"] for s in p["services"]}
+    ports = {(pt["listen_port"], pt["transport"]) for pt in p["ports"]}
+    assert "nginx" in svc_names
+    assert ("80", "tcp") in ports
+    assert ("443", "tcp") in ports
+
+
+def test_db_server_has_db_signals():
+    """db-prod-01 must have postgresql service + port 5432."""
+    p = HOST_PROFILES["db-prod-01.odin.local"]
+    svc_names = {s["service_name"] for s in p["services"]}
+    ports = {(pt["listen_port"], pt["transport"]) for pt in p["ports"]}
+    assert "postgresql" in svc_names
+    assert ("5432", "tcp") in ports
+
+
+def test_classification_coverage():
+    """Generated signals should hit key services from lookups."""
+    all_services = set()
+    for hostname, profile in HOST_PROFILES.items():
+        for svc in profile["services"]:
+            all_services.add(svc["service_name"])
+    expected_services = {
+        "nginx", "postgresql", "docker", "redis", "rsyslog",
+        "prometheus", "postfix", "openvpn", "jenkins", "named",
+        "rabbitmq-server", "kubelet",
+    }
+    missing = expected_services - all_services
+    assert not missing, f"Missing services for classification coverage: {missing}"
