@@ -1,0 +1,280 @@
+<dashboard version="2" theme="dark">
+  <label>ODIN Host Classification</label>
+  <description>Host role classification, log source identification, and TA deployment recommendations</description>
+  <definition><![CDATA[
+{
+  "title": "ODIN Host Classification",
+  "description": "Host role classification, log source identification, and TA deployment recommendations from ODIN enumeration data.",
+  "dataSources": {
+    "ds_base": {
+      "type": "ds.search",
+      "name": "Classification Base Search",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration (type=service OR type=port OR type=package) hostname=\"$hostname_filter$\"\n| eval signal_type=type\n| eval signal_value=case(type=\"service\", service_name, type=\"port\", listen_port.\"/\".transport, type=\"package\", package_name)\n| dedup hostname, signal_type, signal_value\n| lookup odin_log_sources signal_type, signal_value\n| where isnotnull(host_role)"
+      }
+    },
+    "ds_hosts_dropdown": {
+      "type": "ds.search",
+      "name": "Hostname List for Dropdown",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration (type=service OR type=port OR type=package)\n| dedup hostname\n| table hostname\n| sort hostname\n| rename hostname AS label\n| eval value=label"
+      }
+    },
+    "ds_sv_hosts": {
+      "type": "ds.chain",
+      "name": "Total Classified Hosts",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats dc(hostname) AS count"
+      }
+    },
+    "ds_sv_roles": {
+      "type": "ds.chain",
+      "name": "Distinct Host Roles",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats dc(host_role) AS count"
+      }
+    },
+    "ds_sv_logsources": {
+      "type": "ds.chain",
+      "name": "Distinct Log Sources",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats dc(log_source) AS count"
+      }
+    },
+    "ds_sv_tas": {
+      "type": "ds.chain",
+      "name": "Recommended TAs",
+      "options": {
+        "extend": "ds_base",
+        "query": "| where recommended_ta!=\"none\" | stats dc(recommended_ta) AS count"
+      }
+    },
+    "ds_roles_per_host": {
+      "type": "ds.chain",
+      "name": "Roles per Host Matrix",
+      "options": {
+        "extend": "ds_base",
+        "query": "| eval _count=1 | chart sum(_count) over hostname by host_role"
+      }
+    },
+    "ds_role_dist": {
+      "type": "ds.chain",
+      "name": "Role Distribution",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats dc(hostname) AS host_count by host_role | sort -host_count"
+      }
+    },
+    "ds_ta_matrix": {
+      "type": "ds.chain",
+      "name": "TA Deployment Matrix",
+      "options": {
+        "extend": "ds_base",
+        "query": "| where recommended_ta!=\"none\"\n| stats dc(hostname) AS host_count by recommended_ta\n| lookup odin_recommended_tas recommended_ta OUTPUT official_name, splunkbase_id, splunkbase_url, status, notes\n| eval _color_rank=case(status=\"official\", 1, status=\"deprecated\", 2, status=\"not_found\", 3, 1=1, 4)\n| sort -host_count\n| rename recommended_ta AS TA, official_name AS \"Official Name\", host_count AS Hosts, splunkbase_url AS \"Splunkbase URL\", status AS Status, notes AS Notes"
+      }
+    },
+    "ds_logsource_count": {
+      "type": "ds.chain",
+      "name": "Log Sources per Host",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats dc(log_source) AS log_source_count by hostname | sort -log_source_count"
+      }
+    },
+    "ds_host_inventory": {
+      "type": "ds.chain",
+      "name": "Host Inventory Table",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats values(host_role) AS host_roles, values(recommended_ta) AS recommended_tas, dc(log_source) AS log_source_count, dc(host_role) AS role_count by hostname\n| eval host_roles=mvjoin(host_roles, \", \"), recommended_tas=mvjoin(recommended_tas, \", \")\n| sort -role_count\n| rename hostname AS Host, host_roles AS \"Host Roles\", recommended_tas AS \"Recommended TAs\", log_source_count AS \"Log Sources\", role_count AS Roles"
+      }
+    },
+    "ds_log_details": {
+      "type": "ds.chain",
+      "name": "Log Source Details Table",
+      "options": {
+        "extend": "ds_base",
+        "query": "| stats values(signal_type) AS detected_by, values(signal_value) AS signals, values(sourcetype) AS sourcetypes, values(log_path) AS log_paths, values(recommended_ta) AS recommended_ta by hostname, host_role, log_source\n| eval detected_by=mvjoin(detected_by, \", \"), signals=mvjoin(signals, \", \"), sourcetypes=mvjoin(sourcetypes, \", \"), log_paths=mvjoin(log_paths, \", \")\n| sort hostname, host_role\n| rename hostname AS Host, host_role AS Role, log_source AS \"Log Source\", detected_by AS \"Detected By\", signals AS Signals, sourcetypes AS Sourcetypes, log_paths AS \"Log Paths\", recommended_ta AS TA"
+      }
+    }
+  },
+  "visualizations": {
+    "viz_sv_hosts": {
+      "type": "splunk.singlevalue",
+      "title": "Classified Hosts",
+      "dataSources": {"primary": "ds_sv_hosts"},
+      "options": {
+        "majorColor": "#009CEB",
+        "backgroundColor": "transparent",
+        "unit": "hosts",
+        "unitPosition": "after"
+      }
+    },
+    "viz_sv_roles": {
+      "type": "splunk.singlevalue",
+      "title": "Host Roles Detected",
+      "dataSources": {"primary": "ds_sv_roles"},
+      "options": {
+        "majorColor": "#7B56DB",
+        "backgroundColor": "transparent",
+        "unit": "roles",
+        "unitPosition": "after"
+      }
+    },
+    "viz_sv_logsources": {
+      "type": "splunk.singlevalue",
+      "title": "Log Sources Identified",
+      "dataSources": {"primary": "ds_sv_logsources"},
+      "options": {
+        "majorColor": "#00CDAF",
+        "backgroundColor": "transparent",
+        "unit": "sources",
+        "unitPosition": "after"
+      }
+    },
+    "viz_sv_tas": {
+      "type": "splunk.singlevalue",
+      "title": "TAs Recommended",
+      "dataSources": {"primary": "ds_sv_tas"},
+      "options": {
+        "majorColor": "#DD9900",
+        "backgroundColor": "transparent",
+        "unit": "TAs",
+        "unitPosition": "after"
+      }
+    },
+    "viz_roles_per_host": {
+      "type": "splunk.column",
+      "title": "Host Roles by Host",
+      "dataSources": {"primary": "ds_roles_per_host"},
+      "options": {
+        "stackMode": "stacked",
+        "legendDisplay": "right",
+        "xAxisLabelRotation": -45,
+        "dataValuesDisplay": "off",
+        "yAxisTitleText": "Roles",
+        "yAxisTitleVisibility": "show",
+        "xAxisTitleVisibility": "hide"
+      }
+    },
+    "viz_role_dist": {
+      "type": "splunk.pie",
+      "title": "Hosts per Role",
+      "dataSources": {"primary": "ds_role_dist"},
+      "options": {
+        "labelDisplay": "valuesAndPercentage"
+      }
+    },
+    "viz_ta_matrix": {
+      "type": "splunk.table",
+      "title": "TA Deployment Matrix",
+      "dataSources": {"primary": "ds_ta_matrix"},
+      "options": {
+        "count": 25,
+        "showRowNumbers": false,
+        "showInternalFields": false,
+        "tableFormat": {
+          "rowBackgroundColors": "> table | seriesByName(\"_color_rank\") | rangeValue(statusRowColors)"
+        }
+      },
+      "context": {
+        "statusRowColors": [
+          {"from": 0, "to": 1.5, "value": "#1a3a2a"},
+          {"from": 1.5, "to": 2.5, "value": "#3a3a1a"},
+          {"from": 2.5, "to": 3.5, "value": "#3a1a1a"},
+          {"from": 3.5, "to": 5, "value": "#1a1a2a"}
+        ]
+      }
+    },
+    "viz_logsource_count": {
+      "type": "splunk.column",
+      "title": "Log Sources per Host",
+      "dataSources": {"primary": "ds_logsource_count"},
+      "options": {
+        "seriesColors": ["#00CDAF"],
+        "xAxisLabelRotation": -45,
+        "yAxisTitleText": "Log Sources",
+        "yAxisTitleVisibility": "show",
+        "xAxisTitleVisibility": "hide",
+        "dataValuesDisplay": "all",
+        "legendDisplay": "off"
+      }
+    },
+    "viz_host_inventory": {
+      "type": "splunk.table",
+      "title": "Host Inventory",
+      "dataSources": {"primary": "ds_host_inventory"},
+      "options": {
+        "count": 20,
+        "showRowNumbers": true
+      }
+    },
+    "viz_log_details": {
+      "type": "splunk.table",
+      "title": "Log Source Details",
+      "dataSources": {"primary": "ds_log_details"},
+      "options": {
+        "count": 50,
+        "showRowNumbers": false
+      }
+    }
+  },
+  "inputs": {
+    "input_global_trp": {
+      "type": "input.timerange",
+      "title": "Time Range",
+      "options": {
+        "token": "global_time",
+        "defaultValue": "-45d@d,now"
+      }
+    },
+    "input_hostname": {
+      "type": "input.dropdown",
+      "title": "Host",
+      "dataSources": {"primary": "ds_hosts_dropdown"},
+      "options": {
+        "token": "hostname_filter",
+        "defaultValue": "*",
+        "items": "> frame(label, value) | prepend(prependItems)"
+      },
+      "context": {
+        "prependItems": [
+          {"label": "All Hosts", "value": "*"}
+        ]
+      }
+    }
+  },
+  "defaults": {
+    "dataSources": {
+      "ds.search": {
+        "options": {
+          "queryParameters": {
+            "earliest": "$global_time.earliest$",
+            "latest": "$global_time.latest$"
+          }
+        }
+      }
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "globalInputs": ["input_global_trp", "input_hostname"],
+    "structure": [
+      {"item": "viz_sv_hosts", "type": "block", "position": {"x": 0, "y": 0, "w": 300, "h": 130}},
+      {"item": "viz_sv_roles", "type": "block", "position": {"x": 300, "y": 0, "w": 300, "h": 130}},
+      {"item": "viz_sv_logsources", "type": "block", "position": {"x": 600, "y": 0, "w": 300, "h": 130}},
+      {"item": "viz_sv_tas", "type": "block", "position": {"x": 900, "y": 0, "w": 300, "h": 130}},
+      {"item": "viz_roles_per_host", "type": "block", "position": {"x": 0, "y": 130, "w": 700, "h": 350}},
+      {"item": "viz_role_dist", "type": "block", "position": {"x": 700, "y": 130, "w": 500, "h": 350}},
+      {"item": "viz_logsource_count", "type": "block", "position": {"x": 0, "y": 480, "w": 1200, "h": 300}},
+      {"item": "viz_ta_matrix", "type": "block", "position": {"x": 0, "y": 780, "w": 1200, "h": 350}},
+      {"item": "viz_host_inventory", "type": "block", "position": {"x": 0, "y": 1130, "w": 1200, "h": 350}},
+      {"item": "viz_log_details", "type": "block", "position": {"x": 0, "y": 1480, "w": 1200, "h": 400}}
+    ]
+  }
+}
+  ]]></definition>
+</dashboard>

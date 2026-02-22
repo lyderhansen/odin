@@ -1,0 +1,53 @@
+recommended_ta,splunkbase_id,splunkbase_url,official_name,status,github_url,notes
+Splunk_TA_apache,3186,https://splunkbase.splunk.com/app/3186,Splunk Add-on for Apache Web Server,official,,
+Splunk_TA_bind,2876,https://splunkbase.splunk.com/app/2876,Splunk Add-on for ISC BIND,official,,
+Splunk_TA_carbonblack,2790,https://splunkbase.splunk.com/app/2790,Splunk Add-on for Carbon Black,official,,
+Splunk_TA_crowdstrike,5579,https://splunkbase.splunk.com/app/5579,Splunk Add-on for CrowdStrike FDR,official,,FDR via S3/SQS. See also CrowdStrike Falcon Event Streams (app 5082)
+TA_docker_simple,4468,https://splunkbase.splunk.com/app/4468,Docker Simple TA,community,,Forwarder-based. Scripted inputs for docker stats/ps plus container log monitoring. By Chris Younger
+Splunk_TA_elasticsearch,,,,not_found,,No official TA. Consider Add-on for Elasticsearch (app 7839) or ElasticSPL (app 6477)
+Splunk_TA_haproxy,3135,https://splunkbase.splunk.com/app/3135,Splunk Add-on for HAProxy,official,,
+Splunk_TA_kubernetes,3991,https://splunkbase.splunk.com/app/3991,Splunk Add-on for Kubernetes,deprecated,,Archived 2019. Use Splunk OpenTelemetry Collector for Kubernetes (app 6264) or Splunk Connect for Kubernetes (app 4497)
+Splunk_TA_microsoft_defender,6207,https://splunkbase.splunk.com/app/6207,Splunk Add-on for Microsoft Security,official,,Covers M365 Defender and Defender for Endpoint
+Splunk_TA_microsoft_exchange,3225,https://splunkbase.splunk.com/app/3225,Splunk Add-on for Microsoft Exchange,official,,
+Splunk_TA_microsoft_sqlserver,2648,https://splunkbase.splunk.com/app/2648,Splunk Add-on for Microsoft SQL Server,official,,
+Splunk_TA_microsoft_sysmon,5709,https://splunkbase.splunk.com/app/5709,Splunk Add-on for Sysmon,official,,Replaces archived app 1914
+Splunk_TA_mongodb,,,,not_found,,No official TA. Consider Splunk DB Connect (app 2686) with MongoDB JDBC driver (app 7095)
+Splunk_TA_mysql,2848,https://splunkbase.splunk.com/app/2848,Splunk Add-on for MySQL,official,,Some collection methods require DB Connect
+Splunk_TA_nginx,3258,https://splunkbase.splunk.com/app/3258,Splunk Add-on for NGINX,official,,
+Splunk_TA_nix,833,https://splunkbase.splunk.com/app/833,Splunk Add-on for Unix and Linux,official,,
+Splunk_TA_postgresql,,,,not_found,,No official TA. Use Splunk DB Connect (app 2686) with Postgres JDBC driver (app 6152)
+TA-snort_alert,5488,https://splunkbase.splunk.com/app/5488,Snort Alert for Splunk,community,,CIM 6.x. Supports Snort 2 and 3 text formats. By Splunk Works
+TA-suricata-ccx,6994,https://splunkbase.splunk.com/app/6994,CCX Add-on for Suricata,community,,CIM 6.x. 7 CIM data models. Parses Suricata EVE JSON. By CyberCX
+Splunk_TA_symantec_ep,2772,https://splunkbase.splunk.com/app/2772,Splunk Add-on for Symantec Endpoint Protection,official,,
+Splunk_TA_trendmicro,,,,not_found,,No official TA. Consider CCX Unified Splunk Add-on for Trend Micro (app 5349)
+Splunk_TA_windows,742,https://splunkbase.splunk.com/app/742,Splunk Add-on for Microsoft Windows,official,,
+Splunk_OTEL_Collector,7125,https://splunkbase.splunk.com/app/7125,Splunk Add-On for OpenTelemetry Collector,official,,Traces and metrics. Includes Prometheus/Jaeger/OTLP receivers
+Splunk_TA_nagios,2703,https://splunkbase.splunk.com/app/2703,Splunk Add-on for Nagios Core,deprecated,,CIM-compatible. Archived Sept 2020. Polls via NDOUtils
+Zabbix_Addon_for_Splunk,5272,https://splunkbase.splunk.com/app/5272,Zabbix Add-on For Splunk,community,,Bidirectional - retrieves Zabbix audit logs and sends Splunk data to Zabbix
+Datadog_Addon_for_Splunk,4163,https://splunkbase.splunk.com/app/4163,Datadog Add-on for Splunk,community,,Fetches Datadog metrics via API. By Splunk Works
+splunk_modinput_prometheus,,,,github,https://github.com/lukemonahan/splunk_modinput_prometheus,Prometheus metrics scraping. Author recommends migrating to OTEL Collector
+TA-influxdata-telegraf,,,,github,https://github.com/guilhemmarchand/TA-influxdata-telegraf,Indexing-time parsing for Telegraf metrics in Splunk metric store
+Splunk_TA_squid,2965,https://splunkbase.splunk.com/app/2965,Splunk Add-on for Squid Proxy,official,,Built by Splunk. Archived but supports Splunk 10.x. Parses squid access.log
+TA-wireguard,5375,https://splunkbase.splunk.com/app/5375,TA for wireguard,community,https://github.com/ipfyx/TA-wireguard,CIM 5.x. Parses WireGuard kernel debug log. Archived but functional
+TA-zeek,5466,https://splunkbase.splunk.com/app/5466,TA for Zeek,vendor,,Maintained by Corelight. CIM 6.x. Parses Zeek JSON and TSV. 83K downloads
+TA-fail2ban,4421,https://splunkbase.splunk.com/app/4421,TA for fail2ban,community,,CIM 5.x. Archived but functional. Parses fail2ban log
+TA-pritunl,7223,https://splunkbase.splunk.com/app/7223,Pritunl Add-on for Splunk,community,,CIM 6.x. Parses pritunl journal JSON. Active (Feb 2026)
+splunk-kafka-connect,3862,https://splunkbase.splunk.com/app/3862,Splunk Connect for Kafka,official,https://github.com/splunk/kafka-connect-splunk,Kafka Connect sink for HEC. Replaces deprecated Splunk_TA_Kafka (app 2935)
+splunk-app-for-jenkins,3332,https://splunkbase.splunk.com/app/3332,Splunk App for Jenkins,community,https://github.com/jenkinsci/splunk-devops-plugin,Push-based via Jenkins HEC plugin. By Splunk Works
+gitlab-add-on-for-splunk,6848,https://splunkbase.splunk.com/app/6848,Gitlab Add-on for Splunk,community,,API-based collection of projects and events. By Avotrix Inc
+jfrog-logs,5023,https://splunkbase.splunk.com/app/5023,JFrog Platform Log Analytics,vendor,https://github.com/jfrog/log-analytics-splunk,FluentD pipeline to HEC for Artifactory and Xray logs. By JFrog
+Splunk_TA_tomcat,2911,https://splunkbase.splunk.com/app/2911,Splunk Add-on for Tomcat,official,,CIM 5.x. Parses catalina.out and access logs. Supports JMX via Splunk_TA_jmx
+Splunk_TA_jboss,2954,https://splunkbase.splunk.com/app/2954,Splunk Add-on for JBoss,official,,CIM 4.x. Parses server.log and access.log. Covers WildFly and JBoss EAP
+hashicorp-vault-app,5093,https://splunkbase.splunk.com/app/5093,HashiCorp Vault App for Splunk,vendor,,Parses Vault audit logs (JSON). Dashboards require Vault Enterprise license. By HashiCorp
+TA-unbound,4888,https://splunkbase.splunk.com/app/4888,Technology Add-On for Unbound DNS,community,,CIM 4.x. Parses Unbound query and answer logs. Archived
+TA-pihole_dns,4505,https://splunkbase.splunk.com/app/4505,Pi-hole Add-on for Splunk,community,https://github.com/ZachChristensen28/TA-pihole_dns,CIM 5.x. Parses Pi-hole DNS (dnsmasq) and DHCP logs. Active
+Splunk_TA-ossec,2808,https://splunkbase.splunk.com/app/2808,Splunk Add-on for OSSEC,official,,CIM 4.x. Parses OSSEC and Wazuh syslog alerts
+TA-SentinelOne,5435,https://splunkbase.splunk.com/app/5435,Technical Add On SentinelOne App For Splunk,vendor,,CIM 5.x. Parses syslog and API data. By SentinelOne. Active
+TA-cylance,3709,https://splunkbase.splunk.com/app/3709,CylancePROTECT Add-on for Splunk Enterprise,community,,CIM 4.x. Parses Cylance syslog threat and device events
+TA-Tanium,4439,https://splunkbase.splunk.com/app/4439,TA-Tanium,vendor,,CIM 6.x. API/stream-based via Tanium Connect. By Tanium Inc. Active
+TA-QualysCloudPlatform,2964,https://splunkbase.splunk.com/app/2964,Qualys Technology Add-on (TA) for Splunk,vendor,,CIM 5.x. API-based. By Qualys Inc. Active
+TA-tenable,4060,https://splunkbase.splunk.com/app/4060,Tenable Add-On for Splunk,vendor,,CIM 6.x. API-based. By Tenable Inc. Active
+Splunk_TA_mcafee-epo-syslog,5085,https://splunkbase.splunk.com/app/5085,Splunk Add-on for McAfee ePO Syslog,official,,CIM 5.x. Parses McAfee/Trellix ePO syslog events. Archived
+Splunk_TA_sophos,1854,https://splunkbase.splunk.com/app/1854,Splunk Add-on for Sophos,official,,CIM 4.x. Parses Sophos endpoint syslog events. Archived
+Splunk_TA_microsoft-iis,3185,https://splunkbase.splunk.com/app/3185,Splunk Add-on for Microsoft IIS,official,,CIM Web model. Parses IIS W3C access logs. Richer than Splunk_TA_windows for IIS
+none,,,,na,,No specific TA required for this log source

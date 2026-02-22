@@ -12,3 +12,6 @@ export = system
 
 [savedsearches]
 export = system
+
+[views]
+export = system

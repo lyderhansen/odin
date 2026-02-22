@@ -4,6 +4,67 @@ All timestamps are ISO 8601 in CET timezone.
 
 ---
 
+## v2.2.2 — Splunkbase TA Coverage Expansion
+
+**Date:** 2026-02-22
+
+### Summary
+
+Expanded TA coverage in `odin_recommended_tas.csv` and `odin_log_sources.csv` by researching Splunkbase and GitHub for every technology in the ODIN classification lookups. Reduced `recommended_ta=none` rate from 65% to 48% (service/package rows), added 30 new TA entries, and corrected 3 phantom TA references.
+
+### Coverage metrics (before -> after)
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Distinct TAs in reference lookup | 22 | 52 |
+| Service/package rows with TA assigned | ~70 | 105 (52%) |
+| Service/package rows with `none` | ~133 (65%) | 98 (48%) |
+| Host roles with at least one TA | ~15 | 34 |
+
+### Status taxonomy expansion
+
+| Status | Count | Description |
+|--------|-------|-------------|
+| `official` | 23 | Built by Splunk, on Splunkbase |
+| `community` | 13 | Third-party/community, on Splunkbase |
+| `vendor` | 7 | Built by the technology vendor, on Splunkbase |
+| `not_found` | 4 | No TA found (PostgreSQL, MongoDB, Elasticsearch, Trend Micro) |
+| `deprecated` | 2 | Archived on Splunkbase (Kubernetes, Nagios) |
+| `github` | 2 | GitHub only (Prometheus modinput, Telegraf) |
+| `na` | 1 | Intentionally no TA needed |
+
+### New TA entries added
+
+| Category | TAs Added |
+|----------|-----------|
+| Security tools | TA-SentinelOne, TA-cylance, TA-Tanium, TA-QualysCloudPlatform, TA-tenable, Splunk_TA_mcafee-epo-syslog, Splunk_TA_sophos, Splunk_TA-ossec |
+| VPN/Network | TA-wireguard, Splunk_TA_squid, TA-suricata-ccx, TA-snort_alert, TA-zeek, TA-fail2ban, TA-pritunl |
+| CI/CD | splunk-app-for-jenkins, gitlab-add-on-for-splunk, jfrog-logs, splunk-kafka-connect |
+| Monitoring | Splunk_TA_nagios, Zabbix_Addon_for_Splunk, Datadog_Addon_for_Splunk, Splunk_OTEL_Collector, splunk_modinput_prometheus, TA-influxdata-telegraf |
+| App servers | Splunk_TA_tomcat, Splunk_TA_jboss |
+| DNS | TA-unbound, TA-pihole_dns |
+| Containers | TA_docker_simple |
+| Identity | hashicorp-vault-app |
+| Windows | Splunk_TA_microsoft-iis |
+
+### Corrections
+
+| Old value | New value | Reason |
+|-----------|-----------|--------|
+| `Splunk_TA_docker` | `TA_docker_simple` | Splunk_TA_docker does not exist on Splunkbase; real TA is app 4468 |
+| `Splunk_TA_snort` | `TA-snort_alert` | No official Splunk TA; community alternative app 5488 |
+| `Splunk_TA_suricata` | `TA-suricata-ccx` | No official Splunk TA; community alternative app 6994 |
+| IIS W3SVC -> `Splunk_TA_windows` | `Splunk_TA_microsoft-iis` | Dedicated IIS TA (app 3185) provides richer W3C log parsing |
+
+### Modified files
+
+| File | Changes |
+|------|---------|
+| `ODIN_app_for_splunk/lookups/odin_recommended_tas.csv` | 30 new entries, 3 corrected entries, `github_url` column added |
+| `ODIN_app_for_splunk/lookups/odin_log_sources.csv` | 30 rows updated from `none` to actual TAs, 4 corrections |
+
+---
+
 ## v2.2.1 — Synthetic Data Generator
 
 **Date:** 2026-02-22
