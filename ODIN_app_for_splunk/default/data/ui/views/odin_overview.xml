@@ -238,12 +238,16 @@
       "options": {
         "token": "hostname_filter",
         "defaultValue": "*",
-        "items": "> frame(label, value) | prepend(prependItems)"
+        "items": ">frame(label, value) | prepend(formattedStatics) | objects()"
       },
       "context": {
-        "prependItems": [
-          {"label": "All Hosts", "value": "*"}
-        ]
+        "formattedConfig": {
+          "number": {"prefix": ""}
+        },
+        "formattedStatics": ">statics | formatByType(formattedConfig)",
+        "statics": [["All Hosts"], ["*"]],
+        "label": ">primary | seriesByName(\"label\") | renameSeries(\"label\") | formatByType(formattedConfig)",
+        "value": ">primary | seriesByName(\"label\") | renameSeries(\"value\") | formatByType(formattedConfig)"
       }
     }
   },
