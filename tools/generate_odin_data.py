@@ -8,6 +8,9 @@ Usage:
     python3 tools/generate_odin_data.py [--output FILE] [--hosts HOST,...] [--date YYYY-MM-DD]
 """
 
+import random
+from datetime import datetime
+
 ODIN_VERSION = "2.2.0"
 
 
@@ -672,3 +675,63 @@ def generate_scan(
     ))
 
     return events
+
+
+def generate_all(
+    scan_date: str = None,
+    output_file: str = None,
+    hosts: list = None,
+) -> list:
+    """Generate ODIN scans for all (or specified) host profiles."""
+    if scan_date is None:
+        scan_date = datetime.utcnow().strftime("%Y-%m-%d")
+
+    profiles = HOST_PROFILES
+    if hosts:
+        profiles = {h: p for h, p in HOST_PROFILES.items() if h in hosts}
+
+    all_events = []
+    for hostname, profile in profiles.items():
+        hour = random.randint(1, 5)
+        minute = random.randint(0, 59)
+        scan_timestamp = f"{scan_date}T{hour:02d}:{minute:02d}:00Z"
+        run_id = f"{int(datetime.fromisoformat(scan_timestamp.replace('Z', '+00:00')).timestamp())}-{random.randint(1000, 9999)}"
+
+        events = generate_scan(hostname, profile, scan_timestamp, run_id)
+        all_events.extend(events)
+
+    all_events.sort(key=lambda e: e.split()[0])
+
+    if output_file:
+        from pathlib import Path
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+        with open(output_file, "w") as f:
+            for event in all_events:
+                f.write(event + "\n")
+
+    return all_events
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate synthetic ODIN enumeration data")
+    parser.add_argument("--output", "-o", default="tools/output/odin_enumeration.log",
+                        help="Output file path (default: tools/output/odin_enumeration.log)")
+    parser.add_argument("--date", "-d", default=None,
+                        help="Scan date in YYYY-MM-DD format (default: today)")
+    parser.add_argument("--hosts", nargs="*", default=None,
+                        help="Specific hostnames to generate (default: all)")
+    parser.add_argument("--list-hosts", action="store_true",
+                        help="List available host profiles and exit")
+    args = parser.parse_args()
+
+    if args.list_hosts:
+        for h in sorted(HOST_PROFILES.keys()):
+            print(h)
+        raise SystemExit(0)
+
+    events = generate_all(scan_date=args.date, output_file=args.output, hosts=args.hosts)
+    print(f"Generated {len(events)} events for {len(set(e.split()[1].split('=')[1] for e in events))} hosts")
+    if args.output:
+        print(f"Written to: {args.output}")

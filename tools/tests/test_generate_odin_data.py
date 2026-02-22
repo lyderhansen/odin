@@ -191,3 +191,49 @@ def test_all_events_have_common_header():
         assert "os=linux" in event
         assert "run_id=1736899200-1234" in event
         assert "odin_version=2.2.0" in event
+
+
+import tempfile
+import os
+
+from generate_odin_data import generate_all
+
+
+def test_generate_all_produces_output():
+    """generate_all() returns events for all hosts."""
+    events = generate_all(scan_date="2026-01-15")
+    assert len(events) > 0
+    hostnames_in_output = set()
+    for event in events:
+        for part in event.split():
+            if part.startswith("hostname="):
+                hostnames_in_output.add(part.split("=", 1)[1])
+    assert len(hostnames_in_output) == len(HOST_PROFILES)
+
+
+def test_generate_all_writes_file():
+    """generate_all() writes events to output file."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as f:
+        tmpfile = f.name
+    try:
+        events = generate_all(scan_date="2026-01-15", output_file=tmpfile)
+        with open(tmpfile) as f:
+            lines = f.readlines()
+        assert len(lines) == len(events)
+        assert all(line.strip().startswith("timestamp=") for line in lines)
+    finally:
+        os.unlink(tmpfile)
+
+
+def test_generate_all_host_filter():
+    """generate_all() with hosts filter only generates for specified hosts."""
+    events = generate_all(
+        scan_date="2026-01-15",
+        hosts=["web-prod-01.odin.local", "db-prod-01.odin.local"],
+    )
+    hostnames_in_output = set()
+    for event in events:
+        for part in event.split():
+            if part.startswith("hostname="):
+                hostnames_in_output.add(part.split("=", 1)[1])
+    assert hostnames_in_output == {"web-prod-01.odin.local", "db-prod-01.odin.local"}
