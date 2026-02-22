@@ -4,6 +4,54 @@ All timestamps are ISO 8601 in CET timezone.
 
 ---
 
+## v2.2.1 — Synthetic Data Generator
+
+**Date:** 2026-02-22
+
+### New files
+
+| File | Description |
+|------|-------------|
+| `tools/generate_odin_data.py` | Synthetic ODIN data generator (15 host profiles, 700 events) |
+| `tools/tests/test_generate_odin_data.py` | Unit tests for event format, profiles, scan generation (17 tests) |
+| `tools/tests/test_classification_coverage.py` | Validation tests against classification lookups (5 tests) |
+| `tools/output/odin_enumeration.log` | Sample generated data |
+| `DOCS/plans/2026-02-22-odin-synthetic-data.md` | Implementation plan |
+
+### Host profiles
+
+15 Linux hosts covering 20 distinct host roles:
+
+| Host | Primary Role | Key Signals |
+|------|-------------|-------------|
+| `web-prod-01` | web_server | nginx, 80/tcp, 443/tcp |
+| `web-prod-02` | web_server | httpd, php-fpm, 80/tcp, 443/tcp |
+| `db-prod-01` | database_server | postgresql, 5432/tcp |
+| `db-prod-02` | database_server | mysqld, 3306/tcp |
+| `app-prod-01` | container_host | docker, containerd, 8080/tcp |
+| `cache-prod-01` | cache_server | redis, memcached, 6379/tcp, 11211/tcp |
+| `log-prod-01` | splunk_server + syslog_receiver | splunkd, rsyslog, 514/tcp, 9997/tcp |
+| `mon-prod-01` | monitoring_server | prometheus, grafana-server, 9090/tcp, 3000/tcp |
+| `k8s-master-01` | kubernetes_master | kube-apiserver, etcd, 6443/tcp |
+| `k8s-worker-01` | kubernetes_node | kubelet, containerd, 10250/tcp |
+| `mail-prod-01` | mail_server | postfix, dovecot, 25/tcp, 993/tcp |
+| `vpn-prod-01` | vpn_server | openvpn, 1194/udp |
+| `ci-prod-01` | cicd_server | jenkins, docker, 8080/tcp, 50000/tcp |
+| `dns-prod-01` | dns_server | named, 53/tcp, 53/udp |
+| `mq-prod-01` | message_broker | rabbitmq-server, 5672/tcp, 15672/tcp |
+
+### Classification coverage
+
+| Metric | Count |
+|--------|-------|
+| Service signal matches | 32 |
+| Port signal matches | 31 |
+| Package signal matches | 23 |
+| Log source signal matches | 55 |
+| Distinct host roles covered | 20 |
+
+---
+
 ## v2.2.0 — Phase 2: Host Role Classification & Log Source Identification
 
 **Date:** 2026-02-21
