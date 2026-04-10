@@ -93,8 +93,33 @@ Reproducible build script producing `TA-ODIN-<version>.tar.gz` and `ODIN_app_for
 
 ## Traceability
 
-_Populated by `gsd-roadmapper` when the roadmap is created. Each REQ-ID will be mapped to exactly one phase._
+_Populated by `gsd-roadmapper` on 2026-04-10. Each REQ-ID maps to exactly one phase._
 
 | REQ-ID | Phase | Notes |
 |--------|-------|-------|
-| _pending roadmap_ | | |
+| WIN-01 | Phase 1 | Windows orchestrator auto-discovery + markers |
+| WIN-02 | Phase 1 | services.ps1 module |
+| WIN-03 | Phase 1 | ports.ps1 module |
+| WIN-04 | Phase 1 | packages.ps1 via registry (NOT Win32_Product) |
+| WIN-05 | Phase 1 | scheduled_tasks.ps1 module |
+| WIN-06 | Phase 1 | processes.ps1 module |
+| WIN-07 | Phase 1 | mounts.ps1 module |
+| WIN-08 | Phase 1 | Identical key=value format parity with Linux |
+| WIN-09 | Phase 1 | Built-in cmdlets only; no PS Gallery / Add-Type / IEX |
+| WIN-10 | Phase 1 | Safe invocation under AppLocker/WDAC/CLM |
+| WIN-11 | Phase 1 | LocalSystem on Server 2019/2022 + Win 10/11 |
+| WIN-12 | Phase 1 | Fail-soft orchestration parity with Linux |
+| HARD-01 | Phase 2 | Single source of truth for ODIN_VERSION → 1.0.0 |
+| HARD-02 | Phase 2 | Tunable MAX_EVENTS + MODULE_TIMEOUT both orchestrators |
+| HARD-03 | Phase 2 | Alerting saved search for type=truncated |
+| HARD-04 | Phase 2 | Alerting saved search for odin_error exit_code=124 |
+| HARD-05 | Phase 2 | shellcheck CI gate |
+| HARD-06 | Phase 2 | PSScriptAnalyzer CI gate |
+| HARD-07 | Phase 2 | Two-app-split CI guard |
+| HARD-08 | Phase 2 | safe_val / emit shell-injection audit + regression fixture |
+| APPI-01 | Phase 3 | TA-ODIN passes splunk-appinspect |
+| APPI-02 | Phase 3 | ODIN_app_for_splunk passes splunk-appinspect |
+| APPI-03 | Phase 3 | AppInspect wired into release build as hard gate |
+| APPI-04 | Phase 3 | Splunkbase-ready app.conf metadata both apps |
+| APPI-05 | Phase 3 | default.meta least-privilege review |
+| APPI-06 | Phase 3 | No AppInspect red flags (paths, network, binaries) |

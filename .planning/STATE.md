@@ -3,18 +3,27 @@
 ## Current Position
 
 - **Milestone:** v1.0.0 — First Production Delivery (scope A–C)
-- **Phase:** Not started (defining requirements → roadmap)
+- **Phase:** Phase 1 — Windows Parity (not started)
 - **Plan:** —
-- **Status:** Defining requirements
-- **Last activity:** 2026-04-10 — Milestone v1.0.0 started via `/gsd-new-milestone`
+- **Status:** Roadmap complete; ready for `/gsd-plan-phase 1`
+- **Progress:** [░░░░░░░░░░] 0/3 phases complete
+- **Last activity:** 2026-04-10 — ROADMAP.md created via `gsd-roadmapper` (3 phases, 26 REQ-IDs mapped)
 
 ## Milestone Scope (v1.0.0)
 
-- **A.** Windows parity — `odin.ps1` orchestrator + six Windows modules matching Linux event format
-- **B.** Production hardening — version drift fix, tunable guardrails, alerting, lint gates, two-app-split CI enforcement, shell-injection audit
-- **C.** AppInspect compliance — both apps pass cloud vetting as a release gate
+- **A.** Windows parity — `odin.ps1` orchestrator + six Windows modules matching Linux event format → **Phase 1**
+- **B.** Production hardening — version drift fix, tunable guardrails, alerting, lint gates, two-app-split CI enforcement, shell-injection audit → **Phase 2**
+- **C.** AppInspect compliance — both apps pass cloud vetting as a release gate → **Phase 3**
 
 **Deferred to v1.1+:** D (testing harness), E (docs), F (Windows classification CSV content), G (packaging).
+
+## Phase Map
+
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 1 | Windows Parity | WIN-01..WIN-12 | Not started |
+| 2 | Production Hardening | HARD-01..HARD-08 | Not started |
+| 3 | AppInspect Compliance & Release Gate | APPI-01..APPI-06 | Not started |
 
 ## Accumulated Context
 
@@ -45,10 +54,15 @@
 - AppInspect is a hard gate, not optional.
 - Packaging as `.tar.gz`, not `.spl`.
 
+### Roadmap decisions (2026-04-10)
+- 3 phases (coarse granularity per config.json).
+- Strict build order: Windows Parity → Hardening → AppInspect. Rationale: CI lint gates and the two-app-split guard need real Windows code to inspect; AppInspect must run after all code it vets is frozen, otherwise the vet cycle repeats.
+- Each phase is a "bucket of work" with 2–3 plans expected downstream.
+
 ## Todos
 
 _None. Use `/gsd-add-todo` to capture ideas as they come up._
 
 ## Session Continuity
 
-_No pending handoff._
+_No pending handoff. Next command: `/gsd-plan-phase 1`_
