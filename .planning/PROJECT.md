@@ -8,6 +8,17 @@ TA-ODIN is a Splunk Technology Add-on that performs full metadata-only enumerati
 
 **Safe, dependency-free, cross-platform endpoint enumeration that ships to 10k+ hosts without breaking any of them** — if the agent ever breaks a production host or floods Splunk, the whole project is worthless.
 
+## Current Milestone: v1.0.0 — First Production Delivery
+
+**Goal:** Ship a cross-platform (Linux + Windows) TA-ODIN that is AppInspect-clean, production-hardened, and safe to pilot on a Deployment Server fleet.
+
+**Target feature groups (this milestone):**
+- **A.** Windows parity — `odin.ps1` orchestrator + six Windows modules matching the Linux event format, using only built-in PowerShell 5.1+
+- **B.** Production hardening — version drift fix, tunable guardrails, alerting saved searches, lint gates, two-app-split CI enforcement, shell-injection audit
+- **C.** AppInspect compliance — both apps pass `splunk-appinspect` cloud vetting as a release gate, with clean app.conf/default.meta metadata
+
+**Explicitly deferred to v1.1+:** Cross-platform testing harness (D), end-user documentation (E), Windows classification CSV content (F), reproducible packaging (G). These remain tracked below under *Deferred to v1.1+* so they are not forgotten.
+
 ## Requirements
 
 ### Validated
@@ -59,6 +70,10 @@ TA-ODIN is a Splunk Technology Add-on that performs full metadata-only enumerati
 - [ ] `app.conf` metadata complete for Splunkbase submission (author, description, license, version, build, id)
 - [ ] `default.meta` permissions reviewed — least-privilege, not blanket exports if tighter scoping is viable
 - [ ] No hardcoded paths, no network calls from scripts, no binary execution, no suspicious patterns that trip cloud vetting
+
+### Deferred to v1.1+
+
+<!-- Scoped out of v1.0.0 but still in the project's trajectory. These move back into Active at the start of v1.1. -->
 
 **D. Cross-platform testing strategy (no Windows hosts available)**
 - [ ] PowerShell syntax parse gate via `pwsh` on CI (runs on Linux/macOS — validates all `.ps1` files without executing them)
@@ -164,4 +179,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after initialization*
+*Last updated: 2026-04-10 — milestone v1.0.0 kickoff (scope A–C)*
