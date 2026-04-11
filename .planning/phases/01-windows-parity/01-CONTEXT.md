@@ -131,26 +131,40 @@ type=odin_error module=<name> exit_code=124 message="module exceeded ODIN_MODULE
 
 Also document in `DOCS/DATA-DICTIONARY.md` when v1.1 group E lands.
 
-### D5. Output encoding and line endings — UTF-8 no BOM, explicit LF
+### D5. Output encoding — CHARSET at parse time, not `[Console]` at runtime
 
-**Locked.** The Windows orchestrator sets the console output encoding explicitly at startup:
+**Locked (revised 2026-04-11 after research surfaced CLM blocker).**
 
-```powershell
-[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)  # $false = no BOM
-[Console]::InputEncoding  = New-Object System.Text.UTF8Encoding($false)
-```
+**Original plan (abandoned):** force UTF-8 at the PowerShell console via `[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)` and emit with `[Console]::Out.Write("$line`n")` for literal-LF discipline.
 
-And every event-emitting path uses `[Console]::Out.Write("$line`n")` with a **literal LF**, not `Write-Output` (which adds CRLF on Windows). `Invoke-OdinEmit` in `_common.ps1` is the only place that writes events, so the LF discipline lives in exactly one function.
+**Why abandoned:** `[System.Console]` and `[System.Text.UTF8Encoding]` are **not** on the Constrained Language Mode allowed-types list (Microsoft Learn, `about_Language_Modes` for PS 5.1). Both lines throw `Cannot invoke method. Method invocation is supported only on core types in this language mode.` on any host enforcing system-wide WDAC/UMCI or AppLocker CLM. TA-ODIN must run on such hosts (WIN-10), so this is a hard blocker. See `01-RESEARCH.md` §7 and §13 R2.
 
-**Rationale:** The only way to produce bytes indistinguishable from Linux output. Silent field-extraction failures from a CRLF buried mid-event or a CP1252 byte in a non-English service display name are high-cost, low-visibility bugs at 10k-host scale.
+**Revised approach:**
 
-**Splunk side (props.conf) verification:** `TA-ODIN/default/props.conf` currently uses `LINE_BREAKER = ([\r\n]+)` which already tolerates both CRLF and LF, so this is a belt-and-braces choice — producer and parser both agree on LF.
+1. **Emit via `Write-Output`** — goes through the PS success stream, CLM-safe. In `_common.ps1`:
+   ```powershell
+   function Invoke-OdinEmit {
+       param([string]$Line)
+       $script:ODIN_EVENT_COUNT++
+       if ($script:ODIN_EVENT_COUNT -gt $script:ODIN_MAX_EVENTS) { return }
+       Write-Output $Line
+   }
+   ```
+   No `[Console]` access. No `Add-Type`. No `New-Object` on non-allowlisted types.
 
-**Non-ASCII characters in service/package/mount names are preserved.** Non-English Windows Server hosts (German, Japanese, Chinese) emit their native-language Unicode values unchanged. This works because:
-1. We force UTF-8 at the console boundary — no CP1252 transliteration
-2. The `safe_val` helper quotes and escapes but never re-encodes
-3. Splunk `KV_MODE = auto` is Unicode-safe
-4. Classification lookups match on English-normalized fields (service executable names, port numbers, package GUIDs), not display names
+2. **Normalize encoding at Splunk parse time** — add `CHARSET = UTF-8` to the `[odin:enumeration]` stanza in `TA-ODIN/default/props.conf`. Splunk decodes the forwarder's byte stream as UTF-8 at ingestion regardless of what the UF sent. This is the idiomatic Splunk pattern for encoding control and is itself AppInspect-safe.
+
+3. **Accept CRLF line endings on Windows.** `Write-Output` on Windows emits CRLF; Linux-side `printf` + `echo` emit LF. The bytes inside the `key=value` payload are identical — only the line terminator differs. `TA-ODIN/default/props.conf` already uses `LINE_BREAKER = ([\r\n]+)` which handles both transparently, and ROADMAP Phase 1 success criterion #2 explicitly scopes the parity check to "the identical set of field names," not line terminators.
+
+**Non-ASCII characters in service/package/mount names are preserved.** Non-English Windows hosts (German/Japanese/Chinese) emit their native Unicode values unchanged because:
+1. PowerShell 5.1's default pipeline encoding on Windows is UTF-16 internally; the UF's stdout capture on modern Windows (Server 2019+, Win 10 1903+) decodes to UTF-8 when the system locale supports it
+2. `CHARSET = UTF-8` in props.conf forces Splunk to treat the ingested bytes as UTF-8 — if the forwarder sent something else (e.g. CP1252 on an ancient locale), Splunk raises a parse warning we can alert on in Phase 2
+3. The `Format-OdinValue` helper quotes and escapes but never re-encodes
+4. Classification lookups match on ASCII-normalized fields (service executable names, port numbers, package GUIDs), not display names
+
+**CLM compatibility check:** every construct used in the revised D5 (`Write-Output`, `$script:` variables, plain string interpolation) is CLM-legal per Microsoft's allowed surface. Verified against the allow-list in `about_Language_Modes` for PS 5.1.
+
+**Related risk (documented, accepted):** D1's `Start-Job` has a parallel CLM edge case — it fails under system-wide WDAC if TA-ODIN is not path-allowlisted. Unlike D5, there is no in-process fallback (Runspace APIs are also CLM-blocked), so we document WDAC allowlisting as an operational prerequisite for enterprise-lockdown customers. See `01-RESEARCH.md` §2 and §13 R1.
 
 ### D6. Standalone-mode parity for modules — full parity
 
@@ -300,7 +314,7 @@ ODIN_TEST_FIXTURE=1 pwsh TA-ODIN/bin/modules/services.ps1
 
 ### To v1.1+ (milestones after v1.0.0)
 - **Full cross-platform testing harness (group D):** Pester migration for Windows tests, `pwsh`-based parse gate on CI, containerized Linux integration per distro family, `type=odin_complete modules_failed=0` as automated release signal. Phase 1's cmdlet-shadow stubs are the *minimum viable* test bed; v1.1 replaces it with something more maintainable.
-- **Documentation (group E):** `DOCS/INSTALL.md`, `DOCS/DATA-DICTIONARY.md` (including the `exit_code=124` convention from D4, the `timeout_reason` field, the UTF-8 no-BOM discipline from D5), `DOCS/SAFETY.md`, `DOCS/TROUBLESHOOTING.md`, `DOCS/RELEASE.md`, README updates.
+- **Documentation (group E):** `DOCS/INSTALL.md`, `DOCS/DATA-DICTIONARY.md` (including the `exit_code=124` convention from D4, the `timeout_reason` field, the `CHARSET = UTF-8` props.conf discipline from D5-revised, WDAC-allowlisting prerequisite from D1 mitigation), `DOCS/SAFETY.md`, `DOCS/TROUBLESHOOTING.md`, `DOCS/RELEASE.md`, README updates.
 - **Windows classification coverage (group F):** rows in `odin_classify_services.csv`, `odin_classify_ports.csv`, `odin_classify_packages.csv`, `odin_log_sources.csv` for IIS, MSSQL, AD DS, DNS, DHCP, Exchange, WinRM, etc. None of this lives in Phase 1 — the collection layer ships first, the classification rows ship in v1.1.
 - **Reproducible packaging (group G):** Single-source version stamping build script.
 - **Windows live-host pilot validation:** User has no Windows hosts during development. Live pilot happens post-release.
