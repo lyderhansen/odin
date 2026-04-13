@@ -1,0 +1,1 @@
+type=process process_pid=1 process_ppid=0 process_user=root process_state=running process_cpu=0.10 process_mem=2048 process_elapsed=3600 process_name=systemd process_command=/sbin/init

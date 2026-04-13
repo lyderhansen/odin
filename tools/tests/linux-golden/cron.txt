@@ -1,0 +1,1 @@
+type=cron cron_source=crontab cron_user=root cron_schedule=@daily cron_command=/usr/local/bin/example cron_file=/etc/cron.d/example

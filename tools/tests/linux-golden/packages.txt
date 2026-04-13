@@ -1,0 +1,1 @@
+type=package package_name=example package_version=1.0 package_arch=amd64 package_manager=dpkg

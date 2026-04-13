@@ -1,0 +1,1 @@
+type=port transport=tcp listen_address=0.0.0.0 listen_port=22 process_name=sshd process_pid=1234

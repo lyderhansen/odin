@@ -1,0 +1,1 @@
+type=mount mount_device=/dev/sda1 mount_point=/ mount_type=ext4 mount_size_kb=10240000 mount_used_kb=5120000 mount_avail_kb=5120000 mount_use_pct=50
