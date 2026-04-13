@@ -1,13 +1,28 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0.0
+milestone_name: milestone
+status: completed
+last_updated: "2026-04-13T14:58:00.000Z"
+last_activity: 2026-04-13 — Plan 01-01 executed (Wave 0 test harness complete: stubs.ps1, hostA/hostA-broken fixtures, windows-parity-harness.sh)
+progress:
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
+---
+
 # Project State — TA-ODIN
 
 ## Current Position
 
 - **Milestone:** v1.0.0 — First Production Delivery (scope A–C)
-- **Phase:** Phase 1 — Windows Parity (not started)
-- **Plan:** —
-- **Status:** Roadmap complete; ready for `/gsd-plan-phase 1`
-- **Progress:** [░░░░░░░░░░] 0/3 phases complete
-- **Last activity:** 2026-04-10 — ROADMAP.md created via `gsd-roadmapper` (3 phases, 26 REQ-IDs mapped)
+- **Phase:** Phase 1 — Windows Parity (Wave 0 complete, Wave 1 next)
+- **Plan:** 01-01 complete (test harness); 01-02 next (orchestrator + _common.ps1)
+- **Status:** Plan 01-01 executed; harness green on Dim 1-3, red on Dim 4-6 as expected pre-Wave-1
+- **Progress:** [███░░░░░░░] 33%
+- **Last activity:** 2026-04-13 — Plan 01-01 (Wave 0 test harness) executed: 3 tasks, 15 files, 3 commits (72956f0, 4e564c9, 406658b)
 
 ## Milestone Scope (v1.0.0)
 
@@ -28,6 +43,7 @@
 ## Accumulated Context
 
 ### Codebase facts (as of 2026-04-10)
+
 - Linux side complete: 6 modules (services, ports, packages, cron, processes, mounts), bash orchestrator with 90s/module timeout and MAX_EVENTS=50000 guardrails, space-separated `key=value` output.
 - Two-app split in place: `TA-ODIN/` (forwarders) and `ODIN_app_for_splunk/` (indexers/SH). Currently enforced only by human discipline — no mechanical guard.
 - Windows orchestrator `odin.ps1` is a stub that emits one "not yet implemented" event.
@@ -39,6 +55,7 @@
 - Dev tooling tests (`tools/tests/test_classification_coverage.py`, `test_generate_odin_data.py`) exist but cover synthetic data generation, not the modules themselves.
 
 ### Hard constraints
+
 - Linux tech stack: Bash 4+ only. No Python, Perl, or compiled binaries on endpoints.
 - Windows tech stack: PowerShell 5.1+ built-in cmdlets only. No PS Gallery, no `Add-Type`, no `Invoke-Expression`, no base64.
 - Read-only on the host: no writes outside Splunk var, no network, no process kills, no config changes.
@@ -48,6 +65,7 @@
 - Both apps must pass `splunk-appinspect` cloud vetting.
 
 ### Key decisions (from PROJECT.md)
+
 - Full Windows parity (all 6 modules), not a subset.
 - Registry-based Windows package enumeration, **not** `Win32_Product` (MSI self-repair side effect).
 - Linux modules frozen unless audit finds a concrete defect.
@@ -55,6 +73,7 @@
 - Packaging as `.tar.gz`, not `.spl`.
 
 ### Roadmap decisions (2026-04-10)
+
 - 3 phases (coarse granularity per config.json).
 - Strict build order: Windows Parity → Hardening → AppInspect. Rationale: CI lint gates and the two-app-split guard need real Windows code to inspect; AppInspect must run after all code it vets is frozen, otherwise the vet cycle repeats.
 - Each phase is a "bucket of work" with 2–3 plans expected downstream.
@@ -65,4 +84,4 @@ _None. Use `/gsd-add-todo` to capture ideas as they come up._
 
 ## Session Continuity
 
-_No pending handoff. Next command: `/gsd-plan-phase 1`_
+_Last session: 2026-04-13 — completed 01-01-PLAN.md (Wave 0 test harness). Next: `/gsd-execute-phase 1` for plan 01-02 (Wave 1 orchestrator + shared library)._
