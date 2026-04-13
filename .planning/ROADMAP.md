@@ -18,7 +18,7 @@ Three phases, executed strictly in order:
 
 ## Phases
 
-- [ ] **Phase 1: Windows Parity** — Implement the PowerShell orchestrator and six Windows modules with byte-compatible `key=value` output against the existing Linux event schema.
+- [x] **Phase 1: Windows Parity** — Implement the PowerShell orchestrator and six Windows modules with byte-compatible `key=value` output against the existing Linux event schema. (completed 2026-04-13)
 - [ ] **Phase 2: Production Hardening** — Fix version drift, expose tunables, add alerting saved searches, gate CI on linters, mechanically enforce the two-app split, and audit shell-injection risk.
 - [ ] **Phase 3: AppInspect Compliance & Release Gate** — Make both apps pass `splunk-appinspect` cleanly, complete Splunkbase-ready metadata, review least-privilege permissions, and wire AppInspect into the release build as a hard gate.
 
@@ -34,7 +34,7 @@ Three phases, executed strictly in order:
   3. `grep -RIEn 'Invoke-Expression|Add-Type|iex |FromBase64String|Net\.WebClient|DownloadString|IEX' TA-ODIN/bin/` against the Windows code returns zero matches, and `grep -RIEn '#Requires -Module|Import-Module [^M]' TA-ODIN/bin/` shows no references to non-built-in modules — proves the zero-dependency / EDR-safe constraint holds by static inspection.
   4. `TA-ODIN/bin/odin.ps1` auto-discovers every `.ps1` file in `TA-ODIN/bin/modules/`, runs each under a bounded per-module timeout (Windows equivalent of the Linux `timeout 90`), honors a pre-set `$env:ODIN_MAX_EVENTS`, and on a fixture where one module throws, emits a `type=odin_error exit_code=<n>` event and still reaches `type=odin_complete` — verifiable by inducing a failure in a stub module and asserting on the emitted lines.
   5. `TA-ODIN/bin/modules/packages.ps1` reads from `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall` and `HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall` only — confirmed by `grep -n 'Win32_Product' TA-ODIN/bin/modules/packages.ps1` returning zero matches (prevents MSI self-repair blast).
-**Plans:** TBD
+**Plans:** 3/3 plans complete
 **UI hint:** no
 
 ### Phase 2: Production Hardening
@@ -68,7 +68,7 @@ Three phases, executed strictly in order:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Windows Parity | 0/TBD | Not started | - |
+| 1. Windows Parity | 3/3 | Complete   | 2026-04-13 |
 | 2. Production Hardening | 0/TBD | Not started | - |
 | 3. AppInspect Compliance & Release Gate | 0/TBD | Not started | - |
 

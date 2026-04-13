@@ -17,16 +17,16 @@
 Full PowerShell 5.1+ implementation that mirrors the Linux orchestrator and six modules, emitting the same `key=value` event format so existing search-time lookups and saved searches keep working.
 
 - [x] **WIN-01** — `TA-ODIN/bin/odin.ps1` orchestrator auto-discovers PowerShell modules under `bin/modules/*.ps1`, runs each under a bounded per-module timeout, enforces `ODIN_MAX_EVENTS`, emits `type=odin_start` and `type=odin_complete` markers, and exports shared context via `ODIN_*` environment variables
-- [ ] **WIN-02** — Windows `services.ps1` module enumerates services using `Get-Service` plus `Get-CimInstance Win32_Service` for start mode and image path; emits one `type=service` event per service
-- [ ] **WIN-03** — Windows `ports.ps1` module enumerates listening endpoints using `Get-NetTCPConnection -State Listen` and `Get-NetUDPEndpoint`; emits one `type=port` event per listener
-- [ ] **WIN-04** — Windows `packages.ps1` module enumerates installed software by scanning `HKLM:\...\Uninstall` and `HKLM:\...\Wow6432Node\...\Uninstall` registry keys — **never** `Win32_Product` (triggers MSI self-repair); emits one `type=package` event per entry
-- [ ] **WIN-05** — Windows `scheduled_tasks.ps1` module enumerates scheduled tasks using `Get-ScheduledTask` plus `Get-ScheduledTaskInfo`; emits one `type=scheduled_task` event per task
-- [ ] **WIN-06** — Windows `processes.ps1` module enumerates running processes using `Get-Process` (plus `Get-CimInstance Win32_Process` for command line where available); emits one `type=process` event per process
-- [ ] **WIN-07** — Windows `mounts.ps1` module enumerates filesystem volumes using `Get-Volume` / `Get-PSDrive -PSProvider FileSystem`; emits one `type=mount` event per volume
+- [x] **WIN-02** — Windows `services.ps1` module enumerates services using `Get-Service` plus `Get-CimInstance Win32_Service` for start mode and image path; emits one `type=service` event per service
+- [x] **WIN-03** — Windows `ports.ps1` module enumerates listening endpoints using `Get-NetTCPConnection -State Listen` and `Get-NetUDPEndpoint`; emits one `type=port` event per listener
+- [x] **WIN-04** — Windows `packages.ps1` module enumerates installed software by scanning `HKLM:\...\Uninstall` and `HKLM:\...\Wow6432Node\...\Uninstall` registry keys — **never** `Win32_Product` (triggers MSI self-repair); emits one `type=package` event per entry
+- [x] **WIN-05** — Windows `scheduled_tasks.ps1` module enumerates scheduled tasks using `Get-ScheduledTask` plus `Get-ScheduledTaskInfo`; emits one `type=scheduled_task` event per task
+- [x] **WIN-06** — Windows `processes.ps1` module enumerates running processes using `Get-Process` (plus `Get-CimInstance Win32_Process` for command line where available); emits one `type=process` event per process
+- [x] **WIN-07** — Windows `mounts.ps1` module enumerates filesystem volumes using `Get-Volume` / `Get-PSDrive -PSProvider FileSystem`; emits one `type=mount` event per volume
 - [x] **WIN-08** — All Windows modules emit the **identical** space-separated `key=value` format used by Linux, including the same field names (`hostname`, `os`, `run_id`, `type`, etc.), so existing `odin_classify_*.csv` lookups and the three nightly saved searches work unchanged
 - [x] **WIN-09** — Windows code uses only built-in PowerShell 5.1+ cmdlets: no PS Gallery modules, no `Add-Type`, no `Invoke-Expression`, no base64-encoded commands, no compiled binaries, no network calls
 - [x] **WIN-10** — Windows orchestrator is invokable via `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File odin.ps1` and runs cleanly under AppLocker / WDAC / Constrained Language Mode
-- [ ] **WIN-11** — Windows modules run correctly under `LocalSystem` (the default Splunk UF service account) on Windows Server 2019/2022 and Windows 10/11
+- [x] **WIN-11** — Windows modules run correctly under `LocalSystem` (the default Splunk UF service account) on Windows Server 2019/2022 and Windows 10/11
 - [x] **WIN-12** — Windows orchestrator never aborts on module failure — failed modules emit a `type=odin_error` event with `exit_code` and the orchestrator continues, matching the Linux fail-soft behavior
 
 ### B. Production Hardening (HARD-*)
