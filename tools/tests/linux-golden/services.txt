@@ -1,0 +1,1 @@
+timestamp=2026-04-13T00:00:00Z hostname=linux-golden os=linux run_id=golden-001 odin_version=1.0.0 type=service service_name=example service_status=running service_enabled=enabled
