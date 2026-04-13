@@ -95,8 +95,11 @@ dimension_2_dependency() {
 # ============================================================================
 dimension_3_msi_hazard() {
     if [[ -f TA-ODIN/bin/modules/packages.ps1 ]]; then
+        # `grep -c` exits non-zero when no matches, so the `|| echo 0` in
+        # the original implementation appended a second "0" and broke the
+        # string comparison. Count explicitly via wc -l instead.
         local hits
-        hits=$(grep -c 'Win32_Product' TA-ODIN/bin/modules/packages.ps1 2>/dev/null || echo 0)
+        hits=$(grep 'Win32_Product' TA-ODIN/bin/modules/packages.ps1 2>/dev/null | wc -l | tr -d ' ')
         if [[ "$hits" == "0" ]]; then
             report 3 PASS "no Win32_Product references in packages.ps1"
         else
@@ -157,9 +160,15 @@ dimension_4_behavioral() {
 # audited by code review rather than mechanical grep.
 
 extract_field_names() {
+    # Strip double-quoted values BEFORE tokenizing, so values containing
+    # spaces (e.g. package_name="Google Chrome") don't leak their space
+    # into the field-name token stream. The remaining field=<bareword>
+    # tokens split cleanly on whitespace.
     local line="$1"
     local prelude='timestamp|hostname|os|run_id|odin_version'
-    echo "$line" \
+    local stripped
+    stripped=$(echo "$line" | sed -E 's/="[^"]*"/=/g')
+    echo "$stripped" \
         | tr ' ' '\n' \
         | awk -F= 'NF>0 {print $1}' \
         | grep -vE "^($prelude)$" \
