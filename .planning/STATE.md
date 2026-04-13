@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0.0
 milestone_name: milestone
-status: completed
-last_updated: "2026-04-13T14:58:00.000Z"
-last_activity: 2026-04-13 — Plan 01-01 executed (Wave 0 test harness complete: stubs.ps1, hostA/hostA-broken fixtures, windows-parity-harness.sh)
+status: Plan 01-02 executed; harness --quick green (Dim 1-3); Dim 4-6 awaiting plan 03 modules
+last_updated: "2026-04-13T15:12:00Z"
+last_activity: "2026-04-13 — Plan 01-02 (Wave 1 orchestrator + shared library) executed: 5 tasks, 5 files, 4 commits (3b10698, 41ccc1e, f9fb015, 8c186de)"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State — TA-ODIN
@@ -18,11 +18,11 @@ progress:
 ## Current Position
 
 - **Milestone:** v1.0.0 — First Production Delivery (scope A–C)
-- **Phase:** Phase 1 — Windows Parity (Wave 0 complete, Wave 1 next)
-- **Plan:** 01-01 complete (test harness); 01-02 next (orchestrator + _common.ps1)
-- **Status:** Plan 01-01 executed; harness green on Dim 1-3, red on Dim 4-6 as expected pre-Wave-1
-- **Progress:** [███░░░░░░░] 33%
-- **Last activity:** 2026-04-13 — Plan 01-01 (Wave 0 test harness) executed: 3 tasks, 15 files, 3 commits (72956f0, 4e564c9, 406658b)
+- **Phase:** Phase 1 — Windows Parity (Wave 0, 1 complete, Wave 2 next)
+- **Plan:** 01-02 complete (orchestrator + shared library); 01-03 next (6 Windows modules)
+- **Status:** Plan 01-02 executed; harness --quick PASS (Dim 1-3); Dim 4-6 awaiting plan 03 modules
+- **Progress:** [███████░░░] 67%
+- **Last activity:** 2026-04-13 — Plan 01-02 (Wave 1 orchestrator + shared library) executed: 5 tasks, 5 files, 4 commits (3b10698, 41ccc1e, f9fb015, 8c186de)
 
 ## Milestone Scope (v1.0.0)
 
@@ -46,7 +46,7 @@ progress:
 
 - Linux side complete: 6 modules (services, ports, packages, cron, processes, mounts), bash orchestrator with 90s/module timeout and MAX_EVENTS=50000 guardrails, space-separated `key=value` output.
 - Two-app split in place: `TA-ODIN/` (forwarders) and `ODIN_app_for_splunk/` (indexers/SH). Currently enforced only by human discipline — no mechanical guard.
-- Windows orchestrator `odin.ps1` is a stub that emits one "not yet implemented" event.
+- Windows orchestrator `odin.ps1` (v1.0.0) now ships the Wave 1 implementation: autodiscovers modules, Start-Job + Wait-Job -Timeout canonical pattern, fail-soft try/catch, D4 `exit_code=124` synthesis on Wait-Job timeout, canonical Linux-parity markers via dot-sourced `_common.ps1`. Splunk UF integration via `odin.path` wrapper + inputs.conf stanza pointing at `odin.path`. `props.conf` has `CHARSET = UTF-8` for CRLF normalization.
 - Bash modules have **0% automated test coverage**. All verification is manual.
 - Version drift: `TA-ODIN/bin/odin.sh` says `2.1.0`; both `app.conf` files say `2.2.0`. Will be reset to `1.0.0` at v1.0.0 release.
 - Search-time classification lookups exist for Linux (services: 332 rows, ports: 206 rows, packages: 274 rows, log sources: 274 rows). Windows rows are deferred to v1.1 (group F).
@@ -84,4 +84,4 @@ _None. Use `/gsd-add-todo` to capture ideas as they come up._
 
 ## Session Continuity
 
-_Last session: 2026-04-13 — completed 01-01-PLAN.md (Wave 0 test harness). Next: `/gsd-execute-phase 1` for plan 01-02 (Wave 1 orchestrator + shared library)._
+_Last session: 2026-04-13 — completed 01-02-PLAN.md (Wave 1 orchestrator + shared library). Next: `/gsd-execute-phase 1` for plan 01-03 (Wave 2 — 6 Windows modules: services, ports, packages, scheduled_tasks, processes, mounts)._
