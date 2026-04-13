@@ -1,0 +1,23 @@
+[
+  {
+    "DriveLetter": "C",
+    "FileSystemLabel": "System",
+    "FileSystem": "NTFS",
+    "Size": 137438953472,
+    "SizeRemaining": 54975581388
+  },
+  {
+    "DriveLetter": "D",
+    "FileSystemLabel": "Data",
+    "FileSystem": "ReFS",
+    "Size": 549755813888,
+    "SizeRemaining": 274877906944
+  },
+  {
+    "DriveLetter": "Z",
+    "FileSystemLabel": "SharedDocs",
+    "FileSystem": "NTFS",
+    "Size": 1099511627776,
+    "SizeRemaining": 824633720832
+  }
+]

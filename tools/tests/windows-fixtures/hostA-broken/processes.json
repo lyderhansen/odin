@@ -1,0 +1,44 @@
+[
+  {
+    "Id": 4,
+    "Name": "System",
+    "Path": "",
+    "CommandLine": "",
+    "UserName": "NT AUTHORITY\\SYSTEM"
+  },
+  {
+    "Id": 612,
+    "Name": "services.exe",
+    "Path": "C:\\Windows\\System32\\services.exe",
+    "CommandLine": "C:\\Windows\\system32\\services.exe",
+    "UserName": "NT AUTHORITY\\SYSTEM"
+  },
+  {
+    "Id": 628,
+    "Name": "lsass.exe",
+    "Path": "C:\\Windows\\System32\\lsass.exe",
+    "CommandLine": "C:\\Windows\\system32\\lsass.exe",
+    "UserName": "NT AUTHORITY\\SYSTEM"
+  },
+  {
+    "Id": 892,
+    "Name": "svchost.exe",
+    "Path": "C:\\Windows\\System32\\svchost.exe",
+    "CommandLine": "C:\\Windows\\system32\\svchost.exe -k RPCSS -p",
+    "UserName": "NT AUTHORITY\\NetworkService"
+  },
+  {
+    "Id": 1842,
+    "Name": "explorer.exe",
+    "Path": "C:\\Windows\\explorer.exe",
+    "CommandLine": "C:\\Windows\\Explorer.EXE",
+    "UserName": "WIN-HOSTA\\Administrator"
+  },
+  {
+    "Id": 2411,
+    "Name": "powershell.exe",
+    "Path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -NoProfile -File C:\\Scripts\\collect data.ps1 -Arg1 value with spaces",
+    "UserName": "NT AUTHORITY\\SYSTEM"
+  }
+]

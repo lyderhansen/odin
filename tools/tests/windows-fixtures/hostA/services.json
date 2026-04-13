@@ -1,0 +1,42 @@
+[
+  {
+    "Name": "W3SVC",
+    "DisplayName": "World Wide Web Publishing Service",
+    "Status": "Running",
+    "StartMode": "Auto",
+    "PathName": "C:\\Windows\\System32\\svchost.exe -k iissvcs",
+    "StartName": "LocalSystem"
+  },
+  {
+    "Name": "WAS",
+    "DisplayName": "Windows Process Activation Service",
+    "Status": "Running",
+    "StartMode": "Auto",
+    "PathName": "C:\\Windows\\System32\\svchost.exe -k iissvcs",
+    "StartName": "LocalSystem"
+  },
+  {
+    "Name": "Spooler",
+    "DisplayName": "Print Spooler",
+    "Status": "Stopped",
+    "StartMode": "Disabled",
+    "PathName": "C:\\Windows\\System32\\spoolsv.exe",
+    "StartName": "LocalSystem"
+  },
+  {
+    "Name": "SplunkForwarder",
+    "DisplayName": "SplunkForwarder",
+    "Status": "Running",
+    "StartMode": "Auto",
+    "PathName": "C:\\Program Files\\SplunkUniversalForwarder\\bin\\splunkd.exe service",
+    "StartName": "LocalSystem"
+  },
+  {
+    "Name": "WinRM",
+    "DisplayName": "Windows Remote Management (WS-Management)",
+    "Status": "Running",
+    "StartMode": "Auto",
+    "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkService",
+    "StartName": "NT AUTHORITY\\NetworkService"
+  }
+]

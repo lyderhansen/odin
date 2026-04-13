@@ -1,0 +1,38 @@
+[
+  {
+    "LocalAddress": "0.0.0.0",
+    "LocalPort": 80,
+    "transport": "tcp",
+    "OwningProcess": 4
+  },
+  {
+    "LocalAddress": "0.0.0.0",
+    "LocalPort": 443,
+    "transport": "tcp",
+    "OwningProcess": 4
+  },
+  {
+    "LocalAddress": "0.0.0.0",
+    "LocalPort": 3389,
+    "transport": "tcp",
+    "OwningProcess": 1124
+  },
+  {
+    "LocalAddress": "::",
+    "LocalPort": 5985,
+    "transport": "tcp",
+    "OwningProcess": 4
+  },
+  {
+    "LocalAddress": "0.0.0.0",
+    "LocalPort": 135,
+    "transport": "udp",
+    "OwningProcess": 892
+  },
+  {
+    "LocalAddress": "0.0.0.0",
+    "LocalPort": 53,
+    "transport": "udp",
+    "OwningProcess": 1512
+  }
+]

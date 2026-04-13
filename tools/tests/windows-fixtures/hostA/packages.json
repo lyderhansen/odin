@@ -1,0 +1,42 @@
+[
+  {
+    "DisplayName": "Google Chrome",
+    "DisplayVersion": "118.0.5993.89",
+    "Publisher": "Google LLC",
+    "SystemComponent": 0,
+    "ParentKeyName": null,
+    "UninstallString": "MsiExec.exe /X{4EA16AC7-FD5A-47C3-875B-1BA1634A3C1F}"
+  },
+  {
+    "DisplayName": "Microsoft Visual C++ 2019 Redistributable (x64)",
+    "DisplayVersion": "14.28.29334",
+    "Publisher": "Microsoft Corporation",
+    "SystemComponent": 0,
+    "ParentKeyName": null,
+    "UninstallString": "C:\\ProgramData\\Package Cache\\{VC++}\\VC_redist.x64.exe /uninstall"
+  },
+  {
+    "DisplayName": "Some \"Quoted\" Tool",
+    "DisplayVersion": "1.2.3",
+    "Publisher": "Contoso",
+    "SystemComponent": 0,
+    "ParentKeyName": null,
+    "UninstallString": "C:\\Program Files\\QuotedTool\\uninstall.exe"
+  },
+  {
+    "DisplayName": "Windows SDK AddOn",
+    "DisplayVersion": "10.0.19041",
+    "Publisher": "Microsoft Corporation",
+    "SystemComponent": 1,
+    "ParentKeyName": null,
+    "UninstallString": ""
+  },
+  {
+    "DisplayName": "Security Update for Windows (KB5031356)",
+    "DisplayVersion": "1",
+    "Publisher": "Microsoft Corporation",
+    "SystemComponent": 0,
+    "ParentKeyName": "KB5031356",
+    "UninstallString": "wusa.exe /uninstall /kb:5031356"
+  }
+]
