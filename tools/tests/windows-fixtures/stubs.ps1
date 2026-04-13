@@ -230,10 +230,25 @@ function Get-PSDrive {
 
 function Get-ChildItem {
     [CmdletBinding()]
-    param([Parameter(ValueFromRemainingArguments = $true)]$Args)
-    $path = $null
-    if ($Args -and $Args.Count -gt 0) { $path = $Args[0] }
-    if ($path -is [string] -and $path -like 'HKLM:\SOFTWARE*Uninstall*') {
+    param(
+        [Parameter(Position = 0)][string]$Path,
+        [string]$LiteralPath,
+        [string]$Filter,
+        [switch]$Recurse,
+        [switch]$File,
+        [switch]$Directory,
+        [Parameter(ValueFromRemainingArguments = $true)]$Args
+    )
+    # Resolve an effective path from -Path, -LiteralPath, or the first
+    # positional arg forwarded into $Args. This keeps both forms working:
+    #   Get-ChildItem -Path 'HKLM:\...'
+    #   Get-ChildItem 'HKLM:\...'
+    $effectivePath = $null
+    if ($Path) { $effectivePath = $Path }
+    elseif ($LiteralPath) { $effectivePath = $LiteralPath }
+    elseif ($Args -and $Args.Count -gt 0 -and $Args[0] -is [string]) { $effectivePath = $Args[0] }
+
+    if ($effectivePath -is [string] -and $effectivePath -like 'HKLM:\SOFTWARE*Uninstall*') {
         $packages = Read-OdinFixture -Module 'packages'
         return $packages | ForEach-Object {
             [PSCustomObject]@{
@@ -242,7 +257,19 @@ function Get-ChildItem {
             }
         }
     }
-    return Microsoft.PowerShell.Management\Get-ChildItem @Args
+    # Forward to the real cmdlet. Reconstruct named parameters the caller
+    # supplied so they reach the underlying provider.
+    $forwarded = @{}
+    if ($Path)        { $forwarded['Path']        = $Path }
+    if ($LiteralPath) { $forwarded['LiteralPath'] = $LiteralPath }
+    if ($Filter)      { $forwarded['Filter']      = $Filter }
+    if ($Recurse)     { $forwarded['Recurse']     = $true }
+    if ($File)        { $forwarded['File']        = $true }
+    if ($Directory)   { $forwarded['Directory']   = $true }
+    if ($Args -and $Args.Count -gt 0) {
+        return Microsoft.PowerShell.Management\Get-ChildItem @forwarded @Args
+    }
+    return Microsoft.PowerShell.Management\Get-ChildItem @forwarded
 }
 
 function Get-ItemProperty {
@@ -264,11 +291,24 @@ function Get-ItemProperty {
 
 function Test-Path {
     [CmdletBinding()]
-    param([Parameter(ValueFromRemainingArguments = $true)]$Args)
-    $path = $null
-    if ($Args -and $Args.Count -gt 0) { $path = $Args[0] }
-    if ($path -is [string] -and $path -like 'HKLM:\SOFTWARE*Uninstall*') {
+    param(
+        [Parameter(Position = 0)][string]$Path,
+        [string]$LiteralPath,
+        [Parameter(ValueFromRemainingArguments = $true)]$Args
+    )
+    $effectivePath = $null
+    if ($Path) { $effectivePath = $Path }
+    elseif ($LiteralPath) { $effectivePath = $LiteralPath }
+    elseif ($Args -and $Args.Count -gt 0 -and $Args[0] -is [string]) { $effectivePath = $Args[0] }
+
+    if ($effectivePath -is [string] -and $effectivePath -like 'HKLM:\SOFTWARE*Uninstall*') {
         if ($env:ODIN_TEST_FIXTURE) { return $true }
     }
-    return Microsoft.PowerShell.Management\Test-Path @Args
+    $forwarded = @{}
+    if ($Path)        { $forwarded['Path']        = $Path }
+    if ($LiteralPath) { $forwarded['LiteralPath'] = $LiteralPath }
+    if ($Args -and $Args.Count -gt 0) {
+        return Microsoft.PowerShell.Management\Test-Path @forwarded @Args
+    }
+    return Microsoft.PowerShell.Management\Test-Path @forwarded
 }
