@@ -1,9 +1,9 @@
 # TA-ODIN v1.0.0 - Shared PowerShell Library (Windows)
 #
-# D2 - DOT-SOURCED, NEVER Import-Moduled:
+# D2 - DOT-SOURCED LIBRARY (NEVER a PowerShell module):
 #   This file is dot-sourced directly by the orchestrator and (Wave 2) by every
 #   module. It is NOT a PowerShell module; there is no .psm1/.psd1 and no
-#   Import-Module call anywhere. Dot-sourcing is CLM-safe (Constrained Language
+#   module-import call anywhere. Dot-sourcing is CLM-safe (Constrained Language
 #   Mode) and requires no module manifest or module path configuration.
 #
 # D5-revised - CLM-SAFE EMISSION:
