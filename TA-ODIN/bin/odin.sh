@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# TA-ODIN v2.1.0 - Orchestrator Script for Linux
+# TA-ODIN v1.0.0 - Orchestrator Script for Linux
 # Autodiscovers and runs all modules in bin/modules/
 #
 # Sets shared context via ODIN_* environment variables and runs each module.
@@ -14,7 +14,7 @@
 
 # Verify bash is available (scripts require bash features)
 if [[ -z "$BASH_VERSION" ]]; then
-    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=2.1.0 type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
+    echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ") hostname=$(hostname) os=linux run_id=error-$$ odin_version=1.0.0 type=odin_error message=\"TA-ODIN requires bash but it is not available on this system\""
     exit 1
 fi
 
@@ -27,7 +27,7 @@ APP_DIR="$(dirname "$SCRIPT_DIR")"
 MODULES_DIR="$SCRIPT_DIR/modules"
 
 # --- Shared context (exported for modules) ---
-export ODIN_VERSION="2.1.0"
+export ODIN_VERSION="1.0.0"
 export ODIN_HOSTNAME="$(hostname -f 2>/dev/null || hostname)"
 export ODIN_OS="linux"
 export ODIN_RUN_ID="$(date +%s)-$$"
