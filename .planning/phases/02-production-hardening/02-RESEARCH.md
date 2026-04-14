@@ -298,11 +298,23 @@ emit "type=mount_error message=\"df command timed out after 30 seconds (possible
 ```
 - Pure constant string. **SAFE.**
 
-### Summary of real HARD-08 gaps
-- **cron.sh:158** — 1 fix (2 vars to safe_val)
-- **packages.sh:70, 78, 93, 102, 111** — 5 fixes (each branch: name + version + arch to safe_val)
+### Summary of real HARD-08 gaps (CORRECTED 2026-04-14 after plan-check)
 
-**Total: 6 emit lines need patching.** All other unsafe-looking emits are either constants, integers, or already-safe'd `$out` builds.
+**Initial audit (incomplete) flagged only:**
+- cron.sh:158 — 1 fix (2 vars to safe_val)
+- packages.sh:70, 78, 93, 102, 111 — 5 fixes
+
+**Plan-check 02-03 found 4 additional cron.sh sites missed by the initial audit:**
+- **cron.sh:67** — `parse_cron_line` raw `$user` (user_crontab branch flows username from basename of file in `/var/spool/cron/crontabs/*`)
+- **cron.sh:70** — `parse_cron_line` raw `$file` (full path containing same attacker-influenced username)
+- **cron.sh:102** — `parse_system_cron_line` raw `$user` and `$file` in single-line `out=` assignment
+- **cron.sh:228-230** — `systemd_timer` branch raw `$activated_unit` and `$timer_unit` from `systemctl list-timers` parsing
+
+**Corrected total: 6 emit lines + 4 helper-function out= lines = 10 fix points across 2 files (cron.sh covers 5 sites; packages.sh covers 5 sites).**
+
+Plan 3 Task 4 was expanded after the plan-check finding to cover all 5 cron.sh sites in one atomic commit. RESEARCH §6's initial pattern (`grep "emit "` looking for raw interpolation in the literal emit line) missed cases where the raw interpolation happens in `out="..."` BEFORE the eventual `emit "$out"` call. The corrected audit walked every helper function that builds `$out` and traced where the helpers' parameters originate.
+
+All other unsafe-looking emits are either constants, integers, or already-safe'd `$out` builds — verified by manual call-graph trace.
 
 ---
 
