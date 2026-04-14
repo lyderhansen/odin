@@ -64,10 +64,10 @@ parse_cron_line() {
     [[ -z "$command" ]] && return
 
     local out="type=cron cron_source=$source"
-    [[ -n "$user" ]] && out="$out cron_user=$user"
+    [[ -n "$user" ]] && out="$out cron_user=$(safe_val "$user")"
     [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
     [[ -n "$command" ]] && out="$out cron_command=$(safe_val "$command")"
-    [[ -n "$file" ]] && out="$out cron_file=$file"
+    [[ -n "$file" ]] && out="$out cron_file=$(safe_val "$file")"
     emit "$out"
     emitted=1
 }
@@ -100,7 +100,7 @@ parse_system_cron_line() {
     [[ -z "$command" ]] && return
 
     local out
-    out="type=cron cron_source=$source cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$file"
+    out="type=cron cron_source=$source cron_user=$(safe_val "$user") cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$(safe_val "$file")"
     emit "$out"
     emitted=1
 }
@@ -158,7 +158,7 @@ for period in hourly daily weekly monthly; do
         [[ ! -f "$script" ]] && continue
         script_name=$(basename "$script")
         [[ "$script_name" == .placeholder ]] && continue
-        emit "type=cron cron_source=cron.$period cron_schedule=@$period cron_command=$script_name cron_file=$script"
+        emit "type=cron cron_source=cron.$period cron_schedule=@$period cron_command=$(safe_val "$script_name") cron_file=$(safe_val "$script")"
         emitted=1
     done
 done
@@ -228,9 +228,9 @@ if command -v systemctl &>/dev/null; then
             activated_unit="${entry##*:}"
             schedule="${timer_schedules[$timer_unit]:-}"
 
-            out="type=cron cron_source=systemd_timer cron_command=$activated_unit"
+            out="type=cron cron_source=systemd_timer cron_command=$(safe_val "$activated_unit")"
             [[ -n "$schedule" ]] && out="$out cron_schedule=$(safe_val "$schedule")"
-            out="$out cron_file=$timer_unit"
+            out="$out cron_file=$(safe_val "$timer_unit")"
             emit "$out"
             emitted=1
         done
