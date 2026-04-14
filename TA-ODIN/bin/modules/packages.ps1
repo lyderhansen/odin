@@ -1,4 +1,4 @@
-# TA-ODIN v1.0.0 - Windows installed packages enumeration module
+﻿# TA-ODIN v1.0.0 - Windows installed packages enumeration module
 # Parity target: TA-ODIN/bin/modules/packages.sh
 # Emits: type=package package_name=<n> package_version=<v> [package_arch=<a>] package_manager=registry
 #
@@ -18,7 +18,7 @@
 # Standalone run (D6): pwsh TA-ODIN/bin/modules/packages.ps1
 
 . $PSScriptRoot/_common.ps1
-Set-OdinContext
+Initialize-OdinContext
 Initialize-OdinModuleState
 
 $uninstallPaths = @(

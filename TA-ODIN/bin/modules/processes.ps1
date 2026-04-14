@@ -1,4 +1,4 @@
-# TA-ODIN v1.0.0 - Windows process enumeration module
+﻿# TA-ODIN v1.0.0 - Windows process enumeration module
 # Parity target: TA-ODIN/bin/modules/processes.sh
 # Emits: type=process process_pid=<n> process_ppid=<n> process_user=<u>
 #        process_state=<s> [process_cpu=<n>] [process_mem=<n>]
@@ -10,7 +10,7 @@
 # variable to avoid PSAvoidAssignmentToAutomaticVariable analyzer violation.
 
 . $PSScriptRoot/_common.ps1
-Set-OdinContext
+Initialize-OdinContext
 Initialize-OdinModuleState
 
 try {

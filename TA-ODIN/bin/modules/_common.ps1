@@ -1,4 +1,4 @@
-# TA-ODIN v1.0.0 - Shared PowerShell Library (Windows)
+﻿# TA-ODIN v1.0.0 - Shared PowerShell Library (Windows)
 #
 # D2 - DOT-SOURCED LIBRARY (NEVER a PowerShell module):
 #   This file is dot-sourced directly by the orchestrator and (Wave 2) by every
@@ -117,7 +117,7 @@ function Invoke-OdinEmit {
 }
 
 # ---------------------------------------------------------------------------
-# Set-OdinContext - populate $env:ODIN_* with standalone fallbacks
+# Initialize-OdinContext - populate $env:ODIN_* with standalone fallbacks
 # ---------------------------------------------------------------------------
 # Mirrors the Linux standalone-fallback block in modules/services.sh:19-26.
 # When a module is run directly (not via the orchestrator) or when the
@@ -128,7 +128,7 @@ function Invoke-OdinEmit {
 # .NET type (see RESEARCH.md §7) and remains CLM-safe (no dynamic compilation).
 # Wrapped in try/catch so macOS pwsh (fixture mode) falls back to the
 # environment's COMPUTERNAME / hostname without throwing.
-function Set-OdinContext {
+function Initialize-OdinContext {
     if (-not $env:ODIN_HOSTNAME) {
         try {
             $env:ODIN_HOSTNAME = [System.Net.Dns]::GetHostEntry('').HostName

@@ -1,4 +1,4 @@
-# TA-ODIN v1.0.0 - Windows Orchestrator
+﻿# TA-ODIN v1.0.0 - Windows Orchestrator
 #
 # Autodiscovers and runs all modules in bin/modules/*.ps1 (excluding _common.ps1).
 # Emits canonical type=odin_start / type=odin_complete / type=odin_error markers
@@ -71,7 +71,7 @@ if (-not $env:ODIN_RUN_ID) {
 if (-not $env:ODIN_VERSION) { $env:ODIN_VERSION = '1.0.0' }
 
 # Populate remaining $env:ODIN_* with fallbacks (hostname, os)
-Set-OdinContext
+Initialize-OdinContext
 
 # --------------------------------------------------------------------------
 # Per-module timeout (seconds) — 90s leaves 30s margin within the Splunk

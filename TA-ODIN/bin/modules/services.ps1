@@ -1,4 +1,4 @@
-# TA-ODIN v1.0.0 - Windows services enumeration module
+﻿# TA-ODIN v1.0.0 - Windows services enumeration module
 # Parity target: TA-ODIN/bin/modules/services.sh
 # Emits: type=service service_name=<n> service_status=<s> service_enabled=<e>
 # Cmdlets used (WIN-09 built-in only): Get-Service, Get-CimInstance Win32_Service
@@ -6,7 +6,7 @@
 # Fail-soft: per-service try/catch; module-level try/catch around enumeration
 
 . $PSScriptRoot/_common.ps1
-Set-OdinContext
+Initialize-OdinContext
 Initialize-OdinModuleState
 
 try {

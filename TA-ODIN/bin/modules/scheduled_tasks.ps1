@@ -1,4 +1,4 @@
-# TA-ODIN v1.0.0 - Windows scheduled tasks enumeration module
+﻿# TA-ODIN v1.0.0 - Windows scheduled tasks enumeration module
 # Parity target: TA-ODIN/bin/modules/cron.sh (semantic parallel, different label)
 # Emits: type=scheduled_task task_name=<n> task_path=<p> task_state=<s>
 #        [task_author=<a>] [task_last_run=<t>] [task_next_run=<t>] [task_last_result=<n>]
@@ -13,7 +13,7 @@
 # Standalone run (D6): pwsh TA-ODIN/bin/modules/scheduled_tasks.ps1
 
 . $PSScriptRoot/_common.ps1
-Set-OdinContext
+Initialize-OdinContext
 Initialize-OdinModuleState
 
 try {
