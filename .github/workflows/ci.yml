@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Verify shellcheck pre-installed
+        run: |
+          shellcheck --version
+          which shellcheck
+
+      - name: Shellcheck Linux modules
+        run: shellcheck TA-ODIN/bin/odin.sh TA-ODIN/bin/modules/*.sh
+
+      - name: Verify pwsh pre-installed
+        run: pwsh --version
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          (Get-Module -ListAvailable PSScriptAnalyzer).Version
+
+      - name: PSScriptAnalyzer Windows modules
+        shell: pwsh
+        run: |
+          $findings = Invoke-ScriptAnalyzer -Path TA-ODIN/bin -Recurse -Severity Error,Warning
+          if ($findings.Count -gt 0) {
+            $findings | Format-Table -AutoSize
+            Write-Host "PSScriptAnalyzer found $($findings.Count) Error/Warning findings - failing build"
+            exit 1
+          }
+          Write-Host "PSScriptAnalyzer: clean"
+
+      - name: Two-app split guard
+        run: bash tools/tests/check-two-app-split.sh
+
+      - name: Version sync guard
+        run: bash tools/tests/check-version-sync.sh
+
+      - name: Injection fixture regression
+        run: bash tools/tests/injection-fixtures/run.sh
