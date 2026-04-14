@@ -23,14 +23,15 @@ export LC_ALL=C
 
 # Find script directory (works even with symlinks)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_DIR="$(dirname "$SCRIPT_DIR")"
 MODULES_DIR="$SCRIPT_DIR/modules"
 
 # --- Shared context (exported for modules) ---
 export ODIN_VERSION="1.0.0"
-export ODIN_HOSTNAME="$(hostname -f 2>/dev/null || hostname)"
+ODIN_HOSTNAME="$(hostname -f 2>/dev/null || hostname)"
+export ODIN_HOSTNAME
 export ODIN_OS="linux"
-export ODIN_RUN_ID="$(date +%s)-$$"
+ODIN_RUN_ID="$(date +%s)-$$"
+export ODIN_RUN_ID
 
 # Per-module timeout in seconds (90s leaves 30s margin within Splunk's 120s input timeout)
 # HARD-02: pre-set ODIN_MODULE_TIMEOUT env var is honored, default applies only when unset
