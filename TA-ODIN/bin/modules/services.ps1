@@ -23,6 +23,7 @@ try {
     } catch {
         # CIM not available - start mode will be "unknown" for every entry
         # (non-fatal, mirrors Linux fallback paths in services.sh).
+        $null = $_
     }
 
     foreach ($svc in $services) {

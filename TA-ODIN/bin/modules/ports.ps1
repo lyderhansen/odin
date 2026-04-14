@@ -23,6 +23,7 @@ try {
     } catch {
         # NetTCPIP module not available - Windows 7 / locked-down images.
         # Parity with Linux ss/netstat fallback: emit nothing and continue.
+        $null = $_
     }
 
     foreach ($c in $tcp) {
@@ -56,6 +57,7 @@ try {
         $udp = Get-NetUDPEndpoint -ErrorAction Stop
     } catch {
         # Same defensive fallback as TCP branch
+        $null = $_
     }
 
     foreach ($u in $udp) {

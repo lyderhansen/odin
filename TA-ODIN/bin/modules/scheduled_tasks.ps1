@@ -54,6 +54,7 @@ try {
                 }
             } catch {
                 # Enrichment is best-effort; emit core fields only.
+                $null = $_
             }
 
             $line = "type=scheduled_task task_name=$name task_path=$path task_state=$state"

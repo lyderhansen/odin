@@ -35,6 +35,7 @@ try {
         $primaryWorked = $true
     } catch {
         # Storage module unavailable - fall through to Get-PSDrive branch.
+        $null = $_
     }
 
     foreach ($v in $vols) {
@@ -91,6 +92,7 @@ try {
             }
         } catch {
             # Both providers failed - emit nothing, fail-soft.
+            $null = $_
         }
     }
 } catch {

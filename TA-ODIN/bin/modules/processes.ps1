@@ -29,6 +29,7 @@ try {
         }
     } catch {
         # CIM unavailable - fall back to Get-Process only (no ppid/command/user).
+        $null = $_
     }
 
     $procs = Get-Process -ErrorAction Stop
@@ -68,6 +69,7 @@ try {
                     }
                 } catch {
                     # Swallow - owner stays 'unknown'.
+                    $null = $_
                 }
                 # Fixture-stub compatibility: when Invoke-CimMethod can't act
                 # on a PSCustomObject, fall back to a UserName property if
@@ -92,14 +94,14 @@ try {
                 if ($null -ne $p.CPU) {
                     $cpu = [math]::Round([double]$p.CPU, 2).ToString()
                 }
-            } catch { }
+            } catch { $null = $_ }
 
             $mem = '0'
             try {
                 if ($null -ne $p.WorkingSet64) {
                     $mem = [string][int]([long]$p.WorkingSet64 / 1024)
                 }
-            } catch { }
+            } catch { $null = $_ }
 
             $elapsed = '0'
             try {
@@ -108,6 +110,7 @@ try {
                 }
             } catch {
                 # Access denied on protected processes - keep default 0.
+                $null = $_
             }
 
             # Always emit the full parity field set. process_command falls
