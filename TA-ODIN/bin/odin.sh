@@ -33,12 +33,16 @@ export ODIN_OS="linux"
 export ODIN_RUN_ID="$(date +%s)-$$"
 
 # Per-module timeout in seconds (90s leaves 30s margin within Splunk's 120s input timeout)
-MODULE_TIMEOUT=90
+# HARD-02: pre-set ODIN_MODULE_TIMEOUT env var is honored, default applies only when unset
+: "${ODIN_MODULE_TIMEOUT:=90}"
+MODULE_TIMEOUT="$ODIN_MODULE_TIMEOUT"
 HAS_TIMEOUT=0
 command -v timeout >/dev/null 2>&1 && HAS_TIMEOUT=1
 
 # Maximum events per module run (prevents output flooding from hosts with 100K+ items)
-export ODIN_MAX_EVENTS=50000
+# HARD-02: pre-set ODIN_MAX_EVENTS env var is honored, default applies only when unset
+: "${ODIN_MAX_EVENTS:=50000}"
+export ODIN_MAX_EVENTS ODIN_MODULE_TIMEOUT
 export ODIN_EVENT_COUNT=0
 export ODIN_EVENTS_TRUNCATED=0
 
