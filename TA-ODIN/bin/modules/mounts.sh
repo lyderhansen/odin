@@ -50,11 +50,12 @@ else
     has_fstype=0
 fi
 
+read -ra df_args <<< "$df_cmd"
 if [[ $has_timeout -eq 1 ]]; then
-    df_output=$(timeout 30 $df_cmd 2>/dev/null)
+    df_output=$(timeout 30 "${df_args[@]}" 2>/dev/null)
     df_rc=$?
 else
-    df_output=$($df_cmd 2>/dev/null)
+    df_output=$("${df_args[@]}" 2>/dev/null)
     df_rc=$?
 fi
 

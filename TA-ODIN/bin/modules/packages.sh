@@ -65,6 +65,7 @@ emitted=0
 case "$pkg_manager" in
     dpkg)
         # dpkg-query: Name Version Architecture
+        # shellcheck disable=SC2016  # dpkg-query format template uses ${Package} as its own placeholder, not bash var
         while IFS=$'\t' read -r name version arch; do
             [[ -z "$name" ]] && continue
             emit "type=package package_name=$name package_version=$version package_arch=$arch package_manager=dpkg"
@@ -87,7 +88,7 @@ case "$pkg_manager" in
                 [[ -z "$line" ]] && continue
                 # apk list output: "name-version {arch} {repo} [installed]"
                 pkg_field="${line%% *}"
-                name=$(echo "$pkg_field" | sed 's/-[0-9].*//')
+                name="${pkg_field%%-[0-9]*}"
                 version="${pkg_field#"$name"-}"
                 [[ -z "$name" ]] && continue
                 emit "type=package package_name=$name package_version=$version package_manager=apk"
@@ -96,7 +97,7 @@ case "$pkg_manager" in
         else
             while IFS= read -r line; do
                 [[ -z "$line" ]] && continue
-                name=$(echo "$line" | sed 's/-[0-9].*//')
+                name="${line%%-[0-9]*}"
                 version="${line#"$name"-}"
                 [[ -z "$name" ]] && continue
                 emit "type=package package_name=$name package_version=$version package_manager=apk"

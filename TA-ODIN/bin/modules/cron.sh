@@ -99,7 +99,8 @@ parse_system_cron_line() {
 
     [[ -z "$command" ]] && return
 
-    local out="type=cron cron_source=$source cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$file"
+    local out
+    out="type=cron cron_source=$source cron_user=$user cron_schedule=$(safe_val "$schedule") cron_command=$(safe_val "$command") cron_file=$file"
     emit "$out"
     emitted=1
 }
@@ -117,9 +118,10 @@ fi
 if [[ -d /etc/cron.d ]]; then
     for cronfile in /etc/cron.d/*; do
         [[ ! -f "$cronfile" ]] && continue
-        while IFS= read -r line; do
+        mapfile -t cron_lines < "$cronfile"
+        for line in "${cron_lines[@]}"; do
             parse_system_cron_line "$line" "cron.d" "$cronfile"
-        done < "$cronfile"
+        done
     done
 fi
 
@@ -137,9 +139,10 @@ if [[ -n "$crontab_dir" ]]; then
         for userfile in "$crontab_dir"/*; do
             [[ ! -f "$userfile" ]] && continue
             user=$(basename "$userfile")
-            while IFS= read -r line; do
+            mapfile -t user_cron_lines < "$userfile" 2>/dev/null || continue
+            for line in "${user_cron_lines[@]}"; do
                 parse_cron_line "$line" "$user" "user_crontab" "$userfile"
-            done < "$userfile" 2>/dev/null
+            done
         done
     else
         # Directory exists but is not readable (non-root)
@@ -166,7 +169,7 @@ if command -v systemctl &>/dev/null; then
     timer_units=()
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        words=($line)
+        read -ra words <<< "$line"
         len=${#words[@]}
         [[ $len -lt 2 ]] && continue
         timer_unit="${words[$((len-2))]}"
@@ -242,7 +245,7 @@ if [[ -f /etc/anacrontab ]]; then
         [[ "$line" =~ ^[[:space:]]*[A-Za-z_][A-Za-z_0-9]*= ]] && continue
 
         # Format: period delay job-identifier command
-        read -r period delay job_id command <<< "$line"
+        read -r period delay _ command <<< "$line"
 
         [[ -z "$command" ]] && continue
         emit "type=cron cron_source=anacron cron_schedule=\"period=${period}d delay=${delay}m\" cron_command=$(safe_val "$command") cron_file=/etc/anacrontab"
