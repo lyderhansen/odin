@@ -37,9 +37,9 @@ Close the gaps that prevent the current codebase from being safe to roll out to 
 - [ ] **HARD-02** — `ODIN_MAX_EVENTS` and `ODIN_MODULE_TIMEOUT` are tunable via environment variables in both orchestrators; pre-set values from the environment are honored and not overwritten by script defaults
 - [ ] **HARD-03** — Saved search in `ODIN_app_for_splunk/default/savedsearches.conf` alerts on `type=truncated` events across the fleet so silent MAX_EVENTS truncation becomes observable
 - [ ] **HARD-04** — Saved search in `ODIN_app_for_splunk/default/savedsearches.conf` alerts on `type=odin_error exit_code=124` (module timeouts) so fleet-wide timeout patterns become observable
-- [ ] **HARD-05** — `shellcheck` runs clean (zero findings at default severity) on every `TA-ODIN/bin/**/*.sh`, gated in CI as a release blocker
-- [ ] **HARD-06** — `PSScriptAnalyzer` runs clean (zero findings at default severity) on every `TA-ODIN/bin/**/*.ps1`, gated in CI as a release blocker
-- [ ] **HARD-07** — CI guard mechanically enforces the two-app split: forbids `indexes.conf`, `transforms.conf`, `savedsearches.conf`, and `lookups/` inside `TA-ODIN/`; forbids `inputs.conf` and any `bin/` scripts inside `ODIN_app_for_splunk/`
+- [x] **HARD-05** — `shellcheck` runs clean (zero findings at default severity) on every `TA-ODIN/bin/**/*.sh`, gated in CI as a release blocker
+- [x] **HARD-06** — `PSScriptAnalyzer` runs clean (zero findings at default severity) on every `TA-ODIN/bin/**/*.ps1`, gated in CI as a release blocker
+- [x] **HARD-07** — CI guard mechanically enforces the two-app split: forbids `indexes.conf`, `transforms.conf`, `savedsearches.conf`, and `lookups/` inside `TA-ODIN/`; forbids `inputs.conf` and any `bin/` scripts inside `ODIN_app_for_splunk/`
 - [ ] **HARD-08** — `safe_val()` and every `emit` call site in the Linux modules are audited for shell-injection against malicious service / unit / package / mount names; findings are fixed and a regression test fixture is added to `tools/tests/`
 
 ### C. AppInspect Compliance (APPI-*)
