@@ -24,6 +24,17 @@ if ! declare -f emit &>/dev/null; then
     emit() { echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"; }
 fi
 
+# Helper: escape double quotes and wrap values containing spaces (HARD-08)
+safe_val() {
+    local val="$1"
+    val="${val//\"/\\\"}"
+    if [[ "$val" == *" "* ]]; then
+        echo "\"$val\""
+    else
+        echo "$val"
+    fi
+}
+
 # Detect package manager
 # Check /etc/os-release first, then fall back to binary detection
 detect_package_manager() {
@@ -68,7 +79,7 @@ case "$pkg_manager" in
         # shellcheck disable=SC2016  # dpkg-query format template uses ${Package} as its own placeholder, not bash var
         while IFS=$'\t' read -r name version arch; do
             [[ -z "$name" ]] && continue
-            emit "type=package package_name=$name package_version=$version package_arch=$arch package_manager=dpkg"
+            emit "type=package package_name=$(safe_val "$name") package_version=$(safe_val "$version") package_arch=$(safe_val "$arch") package_manager=dpkg"
             emitted=1
         done < <(timeout 30 dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' 2>/dev/null)
         ;;
@@ -76,7 +87,7 @@ case "$pkg_manager" in
         # rpm: Name Version Architecture
         while IFS=$'\t' read -r name version arch; do
             [[ -z "$name" ]] && continue
-            emit "type=package package_name=$name package_version=$version package_arch=$arch package_manager=rpm"
+            emit "type=package package_name=$(safe_val "$name") package_version=$(safe_val "$version") package_arch=$(safe_val "$arch") package_manager=rpm"
             emitted=1
         done < <(timeout 30 rpm -qa --queryformat '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\n' 2>/dev/null)
         ;;
@@ -91,7 +102,7 @@ case "$pkg_manager" in
                 name="${pkg_field%%-[0-9]*}"
                 version="${pkg_field#"$name"-}"
                 [[ -z "$name" ]] && continue
-                emit "type=package package_name=$name package_version=$version package_manager=apk"
+                emit "type=package package_name=$(safe_val "$name") package_version=$(safe_val "$version") package_manager=apk"
                 emitted=1
             done < <(timeout 30 apk list --installed 2>/dev/null)
         else
@@ -100,7 +111,7 @@ case "$pkg_manager" in
                 name="${line%%-[0-9]*}"
                 version="${line#"$name"-}"
                 [[ -z "$name" ]] && continue
-                emit "type=package package_name=$name package_version=$version package_manager=apk"
+                emit "type=package package_name=$(safe_val "$name") package_version=$(safe_val "$version") package_manager=apk"
                 emitted=1
             done < <(timeout 30 apk info -v 2>/dev/null)
         fi
@@ -109,7 +120,7 @@ case "$pkg_manager" in
         # pacman: Name Version
         while read -r name version; do
             [[ -z "$name" ]] && continue
-            emit "type=package package_name=$name package_version=$version package_manager=pacman"
+            emit "type=package package_name=$(safe_val "$name") package_version=$(safe_val "$version") package_manager=pacman"
             emitted=1
         done < <(timeout 30 pacman -Q 2>/dev/null)
         ;;
