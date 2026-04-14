@@ -33,9 +33,16 @@
 # ---------------------------------------------------------------------------
 # Script-scope state variables (idempotent — safe against double dot-source)
 # ---------------------------------------------------------------------------
-if (-not (Get-Variable -Name 'ODIN_MAX_EVENTS' -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:ODIN_MAX_EVENTS = 50000
-}
+# HARD-02: pre-set $env:ODIN_MAX_EVENTS / $env:ODIN_MODULE_TIMEOUT are
+# honored. Defaults apply only when the env var is unset or empty. The
+# env var is then cast to int for the $script: counter the orchestrator
+# uses in its Wait-Job event-count comparison.
+if (-not $env:ODIN_MAX_EVENTS)    { $env:ODIN_MAX_EVENTS = '50000' }
+$script:ODIN_MAX_EVENTS = [int]$env:ODIN_MAX_EVENTS
+
+if (-not $env:ODIN_MODULE_TIMEOUT) { $env:ODIN_MODULE_TIMEOUT = '90' }
+$script:ODIN_MODULE_TIMEOUT = [int]$env:ODIN_MODULE_TIMEOUT
+
 if (-not (Get-Variable -Name 'ODIN_EVENT_COUNT' -Scope Script -ErrorAction SilentlyContinue)) {
     $script:ODIN_EVENT_COUNT = 0
 }
