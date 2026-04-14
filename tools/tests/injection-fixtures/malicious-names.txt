@@ -1,0 +1,36 @@
+# HARD-08 injection test fixtures
+# Each non-comment line is fed through safe_val() and asserted to produce
+# a single safe KV-parseable line with no shell expansion.
+#
+# Entry 4 is intentionally two physical lines — its "value" contains a
+# literal newline. The runner reads file line-by-line, so this tests that
+# safe_val still produces safe single-line output even when the input was
+# the two halves of a multi-line attack payload.
+
+# 1. Shell command substitution via $()
+svc-$(id)
+
+# 2. Backtick command substitution
+svc-`whoami`
+
+# 3. Semicolon command chaining
+svc; rm -rf /tmp/test
+
+# 4. Embedded newline (two physical lines in this fixture file)
+svc
+multi-line
+
+# 5. Unbalanced double-quote
+svc"unbalanced
+
+# 6. Embedded equals sign (KV parser confusion)
+svc=injected_field
+
+# 7. Space in name (needs quoting by safe_val)
+svc with spaces
+
+# 8. Pipe character
+svc|cat /etc/passwd
+
+# 9. Redirect
+svc>/tmp/evil
