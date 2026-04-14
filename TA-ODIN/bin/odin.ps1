@@ -41,6 +41,7 @@
 #   _common.ps1 uses $script: state which is private to the parent session.
 
 [CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseUsingScopeModifierInNewRunspaces', '', Justification = 'All outer-scope values are explicitly serialized into the Start-Job scriptblock via -ArgumentList and re-bound through param() inside the scriptblock. The analyzer flags these param-bound variables as false positives because it cannot statically follow the data flow through Start-Job -ArgumentList. The alternative scope-modifier rewrite was rejected per RESEARCH.md section 3 because it would force a re-validation of the Phase 1 Start-Job isolation model.')]
 param()
 
 # Continue-on-error at orchestrator level: we catch per-module and never abort.
