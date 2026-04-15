@@ -48,10 +48,10 @@ Make both apps pass Splunk's cloud vetting cleanly so the milestone can be pilot
 
 - [x] **APPI-01** — `TA-ODIN` passes `splunk-appinspect inspect` with zero failures and no critical warnings
 - [x] **APPI-02** — `ODIN_app_for_splunk` passes `splunk-appinspect inspect` with zero failures and no critical warnings
-- [ ] **APPI-03** — AppInspect runs on every release build (local or CI), not ad-hoc — it is a hard release gate
+- [x] **APPI-03** — AppInspect runs on every release build (local or CI), not ad-hoc — it is a hard release gate
 - [x] **APPI-04** — `app.conf` metadata in both apps is Splunkbase-ready: `author`, `description`, `license`, `version`, `build`, `id` populated with correct values
 - [x] **APPI-05** — `metadata/default.meta` permissions reviewed for least-privilege in both apps; exports are scoped as tightly as viable rather than blanket `export = system`
-- [ ] **APPI-06** — No AppInspect red flags exist in either app: no hardcoded host paths, no outbound network calls from scripts, no binary execution, no suspicious PowerShell / bash patterns that trip cloud vetting
+- [x] **APPI-06** — No AppInspect red flags exist in either app: no hardcoded host paths, no outbound network calls from scripts, no binary execution, no suspicious PowerShell / bash patterns that trip cloud vetting
 
 ---
 
