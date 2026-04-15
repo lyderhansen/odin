@@ -66,6 +66,21 @@ for pair in \
     fi
 done
 
+# HARD-01 extension (Phase 3 Plan 1): also check app.conf header comments
+# for v[0-9]+.[0-9]+.[0-9]+ drift. The main check above only greps the
+# `version = X.Y.Z` line and misses string-drift in file header comments.
+# Scoped to first 10 lines to avoid false positives on inline descriptions.
+for f in \
+    "$REPO_ROOT/TA-ODIN/default/app.conf" \
+    "$REPO_ROOT/ODIN_app_for_splunk/default/app.conf"; do
+    comment_version=$(head -n 10 "$f" 2>/dev/null | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    if [[ -n "$comment_version" ]] && [[ "${comment_version#v}" != "$canonical" ]]; then
+        rel="${f#"$REPO_ROOT"/}"
+        echo "[HARD-01 DRIFT] $rel header comment says $comment_version but canonical is v$canonical"
+        drift=1
+    fi
+done
+
 if [[ $drift -eq 0 ]]; then
     echo "[HARD-01 PASS] Version sync: $canonical"
 fi
