@@ -49,3 +49,16 @@ jobs:
 
       - name: Injection fixture regression
         run: bash tools/tests/injection-fixtures/run.sh
+
+      - name: Install splunk-appinspect
+        run: pip install 'splunk-appinspect==4.1.3'
+
+      - name: AppInspect TA-ODIN
+        run: |
+          splunk-appinspect inspect TA-ODIN --mode precert --excluded-tags cloud --output-file /tmp/ta-odin-ci.json --data-format json
+          python3 -c "import json, sys; s=json.load(open('/tmp/ta-odin-ci.json'))['summary']; print('TA-ODIN AppInspect summary:', s); sys.exit(1 if (s.get('failure',0)+s.get('error',0))>0 else 0)"
+
+      - name: AppInspect ODIN_app_for_splunk
+        run: |
+          splunk-appinspect inspect ODIN_app_for_splunk --mode precert --excluded-tags cloud --output-file /tmp/odin-app-ci.json --data-format json
+          python3 -c "import json, sys; s=json.load(open('/tmp/odin-app-ci.json'))['summary']; print('ODIN_app_for_splunk AppInspect summary:', s); sys.exit(1 if (s.get('failure',0)+s.get('error',0))>0 else 0)"
