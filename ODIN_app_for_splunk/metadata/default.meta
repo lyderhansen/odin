@@ -1,5 +1,25 @@
-# Application-level permissions for ODIN_app_for_splunk
-# Export lookups, props, transforms, and saved searches to all apps
+# ODIN_app_for_splunk/metadata/default.meta - APPI-05 scoping rationale
+#
+# This is the search-head-side app in the TA-ODIN two-app split (see CLAUDE.md).
+# Its entire purpose is to make the following available SYSTEM-WIDE so that
+# TA-ODIN-sourced events (coming from forwarders) can be parsed, classified,
+# and searched regardless of which app context the search is run from:
+#
+#   - [lookups]       - odin_classify_*.csv and odin_log_sources.csv used
+#                        by automatic search-time classification
+#   - [props]         - KV_MODE, CIM aliases, sourcetype->lookup bindings
+#   - [transforms]    - the lookup transform definitions
+#   - [savedsearches] - host inventory, log source detail, TA deployment
+#                        matrix (definition-only; disabled=1 for alert_odin_*)
+#   - [views]         - dashboard views (if/when any are added in v1.1+)
+#
+# Narrower scoping (per-object [lookups/odin_classify_services] etc.) was
+# considered but rejected because the TA-ODIN -> ODIN_app_for_splunk data
+# path relies on these being visible to any search runner, including ad-hoc
+# queries by on-call operators who are not in the ODIN_app_for_splunk app
+# context. APPI-05 says exports should be "as tightly as viable" - for this
+# app the viable answer is system-wide, and this rationale comment makes
+# the decision auditable for Splunkbase reviewers.
 
 [lookups]
 export = system
