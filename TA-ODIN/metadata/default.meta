@@ -1,0 +1,19 @@
+# TA-ODIN/metadata/default.meta - APPI-05 least-privilege scoping
+#
+# Rationale: TA-ODIN is a forwarder-only app deployed to Universal Forwarders
+# via the Splunk Deployment Server. It ships:
+#   - bin/odin.sh and bin/odin.ps1 orchestrators
+#   - bin/modules/*.sh and bin/modules/*.ps1 discovery modules
+#   - default/inputs.conf (scripted input stanza)
+#   - default/props.conf (line-breaking, CHARSET, timestamp)
+#
+# It does NOT ship any lookups, saved searches, transforms, or dashboards.
+# Those live in ODIN_app_for_splunk (the search-head app) per the two-app
+# split rules in CLAUDE.md.
+#
+# The explicit `export = none` tells AppInspect that the empty export
+# surface is intentional, not an omission. Splunkbase reviewers can see
+# at a glance that least-privilege is enforced.
+
+[]
+export = none
