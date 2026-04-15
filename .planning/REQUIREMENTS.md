@@ -123,3 +123,38 @@ _Populated by `gsd-roadmapper` on 2026-04-10. Each REQ-ID maps to exactly one ph
 | APPI-04 | Phase 3 | Splunkbase-ready app.conf metadata both apps |
 | APPI-05 | Phase 3 | default.meta least-privilege review |
 | APPI-06 | Phase 3 | No AppInspect red flags (paths, network, binaries) |
+
+---
+
+## Milestone v1.0.1 — Production Readiness
+
+**Status:** Active (opened 2026-04-15)
+**Goal:** Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, observability, and documentation gaps that block safe rollout beyond ~50 hosts.
+
+**In scope this milestone:** Windows classification data (PROD-01), operational readiness (PROD-03..PROD-06), and pilot validation (PROD-02).
+
+**Not in scope this milestone:** Automated bash test harness (group D), Splunk Cloud Victoria compatibility (Phase 3 D9 — still Enterprise-only), external security audit (separate governance track), supply chain attestation / SLSA L2+, reproducible `.tar.gz` packaging (group G — can ship via GitHub tag for now). Tracked under *Deferred to v1.1+*.
+
+### v1.0.1 Requirements
+
+- [ ] **PROD-01** — Windows-specific rows added to `ODIN_app_for_splunk/lookups/odin_classify_services.csv` (IIS, W3SVC, MSSQLSERVER, ADWS, NTDS, DHCPServer, DNS, SMTP, Exchange, WinRM, etc.), `odin_classify_ports.csv` (135/tcp, 445/tcp, 3389/tcp, 5985/tcp, 5986/tcp, 53/udp, 389/tcp, 636/tcp, 88/tcp, 1433/tcp, etc.), `odin_classify_packages.csv` (common registry display names), and `odin_log_sources.csv` (host_role → Windows Event Log source → recommended TA). Acceptance: a simulated Windows host with realistic services classifies to a non-empty set of roles and produces a non-empty TA deployment matrix row.
+- [ ] **PROD-02** — TA-ODIN piloted on ≥5 Linux + ≥5 Windows real hosts via Deployment Server for a 7-day observation window. Acceptance: `modules_failed=0` on ≥95% of `type=odin_complete` events across the window, no unexplained `type=truncated` alerts, `odin_host_inventory.csv` lookup produces a row for every piloted host with a classified role, pilot log captured in `.planning/artifacts/pilot-v1.0.1/`.
+- [ ] **PROD-03** — `DOCS/RUNBOOK.md` with on-call response procedures for `type=truncated`, `type=odin_error exit_code=124`, `type=odin_error` (non-124), and "fleet scan success rate below SLO" alerts. Each entry includes: what the alert means, diagnostic SPL, remediation steps, escalation contact. Acceptance: a reader who has never seen the TA before can follow one entry end-to-end and understand what to do.
+- [ ] **PROD-04** — `DOCS/INSTALL.md` (Deployment Server rollout playbook per OS), `DOCS/TROUBLESHOOTING.md` (common failure modes — permission issues, missing cmdlets, systemctl quirks, Windows UAC edge cases), `DOCS/DATA-DICTIONARY.md` (every field per `type=*` event), `DOCS/UPGRADE.md` (v1.0.0 → v1.0.1 upgrade path including rollback note), README updates in both app roots. Acceptance: a Splunk admin unfamiliar with TA-ODIN can install it, understand the fields, and diagnose a common failure using these docs alone.
+- [ ] **PROD-05** — `DOCS/ROLLBACK.md` documenting exact Deployment Server steps to disable TA-ODIN on the fleet without removing files (toggle `disabled = 1` in a local overlay stanza), plus dry-run validation: toggle on a pilot host, verify the scripted input stops within one scan cycle, toggle back, verify events resume. Acceptance: dry-run logged in `.planning/artifacts/rollback-dryrun.md` with timestamps and event-count deltas.
+- [ ] **PROD-06** — Ops observability dashboard at `ODIN_app_for_splunk/default/data/ui/views/odin_ops.xml` (Dashboard Studio) showing: scan success rate per OS, module runtime p50/p95/p99 per module type, module-failure heatmap, event-volume-per-host-per-day trendline, fleet host coverage over time (distinct hosts seen per day), top-N truncating hosts. Acceptance: dashboard renders with test data in a local Splunk instance, panels are labeled, no broken searches. AppInspect still passes after adding the view.
+
+### Deferred to v1.1+
+
+The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) remain active backlog. PROD-04 covers part of group E (admin-facing docs), and PROD-01 covers group F for classification data. The *testing harness* portion of group D and the *reproducible packaging* portion of group G stay deferred to v1.1+.
+
+### Traceability (v1.0.1)
+
+| REQ-ID | Phase | Notes |
+|--------|-------|-------|
+| PROD-01 | Phase 4 | Windows classification CSV content — pure data work, no code changes |
+| PROD-03 | Phase 5 | Operational runbook — alert response procedures |
+| PROD-04 | Phase 5 | Admin + troubleshooting + data dictionary + upgrade docs |
+| PROD-05 | Phase 5 | Rollback procedure + dry-run validation |
+| PROD-06 | Phase 5 | Ops observability dashboard (Dashboard Studio) |
+| PROD-02 | Phase 6 | Pilot deployment + 7-day observation window (release gate) |

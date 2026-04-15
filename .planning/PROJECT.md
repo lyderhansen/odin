@@ -8,16 +8,25 @@ TA-ODIN is a Splunk Technology Add-on that performs full metadata-only enumerati
 
 **Safe, dependency-free, cross-platform endpoint enumeration that ships to 10k+ hosts without breaking any of them** — if the agent ever breaks a production host or floods Splunk, the whole project is worthless.
 
-## Current Milestone: v1.0.0 — First Production Delivery
+## Current Milestone: v1.0.1 — Production Readiness
 
-**Goal:** Ship a cross-platform (Linux + Windows) TA-ODIN that is AppInspect-clean, production-hardened, and safe to pilot on a Deployment Server fleet.
+**Goal:** Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, observability, and documentation gaps that block safe rollout beyond ~50 hosts.
 
-**Target feature groups (this milestone):**
-- **A.** Windows parity — `odin.ps1` orchestrator + six Windows modules matching the Linux event format, using only built-in PowerShell 5.1+
-- **B.** Production hardening — version drift fix, tunable guardrails, alerting saved searches, lint gates, two-app-split CI enforcement, shell-injection audit
-- **C.** AppInspect compliance — both apps pass `splunk-appinspect` cloud vetting as a release gate, with clean app.conf/default.meta metadata
+**Target requirement groups (this milestone):**
+- **PROD-01** Windows classification lookups (unblocks meaningful Windows host classification in the pilot)
+- **PROD-02** Pilot deployment + 7-day observation window on ≥5 Linux + ≥5 Windows real hosts
+- **PROD-03** Operational runbook (on-call response procedures for every alert type)
+- **PROD-04** Admin + troubleshooting + data dictionary + upgrade docs
+- **PROD-05** Rollback procedure — documented + dry-run validated
+- **PROD-06** Ops observability dashboard (Dashboard Studio)
 
-**Explicitly deferred to v1.1+:** Cross-platform testing harness (D), end-user documentation (E), Windows classification CSV content (F), reproducible packaging (G). These remain tracked below under *Deferred to v1.1+* so they are not forgotten.
+**Explicitly deferred to v1.1+:** Automated bash test harness (group D residual), reproducible `.tar.gz` packaging (group G), Splunk Cloud Victoria compatibility (Phase 3 D9), external security audit, supply chain attestation / SLSA L2+.
+
+## Previous Milestone: v1.0.0 — First Production Delivery
+
+**Status:** Shipped 2026-04-15. Tag `v1.0.0` on `origin/main`. GitHub release page live. 26 requirements closed (WIN-01..12, HARD-01..08, APPI-01..06), 3 phases, 8 plans, 30/30 UAT tests passed, 0 AppInspect failures under Splunk Enterprise scope.
+
+**What v1.0.0 delivered:** Full Windows parity (`odin.ps1` + 6 Windows modules byte-compatible with Linux event format), production hardening (unified version, tunable guardrails, alerting stanzas, CI lint gates, two-app split enforcement, shell-injection audit), and AppInspect compliance as a mechanical CI gate. Scoped to Splunk Enterprise — Cloud Victoria compatibility deferred.
 
 ## Requirements
 
