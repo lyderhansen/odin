@@ -10,12 +10,19 @@ research_approach: inline (installed splunk-appinspect via pip, ran against both
 
 > Factual findings captured by running `splunk-appinspect inspect --mode precert` against both apps at commit `c9cfb76`. This is REAL audit data, not speculation.
 
-## Executive summary (surprises)
+## ⚠️ AMENDMENT 2026-04-15
+
+**The original "Executive summary" below is KEPT for historical context but SUPERSEDED by §11 at the end of this file.** The plan-check (a5356920344688647, run against the initial Phase 3 plans) prompted an empirical re-audit that revealed the initial baseline was misleading: the `.DS_Store` file was causing AppInspect to skip 217 out of 229 checks. After temporarily removing `.DS_Store`, AppInspect runs under bare `--mode precert` surface 2 failures + 5 warnings (TA-ODIN) and 3 failures + 2 warnings (ODIN_app_for_splunk) — ALL Cloud-runtime-specific rules that conflict with Phase 1's architectural choices (.path wrapper, Windows scripted inputs, etc.). **Resolution:** v1.0.0 targets Splunk Enterprise; all AppInspect runs use `--excluded-tags cloud`. Under this scope, both apps reach `failure: 0` with 1-2 acceptable warnings each. See §11 for the full post-.DS_Store audit details and CONTEXT.md D9 for the architectural decision.
+
+---
+
+## Executive summary (ORIGINAL — superseded by §11, kept for history)
 
 - **Both apps have ONE finding each, both the same trivial issue: a macOS `.DS_Store` file.** No hardcoded URLs. No insecure scripts. No deprecated stanzas. No license issues. No metadata issues flagged by AppInspect.
 - **The codebase is much cleaner than expected.** 9 successes + 217 skipped (checks for features the apps don't use: modular inputs, UCC, Mako templates, Python code, etc.) + 2 not_applicable + 1 failure = 229 total checks per app.
 - **Scope adjustment:** CONTEXT.md D5 proposed 3 plans (audit → fix → CI-integrate). With findings this minimal, the audit and fix work collapses into ONE plan. Phase 3 is now 2 plans instead of 3. RESEARCH.md recommends the planner honor this collapse.
 - **splunk-appinspect 4.1.3 required libmagic system library.** Dev-machine install flow: `brew install libmagic` + `pip3 install --user splunk-appinspect` + add `~/Library/Python/3.9/bin` to PATH + `DYLD_LIBRARY_PATH=/opt/homebrew/lib` for the magic library. CI runner (ubuntu-latest) has `libmagic` pre-installed via apt, so CI only needs `pip install splunk-appinspect`.
+- **Key error in this original summary:** the `217 skipped` number was not "features the apps don't use" — it was AppInspect short-circuiting after finding a prohibited file. Real skip count under clean state is 0 (all checks run).
 
 ---
 
@@ -315,3 +322,125 @@ APPI-03 (hard-gate) and APPI-05 (least-privilege meta) are verified by dedicated
 - Threat-model every plan.
 - Ensure PATH and DYLD_LIBRARY_PATH exports are documented in task action blocks — without them, splunk-appinspect fails to import on dev machines.
 - Phase 2 artifacts must be preserved end-to-end: shellcheck clean, PSA clean, check-version-sync exits 0, check-two-app-split exits 0, Phase 1 harness still exits 0.
+
+---
+
+## §11 — AMENDED AUDIT (2026-04-15, post-.DS_Store removal + Cloud-excluded scope)
+
+This section supersedes §1 + §4 + §7 above. The original audit was misleading because the `.DS_Store` finding caused AppInspect to skip 217 of 229 checks — we reported "1 failure, very clean" when the reality was "1 failure was the only thing AppInspect got to check before short-circuiting".
+
+### §11.1 — Empirical re-audit (dev machine, splunk-appinspect 4.1.3)
+
+**Procedure:** Temporarily removed `TA-ODIN/.DS_Store` and `ODIN_app_for_splunk/.DS_Store`, ran `splunk-appinspect inspect <app> --mode precert` against both apps to get the REAL finding count, then re-ran with `--excluded-tags cloud` to scope to Splunk Enterprise rules only.
+
+**Bare precert (no tag filter) — THIS IS WHAT APPINSPECT REALLY SEES:**
+
+| App | failure | warning | success | skipped | not_applicable | total |
+|-----|---------|---------|---------|---------|-----------------|-------|
+| TA-ODIN | **2** | **5** | 80 | 0 | 142 | 229 |
+| ODIN_app_for_splunk | **3** | **2** | 104 | 0 | 120 | 229 |
+
+**Same runs with `--excluded-tags cloud`:**
+
+| App | failure | warning | success | skipped | not_applicable | total |
+|-----|---------|---------|---------|---------|-----------------|-------|
+| TA-ODIN | **0** | **2** | 12 | 0 | 7 | 21 |
+| ODIN_app_for_splunk | **0** | **1** | 13 | 0 | 7 | 21 |
+
+### §11.2 — Per-finding catalog (bare precert, both apps combined)
+
+| # | Severity | App | Rule | Message excerpt | Cloud-tag? |
+|---|----------|-----|------|------------------|------------|
+| 1 | failure | TA-ODIN | `check_scripted_inputs_cmd_path_pattern` | `bin/odin.path` points at `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...` which AppInspect's Cloud parser doesn't recognize as a valid file target | yes (cloud) |
+| 2 | failure | TA-ODIN | `check_that_local_does_not_exist` | `A 'local' directory exists in the app` (empty per CLAUDE.md "customer overrides") | yes (cloud) |
+| 3 | warning | TA-ODIN | `check_version_is_valid_semver` | `No [id] section found in app.conf file` (misleading rule name — actually complaining about stanza structure, not semver) | yes (cloud) |
+| 4 | warning | TA-ODIN | `check_that_app_contains_any_windows_specific_components` | `default/inputs.conf contains a stanza for Windows inputs that will not work correctly in Splunk Cloud. Stanza: [script://.\bin\od...]` | yes (cloud) |
+| 5 | warning | TA-ODIN | `check_for_indexer_synced_configs` | `default/inputs.conf will not be synced to indexers in Victoria. If this file is necessary on indexers, configure the settings in the Splunk UI or via Admin Config Service` | yes (cloud), BUT still fires under `--excluded-tags cloud` — it's dual-tagged |
+| 6 | warning | TA-ODIN | `check_for_scripted_inputs` | Info-only: `App contains a scripted input script://./bin/odin.sh. No action required.` | yes (cloud) |
+| 7 | warning | BOTH | `check_for_updates_disabled` | `No check_for_updates property found in [package] stanza. check_for_updates property should be set to False for private apps not uploaded to Splunkbase` | no (runs under Enterprise) — **this is the one we fix in Plan 1 Task 7** |
+| 8 | failure | ODIN_app_for_splunk | `check_for_run_script_alert_action` | `Alert of running a script found in savedsearches.conf, though it's disabled. This feature is deprecated in Splunk 6.3 and might be removed in the future.` — **introduced by Phase 2 Plan 3 `action.script = 0` property** | yes (cloud) |
+| 9 | failure | ODIN_app_for_splunk | `check_indexes_conf_properties` | `Illegal property maxTotalDataSizeMB found in stanza odin_discovery. Only properties [homePath, coldPath, thawedPath, frozenTimePeriodInSecs, disabled, datatype, repFactor] are allowed` | yes (cloud) — Victoria-runtime restriction |
+| 10 | failure | ODIN_app_for_splunk | `check_meta_default_write_access` | `Metadata file does not define the global write access. Add a global write access configuration with at least one role.` | yes (cloud) |
+
+### §11.3 — Why `--excluded-tags cloud` is the right answer
+
+Every single failure in the bare precert run (items 1, 2, 8, 9, 10) is a **Cloud Victoria-runtime-specific rule**. Fixing them requires architectural changes that would break Enterprise functionality:
+
+| # | "Fix" | Impact on Enterprise |
+|---|-------|---------------------|
+| 1 | Rewrite `bin/odin.path` to not be a command-line wrapper | Breaks Phase 1 D6 (standalone-runnable modules, CLM-safe invocation) — would require wrapper `.bat` or direct `.ps1` invocation without `-NoProfile -NonInteractive -ExecutionPolicy Bypass` |
+| 2 | Remove empty `TA-ODIN/local/` | Breaks CLAUDE.md convention for customer overrides |
+| 8 | Remove `action.script = 0` | The property is part of Splunk savedsearches.conf structure — removing it changes alert behavior on Enterprise (default alert.script is unset, which may differ from explicit 0) |
+| 9 | Remove `maxTotalDataSizeMB` from indexes.conf | Removes on-prem capacity planning; Enterprise users rely on this setting for disk-quota management |
+| 10 | Add global write access to metadata/default.meta | Changes permissions model; may require different role ACLs than ops expects |
+
+Contrast with `--excluded-tags cloud`, which simply tells AppInspect "we're not targeting Cloud" — zero code changes, zero Enterprise regressions, one CLI flag. This is the canonical way Splunkbase-submitted apps declare Enterprise scope.
+
+### §11.4 — Enterprise-scope remaining warnings + trivial fix
+
+Under `--excluded-tags cloud`, the remaining warnings per app are:
+
+**TA-ODIN (2 warnings):**
+- `check_for_updates_disabled` — **fixable**, Plan 1 Task 7: add `check_for_updates = False` to `[package]` stanza
+- `check_for_indexer_synced_configs` — info-only, documented as accepted warning (Victoria-sync is an ops concern, not a code concern)
+
+**ODIN_app_for_splunk (1 warning):**
+- `check_for_updates_disabled` — **fixable**, same fix as TA-ODIN
+
+**After Plan 1 Task 7 runs:**
+
+| App | failure | warning (expected) |
+|-----|---------|-------------------|
+| TA-ODIN | 0 | 1 (indexer_synced_configs, accepted) |
+| ODIN_app_for_splunk | 0 | 0 |
+
+### §11.5 — Smoke test strategy correction
+
+RESEARCH §2 (original) and Plan 2 Task 2 both assumed that injecting `# http://example.com` as a comment in `app.conf` would trip an AppInspect URL-detection rule. **Empirical test on 2026-04-15 proved this is WRONG** — AppInspect 4.1.3 (with or without `--excluded-tags cloud`) did NOT flag the injected URL. Summary before injection: `failure: 2, warning: 5`. Summary after injection: `failure: 2, warning: 5`. Identical. The URL was completely invisible to the rule set.
+
+**Revised smoke test (for Plan 2 Task 2):** Re-create a `.DS_Store` file as the violation. `check_that_extracted_splunk_app_does_not_contain_prohibited_directories_or_files` is one of the few rules that does NOT carry the `cloud` tag — it fires under both default precert AND `--excluded-tags cloud`, in both TA-ODIN and ODIN_app_for_splunk. Empirically verified: the prohibited-file rule is a reliable detection mechanism.
+
+**Smoke test procedure:**
+```bash
+# Capture pre-state
+rm -f TA-ODIN/.DS_Store  # ensure clean start
+
+# Inject the violation
+touch TA-ODIN/.DS_Store
+
+# Run audit, expect failure > 0
+splunk-appinspect inspect TA-ODIN --mode precert --excluded-tags cloud --output-file /tmp/smoke.json --data-format json
+python3 -c "import json, sys; s=json.load(open('/tmp/smoke.json'))['summary']; sys.exit(0 if s.get('failure',0)>0 else 1)"
+
+# Revert
+rm -f TA-ODIN/.DS_Store
+
+# Re-run, expect clean
+splunk-appinspect inspect TA-ODIN --mode precert --excluded-tags cloud --output-file /tmp/post-revert.json --data-format json
+python3 -c "import json, sys; s=json.load(open('/tmp/post-revert.json'))['summary']; sys.exit(0 if s.get('failure',0)==0 else 1)"
+```
+
+### §11.6 — Impact on plans
+
+**Plan 1:**
+- Task 6 audit invocation must add `--excluded-tags cloud` to both `splunk-appinspect inspect` calls
+- Task 6 expected output: both apps `failure: 0, warning: <acceptable count>`
+- **NEW Task 7**: add `check_for_updates = False` to both app.conf `[package]` stanzas; re-run audit; confirm warning count drops by 2 (one from each app)
+
+**Plan 2:**
+- Task 1 CI workflow: both AppInspect steps must include `--excluded-tags cloud` flag
+- Task 2 smoke test: replace `http://` injection with `.DS_Store` re-creation (per §11.5)
+- Task 4 final audit: same `--excluded-tags cloud` flag
+- Task 4 expected output: TA-ODIN `failure: 0, warning: 1`; ODIN_app_for_splunk `failure: 0, warning: 0`
+
+### §11.7 — Scope defer per CONTEXT D9
+
+Everything listed in §11.2 items 1-6 and 8-10 that IS cloud-tagged gets deferred to v1.1+ as "Splunk Cloud Victoria compatibility work". CONTEXT.md D9 codifies this. The deferral does NOT reduce Enterprise functionality and does NOT block Splunkbase submission — Splunkbase accepts Enterprise-scoped apps.
+
+### §11.8 — Lessons learned
+
+1. **Never trust an audit that includes a prohibited-file finding** — AppInspect short-circuits on packaging errors, masking the real rule results.
+2. **Always remove prohibited files first, THEN re-audit** — the clean run reveals 10-20x more checks actually executed.
+3. **`--excluded-tags cloud` is the standard scoping flag** for Enterprise-only apps. Use it from day one, not after a scope crisis.
+4. **Assumption-based smoke tests fail silently** — verify empirically which rule fires on your test input BEFORE codifying the test.
+5. **Plan-checker added value here** — the findings would have been caught eventually at Plan 1 Task 6 runtime, but plan-check's "walk through each extractor and rule" discipline surfaced them 2 hours earlier.

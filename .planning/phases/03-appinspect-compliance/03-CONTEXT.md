@@ -135,3 +135,46 @@ Phase 1 landed Windows code, Phase 2 made it lint-clean and fleet-safe, Phase 3 
 - Every task must have an `<automated>` verify block. AppInspect rules can be asserted via exit code or JSON field greps on the captured report.
 - Threat model every plan. For Plan 3 specifically, the CI integration adds supply-chain risk: `pip install splunk-appinspect` pulls from PyPI — pin the version if possible, document the integrity check.
 - The user override prompt for D2 (author/license/description) must be surfaced in Plan 1 Task 1's action block so the executor can ask before committing placeholder defaults.
+
+---
+
+## D9 — ADDED 2026-04-15 — v1.0.0 targets Splunk Enterprise; Cloud compliance deferred
+
+**Decision:** TA-ODIN v1.0.0 targets Splunk Enterprise deployment (on-prem or managed private). Splunk Cloud Victoria compliance is explicitly **deferred to v1.1+**. All AppInspect audit runs use `splunk-appinspect inspect ... --mode precert --excluded-tags cloud` to scope the rule catalog to Enterprise-relevant checks.
+
+**Why this decision was needed:** Empirical re-audit during Phase 3 research (after removing the `.DS_Store` prohibited-file that was masking the rest of the rule set) surfaced 2 TA-ODIN failures + 3 ODIN_app_for_splunk failures that are all Cloud-specific:
+
+| Finding | Root cause | Cloud-only? |
+|---------|------------|-------------|
+| `check_scripted_inputs_cmd_path_pattern` (TA-ODIN) | Phase 1's `bin/odin.path` wrapper contains a PowerShell command line; AppInspect's Cloud ruleset expects `.path` files to point at a file path | Yes — Splunk Enterprise UF supports .path command-line wrappers |
+| `check_that_local_does_not_exist` (TA-ODIN) | Empty `local/` directory exists per CLAUDE.md "customer overrides, empty by default" | Yes — Enterprise accepts empty local/ |
+| `check_that_app_contains_any_windows_specific_components` (TA-ODIN) | Windows scripted input stanza | Yes — Cloud doesn't support Windows UF scripted inputs |
+| `check_for_indexer_synced_configs` (TA-ODIN) | inputs.conf won't sync to indexers in Victoria | Yes — Victoria-runtime concern |
+| `check_for_run_script_alert_action` (ODIN_app_for_splunk) | Phase 2 Plan 3 Tasks 2/3 added `action.script = 0` to savedsearches stanzas — the property exists even though disabled | Yes — Cloud deprecated script alerts |
+| `check_indexes_conf_properties` (ODIN_app_for_splunk) | `maxTotalDataSizeMB` in odin_discovery index; not in Cloud Victoria's allowed list | Yes — Enterprise allows it |
+| `check_meta_default_write_access` (ODIN_app_for_splunk) | metadata/default.meta lacks global write access config | Yes — Cloud-only requirement |
+
+**The 7 "fixes" would have required undoing significant Phase 1 and Phase 2 architectural choices:** rewriting the `.path` wrapper technique (Phase 1 D6 design), removing Windows scripted input support entirely, rewriting saved search alerts, rewriting index configuration, restructuring metadata permissions. Each of these fixes makes v1.0.0 Cloud-compatible at the cost of breaking Enterprise functionality.
+
+**Rationale for Enterprise-only scope:**
+1. **Pilot-deliverable** language in ROADMAP Phase 3 "Goal" — pilots run on Enterprise, not Cloud
+2. **Phase 1 D1** (WDAC allowlisting prerequisite) explicitly targets enterprise-lockdown environments, not Cloud
+3. **Phase 1 D6** (standalone-runnable modules via `.path` wrapper) is a design for Enterprise UF, not Cloud
+4. **Cloud forwarders have severe scripted-input limitations** — TA-ODIN's core value proposition (bash/PowerShell endpoint enumeration) doesn't translate to Cloud-hosted UFs anyway
+5. **10k+ host fleets** (PROJECT.md milestone goal) are typically Enterprise deployments — Cloud fleets cap out much lower
+6. **Splunkbase accepts Enterprise-only apps** — the `--excluded-tags cloud` flag is the standard way to submit an Enterprise-scoped app
+
+**Downstream contract:**
+- All AppInspect invocations in Plan 1 Task 6, Plan 2 Task 1 (CI workflow), Plan 2 Task 2 (smoke test), Plan 2 Task 4 (final audit) MUST use `--excluded-tags cloud`.
+- Task 6 and Task 4 expected summary: `failure: 0, error: 0` under the Enterprise scope.
+- Remaining warnings under Enterprise scope (1-2 per app) are acceptable with documented rationale in SUMMARY.md.
+- Plan 1 gains a new Task 7: add `check_for_updates = False` to both app.conf `[package]` stanzas (closes `check_for_updates_disabled` warning — the only Enterprise-scope warning that's trivially fixable).
+- Plan 2 Task 2 smoke test changes from `http://` injection (empirically proven NOT caught by AppInspect 4.1.3 rules) to `.DS_Store` re-creation (empirically proven caught by `check_that_extracted_splunk_app_does_not_contain_prohibited_directories_or_files`).
+
+**Deferred to v1.1+:**
+- Splunk Cloud Victoria compatibility (the 7 Cloud-specific findings above)
+- `--require-hashes` for splunk-appinspect pip install (supply chain)
+- Potential split of `TA-ODIN/default/inputs.conf` into platform-specific stanzas
+- Native `.ps1` invocation without `.path` wrapper (may require CLM policy changes)
+
+**Documented in SUMMARY.md of Plan 1 and Plan 2:** The Enterprise target + Cloud deferral rationale above is restated in both SUMMARY.md files so that a future reviewer inspecting either plan understands the scope without re-reading this CONTEXT file.
