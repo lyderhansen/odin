@@ -272,3 +272,26 @@ service,SplunkForwarder,splunk_forwarder,splunk_internal_win,splunkd,none,%SPLUN
 port,47001/tcp,windows_management,winrm_compat_traffic,,,,WinRM compatibility on port 47001 (Windows),,
 port,3268/tcp,domain_controller,gc_traffic,,,,AD Global Catalog on port 3268 (Windows),,
 port,3269/tcp,domain_controller,gc_ssl_traffic,,,,AD Global Catalog SSL on port 3269 (Windows),,
+service,W3SVC,web_server,iis_access,iis,Splunk_TA_microsoft-iis,C:\inetpub\logs\LogFiles\W3SVC*\u_ex*.log,IIS W3C access logs,50,2000
+service,W3SVC,web_server,iis_httperr,iis_httperr,Splunk_TA_microsoft-iis,C:\Windows\System32\LogFiles\HTTPERR\httperr*.log,IIS HTTP.sys error log,1,50
+service,MSSQLSERVER,database_server,mssql_errorlog,mssql:errorlog,Splunk_TA_microsoft_sqlserver,C:\Program Files\Microsoft SQL Server\MSSQL*\MSSQL\Log\ERRORLOG*,SQL Server error log,5,200
+service,MSSQLSERVER,database_server,mssql_audit,WinEventLog:Application,Splunk_TA_microsoft_sqlserver,WinEventLog://Application,SQL Server events in Application channel (filter by source MSSQLSERVER),10,200
+service,MSExchangeTransport,mail_server,exchange_transport_log,MSExchange:2013:MessageTracking,Splunk_TA_microsoft_exchange,C:\Program Files\Microsoft\Exchange Server\V*\TransportRoles\Logs\MessageTracking\*.log,Exchange transport message tracking log,100,1000
+service,MSExchangeIS,mail_server,exchange_protocol_log,MSExchange:2013:HttpProxy,Splunk_TA_microsoft_exchange,C:\Program Files\Microsoft\Exchange Server\V*\Logging\HttpProxy\*\*.log,Exchange HTTP proxy protocol log,50,500
+service,NTDS,domain_controller,ad_directory_service,WinEventLog:Directory Service,Splunk_TA_windows,WinEventLog://Directory Service,Active Directory Directory Service event log,10,200
+service,NTDS,domain_controller,security_audit,WinEventLog:Security,Splunk_TA_windows,WinEventLog://Security,Security event log on Domain Controllers (high volume - audit policy dependent),500,5000
+service,DNS,dns_server,dns_audit,WinEventLog:Microsoft-Windows-DNSServer/Audit,Splunk_TA_windows,WinEventLog://Microsoft-Windows-DNSServer/Audit,DNS Server audit channel,50,500
+service,DNS,dns_server,dns_analytical,WinEventLog:Microsoft-Windows-DNSServer/Analytical,Splunk_TA_windows,WinEventLog://Microsoft-Windows-DNSServer/Analytical,DNS Server analytical channel (high volume),100,2000
+service,DHCPServer,dhcp_server,dhcp_audit,WinEventLog:Microsoft-Windows-Dhcp-Server/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-Dhcp-Server/Operational,DHCP server operational events,5,100
+service,LanmanServer,file_server,smb_security_audit,WinEventLog:Security,Splunk_TA_windows,WinEventLog://Security,SMB share access via Security audit (filter by EventCode 5140 5145),50,500
+service,Spooler,print_server,print_service_operational,WinEventLog:Microsoft-Windows-PrintService/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-PrintService/Operational,[baseline only - no dedicated Splunkbase TA] Print Service operational log,5,100
+service,vmms,virtualization_host,hyperv_vmms,WinEventLog:Microsoft-Windows-Hyper-V-VMMS/Admin,Splunk_TA_windows,WinEventLog://Microsoft-Windows-Hyper-V-VMMS/Admin,[baseline only - no dedicated Splunkbase TA] Hyper-V VMMS admin log,5,100
+service,adfssrv,identity_server,adfs_admin,WinEventLog:AD FS/Admin,Splunk_TA_windows,WinEventLog://AD FS/Admin,[baseline only - no dedicated Splunkbase TA] AD FS Admin event log,5,100
+service,WsusService,management_server,wsus_application,WinEventLog:Application,Splunk_TA_windows,WinEventLog://Application,[baseline only - no dedicated Splunkbase TA] WSUS server logs to Application channel,10,200
+service,CertSvc,certificate_server,certsvc_application,WinEventLog:Application,Splunk_TA_windows,WinEventLog://Application,[baseline only - no dedicated Splunkbase TA] Certificate Authority logs to Application channel,5,100
+service,IAS,identity_server,nps_security,WinEventLog:Security,Splunk_TA_windows,WinEventLog://Security,[baseline only - no dedicated Splunkbase TA] NPS / RADIUS auth events in Security channel (filter EventCode 6272-6280),20,300
+service,DFSR,file_server,dfsr_replication,WinEventLog:DFS Replication,Splunk_TA_windows,WinEventLog://DFS Replication,[baseline only - no dedicated Splunkbase TA] DFS Replication operational log,5,100
+service,ClusSvc,ha_cluster,failover_cluster,WinEventLog:Microsoft-Windows-FailoverClustering/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-FailoverClustering/Operational,[baseline only - no dedicated Splunkbase TA] Failover Clustering operational log,5,100
+package,Sysmon*,security_endpoint,sysmon_operational,XmlWinEventLog:Microsoft-Windows-Sysmon/Operational,Splunk_TA_microsoft_sysmon,WinEventLog://Microsoft-Windows-Sysmon/Operational,Sysmon operational events (XML format),200,2000
+port,3389/tcp,rdp_server,rdp_session,WinEventLog:Microsoft-Windows-TerminalServices-LocalSessionManager/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-TerminalServices-LocalSessionManager/Operational,Remote Desktop session events,5,100
+port,5985/tcp,windows_management,winrm_powershell,WinEventLog:Microsoft-Windows-PowerShell/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-PowerShell/Operational,WinRM-driven PowerShell script block execution events,10,200
