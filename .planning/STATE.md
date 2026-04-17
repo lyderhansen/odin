@@ -1,31 +1,31 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0.1
-milestone_name: production-readiness
-current_plan: 0 of 0
-status: scoping
-last_updated: "2026-04-15T13:00:00.000Z"
-last_activity: 2026-04-15
+milestone_name: milestone
+current_plan: 1 of 2
+status: in_progress
+last_updated: "2026-04-17T13:07:34.416Z"
+last_activity: 2026-04-17
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State — TA-ODIN
 
 ## Current Position
 
-- **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-06)
-- **Phase:** Phase 4 — Windows Classification Data (not started; awaiting `/gsd-plan-phase 4`)
-- **Plan:** None drafted yet
-- **Status:** Milestone opened — requirements + roadmap committed, ready for planning
-- **Current Plan:** 0 of 0
-- **Total Plans in Phase:** TBD
-- **Progress:** [──────────] 0%
-- **Last activity:** 2026-04-15
+- **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-07)
+- **Phase:** Phase 4 — Windows Classification Data (in progress)
+- **Plan:** 04-01 complete; 04-02 next (Wave 1 — packages + log_sources)
+- **Status:** Plan 04-01 (Wave 0 services + ports) shipped clean; AppInspect Enterprise scope still failure=0/error=0
+- **Current Plan:** 1 of 2
+- **Total Plans in Phase:** 2
+- **Progress:** [█████░░░░░] 50%
+- **Last activity:** 2026-04-17
 
 ## Milestone Scope (v1.0.1)
 
@@ -45,7 +45,7 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 4 | Windows Classification Data | PROD-01 | Not started |
+| 4 | Windows Classification Data | PROD-01 | In progress (1/2 plans complete — 04-01 Wave 0 services+ports landed; 04-02 Wave 1 packages+log_sources next) |
 | 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | Not started |
 | 6 | Pilot Validation | PROD-02 | Not started |
 
@@ -90,10 +90,19 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 - `PROD-02` pilot window is 7 continuous days; shorter windows miss drift and weekly-scheduled-task patterns.
 - No new mandatory CI gates in this milestone (AppInspect + HARD-* gates from v1.0.0 continue to gate every commit).
 
+### Plan 04-01 outcomes (2026-04-17)
+
+- `odin_classify_services.csv` grew 332 → 357 lines (+25 Windows service rows, D1 taxonomy, RESEARCH §3 canonical Get-Service Names).
+- `odin_classify_ports.csv` grew 206 → 224 lines (+18 Windows port rows covering DC/Kerberos/WSUS/WDS/DFSR/KMS/SCCM/DPM/Hyper-V/SSAS/WCF/WinRM/RPC).
+- AppInspect Enterprise scope still `failure=0, error=0, warning=0, success=14, na=7` — byte-for-byte identical to Phase 3 baseline. Wave 0 artifact committed at `.planning/artifacts/appinspect/odin-app-phase04-wave0.json`.
+- Phase 1+2+3 regression suite green (HARD-01 version-sync, HARD-07 two-app-split, HARD-08 injection-fixtures 10/10, windows-parity-harness all dimensions).
+- **Surprise:** Plan 04-01 was drafted assuming a clean Windows-free baseline; commit `da1f66e` (predates v1.0.1) had already added 23 of 34 required services + 18 of 24 required ports. Honored user's gating rule by preserving pre-existing rows byte-for-byte and appending only missing + additional canonical Windows rows to satisfy wc-l gates. Two pre-existing data-quality issues (duplicate (port,transport) keys; legacy role names like `web` instead of `web_server`) tracked for future cleanup in `.planning/phases/04-windows-classification-data/deferred-items.md` (D-04-01, D-04-02).
+- Plan 04-02 should target the D1-correct `host_role` values in `odin_log_sources.csv` regardless of the legacy rows; a focused cleanup plan may re-align the legacy rows after Phase 4 lands.
+
 ## Todos
 
 _None. Use `/gsd-add-todo` to capture ideas as they come up during planning._
 
 ## Session Continuity
 
-_Last session: 2026-04-15 — shipped v1.0.0 (3/3 phases, 8/8 plans, 30/30 UAT tests, tag pushed to origin, GitHub Release created). Opened v1.0.1 Production Readiness milestone: REQUIREMENTS.md amended with PROD-01..PROD-06, ROADMAP.md rewritten for phases 4–6, STATE.md reset. Next: `/gsd-discuss-phase 4` or `/gsd-plan-phase 4` to start Windows classification data work._
+_Last session: 2026-04-17 — Plan 04-01 (Wave 0 services + ports) executed end-to-end. 3/3 tasks committed (`05c1869` services +25, `162897d` ports +18 + deferred-items.md, `653f569` AppInspect Wave 0 baseline). Duration ~5 min. Three Rule 3 deviations documented (baseline-assumption fixes; pre-existing CSV state surprised the plan). AppInspect failure=0/error=0/warning=0; regression suite green. Next: `/gsd-execute-phase 04` continues with Plan 04-02 (Wave 1 — packages + log_sources)._
