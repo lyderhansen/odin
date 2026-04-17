@@ -41,14 +41,15 @@ Three phases, executed strictly in order:
 ### Phase 5: Operational Readiness
 **Goal:** Every ops-visible failure mode, runtime alert, and common admin task has a documented procedure that an on-call engineer — who has never seen TA-ODIN before — can follow end-to-end to reach a working outcome. The ops dashboard surfaces the telemetry an operator needs to answer "is the fleet healthy?" at a glance.
 **Depends on:** Phase 4 (docs and dashboard panels reference the classified-host output, so Phase 4's classification data needs to be in place before docs are finalized and dashboard searches are written)
-**Requirements:** PROD-03, PROD-04, PROD-05, PROD-06
+**Requirements:** PROD-03, PROD-04, PROD-05, PROD-06, PROD-07
 **Success Criteria** (what must be TRUE):
   1. `DOCS/RUNBOOK.md` exists and contains at least 4 alert-response entries: one for `type=truncated`, one for `type=odin_error exit_code=124`, one for `type=odin_error` (non-124), and one for "fleet scan success rate below SLO". Each entry has sections: *What it means*, *Diagnostic SPL*, *Remediation*, *Escalation*. Verified by `grep -c '^### ' DOCS/RUNBOOK.md` ≥ 4 and `grep -c 'Diagnostic SPL' DOCS/RUNBOOK.md` ≥ 4.
   2. `DOCS/INSTALL.md`, `DOCS/TROUBLESHOOTING.md`, `DOCS/DATA-DICTIONARY.md`, and `DOCS/UPGRADE.md` all exist and are non-trivial (≥50 lines each), and both app-root READMEs (`TA-ODIN/README.md`, `ODIN_app_for_splunk/README.md`) reference these docs by relative path — verified by `test -s DOCS/INSTALL.md && test -s DOCS/TROUBLESHOOTING.md && test -s DOCS/DATA-DICTIONARY.md && test -s DOCS/UPGRADE.md` plus line-count spot checks.
   3. `DOCS/DATA-DICTIONARY.md` has one subsection per `type=*` event (`odin_start`, `odin_complete`, `odin_error`, `truncated`, `service`, `port`, `package`, `scheduled_task`, `process`, `mount`) and each subsection lists every field name the module can emit — verified by `grep -c '^## type=' DOCS/DATA-DICTIONARY.md` ≥ 10.
   4. `DOCS/ROLLBACK.md` documents the exact Deployment Server steps to disable TA-ODIN via `disabled = 1` in a local overlay without removing files, AND `.planning/artifacts/rollback-dryrun.md` contains a timestamped dry-run log showing (a) pre-toggle event count on a pilot host, (b) toggle applied, (c) event count drops to zero within one scan cycle, (d) toggle reverted, (e) events resume — proving the procedure is rehearsed, not theoretical.
   5. `ODIN_app_for_splunk/default/data/ui/views/odin_ops.xml` exists as a valid Dashboard Studio view, is exported via `metadata/default.meta`, contains panels for *scan success rate per OS*, *module runtime p95 per module*, *module-failure heatmap*, *event volume per host per day*, and *distinct hosts seen over time*, and the new view does not regress AppInspect: `splunk-appinspect inspect ODIN_app_for_splunk --mode precert --excluded-tags cloud` still exits with `summary.failure + summary.error = 0`.
-**Plans:** TBD (2–3 plans expected — docs cluster, rollback cluster, dashboard cluster)
+  6. All 6 Linux modules (`TA-ODIN/bin/modules/*.sh`) use `ODIN_VERSION="${ODIN_VERSION:-1.0.0}"` in their standalone fallback (not `2.1.0`), and standalone `emit` checks `ODIN_MAX_EVENTS` and emits `type=truncated` at the cap. `check-version-sync.sh` now greps module fallbacks and fails on stale version strings. Optionally, standalone helpers are consolidated into `modules/_common.sh`. Verified by: `bash TA-ODIN/bin/modules/services.sh 2>&1 | head -1 | grep -c 'odin_version=1.0.0'` returns 1; `ODIN_MAX_EVENTS=2 bash TA-ODIN/bin/modules/services.sh 2>&1 | grep -c type=truncated` returns ≥1; `check-version-sync.sh` exits 0.
+**Plans:** TBD (2–3 plans expected — docs cluster, rollback cluster, dashboard + module hygiene cluster)
 **UI hint:** yes (Dashboard Studio view for PROD-06)
 
 ### Phase 6: Pilot Validation
@@ -74,8 +75,8 @@ Three phases, executed strictly in order:
 
 ## Coverage
 
-- **Total v1.0.1 requirements:** 6 (PROD-01..PROD-06)
-- **Mapped:** 6/6
+- **Total v1.0.1 requirements:** 7 (PROD-01..PROD-07)
+- **Mapped:** 7/7
 - **Orphans:** 0
 - **Duplicates:** 0
 

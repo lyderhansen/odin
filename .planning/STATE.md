@@ -37,6 +37,7 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 - **PROD-04.** Admin + troubleshooting docs — install, troubleshoot, data dictionary, upgrade guides → **Phase 5**
 - **PROD-05.** Rollback procedure — documented + dry-run validated → **Phase 5**
 - **PROD-06.** Ops observability dashboard — Dashboard Studio view with scan health + runtime + coverage panels → **Phase 5**
+- **PROD-07.** Linux module standalone-fallback hygiene — bump v2.1.0→1.0.0, add MAX_EVENTS guard to standalone emit, extend version-sync check, optionally centralize into `_common.sh` → **Phase 5**
 
 **Deferred to v1.1+:** Automated bash test harness (group D residual), reproducible `.tar.gz` packaging (group G), Splunk Cloud Victoria compatibility (Phase 3 D9), external security audit, supply chain attestation.
 
@@ -45,7 +46,7 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 4 | Windows Classification Data | PROD-01 | Not started |
-| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06 | Not started |
+| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | Not started |
 | 6 | Pilot Validation | PROD-02 | Not started |
 
 ## Accumulated Context

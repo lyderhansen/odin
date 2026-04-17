@@ -131,7 +131,7 @@ _Populated by `gsd-roadmapper` on 2026-04-10. Each REQ-ID maps to exactly one ph
 **Status:** Active (opened 2026-04-15)
 **Goal:** Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, observability, and documentation gaps that block safe rollout beyond ~50 hosts.
 
-**In scope this milestone:** Windows classification data (PROD-01), operational readiness (PROD-03..PROD-06), and pilot validation (PROD-02).
+**In scope this milestone:** Windows classification data (PROD-01), operational readiness (PROD-03..PROD-07), and pilot validation (PROD-02).
 
 **Not in scope this milestone:** Automated bash test harness (group D), Splunk Cloud Victoria compatibility (Phase 3 D9 — still Enterprise-only), external security audit (separate governance track), supply chain attestation / SLSA L2+, reproducible `.tar.gz` packaging (group G — can ship via GitHub tag for now). Tracked under *Deferred to v1.1+*.
 
@@ -143,6 +143,8 @@ _Populated by `gsd-roadmapper` on 2026-04-10. Each REQ-ID maps to exactly one ph
 - [ ] **PROD-04** — `DOCS/INSTALL.md` (Deployment Server rollout playbook per OS), `DOCS/TROUBLESHOOTING.md` (common failure modes — permission issues, missing cmdlets, systemctl quirks, Windows UAC edge cases), `DOCS/DATA-DICTIONARY.md` (every field per `type=*` event), `DOCS/UPGRADE.md` (v1.0.0 → v1.0.1 upgrade path including rollback note), README updates in both app roots. Acceptance: a Splunk admin unfamiliar with TA-ODIN can install it, understand the fields, and diagnose a common failure using these docs alone.
 - [ ] **PROD-05** — `DOCS/ROLLBACK.md` documenting exact Deployment Server steps to disable TA-ODIN on the fleet without removing files (toggle `disabled = 1` in a local overlay stanza), plus dry-run validation: toggle on a pilot host, verify the scripted input stops within one scan cycle, toggle back, verify events resume. Acceptance: dry-run logged in `.planning/artifacts/rollback-dryrun.md` with timestamps and event-count deltas.
 - [ ] **PROD-06** — Ops observability dashboard at `ODIN_app_for_splunk/default/data/ui/views/odin_ops.xml` (Dashboard Studio) showing: scan success rate per OS, module runtime p50/p95/p99 per module type, module-failure heatmap, event-volume-per-host-per-day trendline, fleet host coverage over time (distinct hosts seen per day), top-N truncating hosts. Acceptance: dashboard renders with test data in a local Splunk instance, panels are labeled, no broken searches. AppInspect still passes after adding the view.
+
+- [ ] **PROD-07** — Linux module standalone-fallback hygiene: (a) bump all 6 `TA-ODIN/bin/modules/*.sh` standalone version fallbacks from `2.1.0` to `1.0.0`, (b) add `ODIN_MAX_EVENTS` truncation check + `type=truncated` emission to the standalone fallback `emit` function so standalone execution matches orchestrator guardrail behavior, (c) extend `tools/tests/check-version-sync.sh` to grep `TA-ODIN/bin/modules/*.sh` for stale version strings and fail if any `2.1.0` (or non-`1.0.0`) reference is found, (d) optionally consolidate `safe_val` + `emit` + `get_timestamp` fallbacks into a shared `modules/_common.sh` dot-sourced by all modules (mirrors the Windows `_common.ps1` pattern). Acceptance: `bash TA-ODIN/bin/modules/services.sh 2>&1 | head -1 | grep -c 'odin_version=1.0.0'` returns 1 (standalone runs with correct version); `check-version-sync.sh` exits 0 including module-fallback sites; `ODIN_MAX_EVENTS=2 bash TA-ODIN/bin/modules/services.sh 2>&1 | grep -c type=truncated` returns at least 1 (standalone truncation works).
 
 ### Deferred to v1.1+
 
@@ -157,4 +159,5 @@ The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) re
 | PROD-04 | Phase 5 | Admin + troubleshooting + data dictionary + upgrade docs |
 | PROD-05 | Phase 5 | Rollback procedure + dry-run validation |
 | PROD-06 | Phase 5 | Ops observability dashboard (Dashboard Studio) |
+| PROD-07 | Phase 5 | Linux module standalone-fallback hygiene (version + MAX_EVENTS + _common.sh) |
 | PROD-02 | Phase 6 | Pilot deployment + 7-day observation window (release gate) |
