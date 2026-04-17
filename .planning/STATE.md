@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: milestone
-current_plan: 1 of 2
-status: in_progress
-last_updated: "2026-04-17T13:07:34.416Z"
+current_plan: 2
+status: executing
+last_updated: "2026-04-17T13:20:12.201Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 50
+  completed_plans: 2
+  percent: 100
 ---
 
 # Project State — TA-ODIN
@@ -19,12 +19,12 @@ progress:
 ## Current Position
 
 - **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-07)
-- **Phase:** Phase 4 — Windows Classification Data (in progress)
-- **Plan:** 04-01 complete; 04-02 next (Wave 1 — packages + log_sources)
-- **Status:** Plan 04-01 (Wave 0 services + ports) shipped clean; AppInspect Enterprise scope still failure=0/error=0
-- **Current Plan:** 1 of 2
+- **Phase:** Phase 4 — Windows Classification Data (COMPLETE)
+- **Plan:** 04-01 + 04-02 both shipped; PROD-01 fully closed
+- **Status:** Phase 4 complete; ready to start Phase 5 (Operational Readiness)
+- **Current Plan:** 2 of 2 (Phase 4)
 - **Total Plans in Phase:** 2
-- **Progress:** [█████░░░░░] 50%
+- **Progress:** [██████████] 100%
 - **Last activity:** 2026-04-17
 
 ## Milestone Scope (v1.0.1)
@@ -45,7 +45,7 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 4 | Windows Classification Data | PROD-01 | In progress (1/2 plans complete — 04-01 Wave 0 services+ports landed; 04-02 Wave 1 packages+log_sources next) |
+| 4 | Windows Classification Data | PROD-01 | **Complete** (2/2 plans — 04-01 services+ports, 04-02 packages+log_sources+regression-guard) |
 | 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | Not started |
 | 6 | Pilot Validation | PROD-02 | Not started |
 
@@ -99,10 +99,21 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 - **Surprise:** Plan 04-01 was drafted assuming a clean Windows-free baseline; commit `da1f66e` (predates v1.0.1) had already added 23 of 34 required services + 18 of 24 required ports. Honored user's gating rule by preserving pre-existing rows byte-for-byte and appending only missing + additional canonical Windows rows to satisfy wc-l gates. Two pre-existing data-quality issues (duplicate (port,transport) keys; legacy role names like `web` instead of `web_server`) tracked for future cleanup in `.planning/phases/04-windows-classification-data/deferred-items.md` (D-04-01, D-04-02).
 - Plan 04-02 should target the D1-correct `host_role` values in `odin_log_sources.csv` regardless of the legacy rows; a focused cleanup plan may re-align the legacy rows after Phase 4 lands.
 
+### Plan 04-02 outcomes (2026-04-17)
+
+- `odin_classify_packages.csv` grew 274 → 308 lines (+34 Windows package wildcard rows, D3 patterns + D1 taxonomy + RESEARCH §4 registry display names).
+- `odin_log_sources.csv` grew 274 → 297 lines (+23 Windows log_source mapping rows: 8 canonical Splunkbase TAs + 8 baseline-only-marked + 7 baseline TAs without marker. Cross-CSV TA registry validation enforced against `odin_recommended_tas.csv` — zero invented TA names).
+- `tools/tests/check-windows-classification.sh` created — 138-line shellcheck-clean executable regression guard. Implements ROADMAP §Phase 4 success criteria 1-5 as shell assertions: row counts on all 4 lookup CSVs, canonical Windows signal coverage, Sysmon XmlWinEventLog format guard, ≥7 baseline-only markers, cross-CSV TA validation, synthetic Windows host classification (W3SVC + MSSQLSERVER + LanmanServer ≥3 distinct roles), schema-header drift guards. Regression detection verified end-to-end (deleting W3SVC row triggers 3 failures; revert restores PASS).
+- AppInspect Enterprise scope still `failure=0, error=0, warning=0, success=14, na=7` — byte-identical to Phase 3 baseline AND Wave 0 baseline. Final artifact at `.planning/artifacts/appinspect/odin-app-phase04-final.json`.
+- Phase 1+2+3 regression suite + new PROD-01 guard all green.
+- **PROD-01 fully closed.** Plans 04-01 + 04-02 together complete every PROD-01 acceptance criterion.
+- Four Rule 1 fixes during execution: removed embedded commas from 2 package descriptions to satisfy NF==5 AC; switched script `grep -E` to `grep -F` for literal-paren wildcard patterns; made schema-header check `tr -d '\r'`-tolerant for pre-existing CRLF in `odin_log_sources.csv`; replaced `\xc2\xa78` byte-escape with literal "section 8" to satisfy shellcheck SC2028.
+- Phase 4 left in fully-buildable, AppInspect-clean, regression-guard-protected state. Ready for Phase 5 (Operational Readiness).
+
 ## Todos
 
 _None. Use `/gsd-add-todo` to capture ideas as they come up during planning._
 
 ## Session Continuity
 
-_Last session: 2026-04-17 — Plan 04-01 (Wave 0 services + ports) executed end-to-end. 3/3 tasks committed (`05c1869` services +25, `162897d` ports +18 + deferred-items.md, `653f569` AppInspect Wave 0 baseline). Duration ~5 min. Three Rule 3 deviations documented (baseline-assumption fixes; pre-existing CSV state surprised the plan). AppInspect failure=0/error=0/warning=0; regression suite green. Next: `/gsd-execute-phase 04` continues with Plan 04-02 (Wave 1 — packages + log_sources)._
+_Last session: 2026-04-17 — Plan 04-02 (Wave 1 packages + log_sources + regression-guard + final AppInspect) executed end-to-end. 4/4 tasks committed (`7f5715a` packages +34, `d3b9c08` log_sources +23, `6e466fa` check-windows-classification.sh, `15ba0ac` AppInspect final baseline). Duration ~6 min. Four Rule 1 deviations documented (plan-supplied content vs plan AC mismatches: comma in description, regex grouping in fixed-string context, CRLF in pre-existing CSV, byte-escape vs shellcheck rule). AppInspect failure=0/error=0/warning=0; regression suite + new PROD-01 guard all green. PROD-01 fully closed. Next: `/gsd-plan-phase 5` to start Operational Readiness (PROD-03..PROD-07)._

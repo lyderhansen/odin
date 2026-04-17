@@ -19,7 +19,7 @@ Three phases, executed strictly in order:
 
 ## Phases
 
-- [ ] **Phase 4: Windows Classification Data** — Populate Windows-specific rows in the four classification lookups so Windows hosts classify to meaningful roles and produce a non-empty TA deployment matrix.
+- [x] **Phase 4: Windows Classification Data** — Populate Windows-specific rows in the four classification lookups so Windows hosts classify to meaningful roles and produce a non-empty TA deployment matrix. **COMPLETE 2026-04-17 (Plans 04-01 + 04-02; PROD-01 closed; AppInspect Enterprise scope clean; PROD-01 regression guard added).**
 - [ ] **Phase 5: Operational Readiness** — Ship the docs, runbook, rollback procedure, and ops observability dashboard that an SRE needs to operate TA-ODIN in production without asking the original author.
 - [ ] **Phase 6: Pilot Validation** — Deploy to ≥5 Linux + ≥5 Windows real hosts via Deployment Server for a 7-day observation window and capture the telemetry that confirms fleet-deploy readiness.
 
@@ -35,7 +35,7 @@ Three phases, executed strictly in order:
   3. `odin_classify_packages.csv` contains at least 30 Windows-specific registry display names (`Microsoft SQL Server *`, `Microsoft Internet Information Services`, `Active Directory *`, `Microsoft Exchange *`, `Windows Server *`, etc.) — verified by `grep -ic 'microsoft\|windows server\|active directory\|iis\|sql server' ODIN_app_for_splunk/lookups/odin_classify_packages.csv`.
   4. `odin_log_sources.csv` has at least 15 new rows whose `signal_type` is one of `service|port|package`, whose `host_role` is a Windows-mapped cross-platform role per CONTEXT.md D1 (e.g. `domain_controller`, `web_server`, `database_server`, `mail_server`, `file_server`, `dns_server`, `dhcp_server`, `print_server`, `virtualization_host`, `identity_server`, `certificate_server`, `rdp_server`, `management_server`, `ha_cluster`, `windows_management`, `windows_host`), and whose `log_source`/`sourcetype`/`recommended_ta` columns are filled — enabling the TA deployment matrix saved search to produce rows for piloted Windows hosts.
   5. A synthetic Windows event replay (`tools/tests/windows-fixtures/hostA` or equivalent — or the inline-simulated signal join used by `tools/tests/check-windows-classification.sh`) produces at least one `host_role` from the Windows-mapped cross-platform set per D1 and at least one recommended TA — confirmed via the regression script or by running the host-inventory saved search SPL against the fixture and piping through `stats`.
-**Plans:** TBD (1–2 plans expected — single large data PR, or split by lookup file)
+**Plans:** 2 of 2 complete (04-01 services+ports Wave 0 shipped 2026-04-17; 04-02 packages+log_sources+regression-guard Wave 1 shipped 2026-04-17)
 **UI hint:** no
 
 ### Phase 5: Operational Readiness
@@ -69,7 +69,7 @@ Three phases, executed strictly in order:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 4. Windows Classification Data | 0/TBD | Not started | — |
+| 4. Windows Classification Data | 2/2 | Complete | 2026-04-17 |
 | 5. Operational Readiness | 0/TBD | Not started | — |
 | 6. Pilot Validation | 0/TBD | Not started | — |
 
