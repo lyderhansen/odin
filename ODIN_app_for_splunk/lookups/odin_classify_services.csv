@@ -330,3 +330,28 @@ MSDTC,application,transaction,Microsoft,infrastructure,Distributed Transaction C
 WSUS,management,update,Microsoft,infrastructure,Windows Server Update Services
 SharePoint,application,collaboration,Microsoft,application,SharePoint Server (Windows)
 BizTalkServerApplication,application,integration,Microsoft,application,BizTalk Server (Windows)
+ADWS,directory_services,management,Microsoft Corporation,domain_controller,Active Directory Web Services
+Kdc,directory_services,authentication,Microsoft Corporation,domain_controller,Kerberos Key Distribution Center
+SQLBrowser,database,discovery,Microsoft Corporation,database_server,SQL Server Browser
+adfssrv,identity_federation,sso,Microsoft Corporation,identity_server,Active Directory Federation Services
+CcmExec,management,sccm_agent,Microsoft Corporation,management_server,Configuration Manager (MECM) client
+SMS_EXECUTIVE,management,sccm_server,Microsoft Corporation,management_server,Configuration Manager site server executive
+WsusService,management,update_server,Microsoft Corporation,management_server,Windows Server Update Services
+IAS,authentication,radius,Microsoft Corporation,identity_server,Network Policy Server (NPS / RADIUS)
+WDSServer,deployment,os_deployment,Microsoft Corporation,management_server,Windows Deployment Services
+RemoteRegistry,management,registry,Microsoft Corporation,windows_management,Remote Registry service
+SQLServerReportingServices,database,reporting,Microsoft Corporation,database_server,SQL Server Reporting Services
+SQLAgent$*,database,job_scheduler,Microsoft Corporation,database_server,SQL Server Agent named instance
+MSExchangeFrontEndTransport,messaging,smtp_frontend,Microsoft Corporation,mail_server,Microsoft Exchange Front End Transport
+MSExchangeMailboxReplication,messaging,replication,Microsoft Corporation,mail_server,Microsoft Exchange Mailbox Replication
+LanmanWorkstation,file_sharing,smb_client,Microsoft Corporation,windows_host,Workstation (SMB client)
+Tssdis,remote_desktop,session_broker,Microsoft Corporation,rdp_server,Terminal Services Session Directory (legacy session broker)
+RDMS,remote_desktop,connection_broker,Microsoft Corporation,rdp_server,Remote Desktop Management Services connection broker
+SMS_SITE_COMPONENT_MANAGER,management,sccm_server,Microsoft Corporation,management_server,Configuration Manager site component manager
+Browser,file_sharing,name_browsing,Microsoft Corporation,windows_host,Computer Browser service
+Sense,security,edr,Microsoft Corporation,windows_host,Microsoft Defender for Endpoint sensor
+Wuauserv,management,windows_update,Microsoft Corporation,windows_management,Windows Update agent
+Dnscache,name_resolution,dns_client,Microsoft Corporation,windows_host,DNS Client resolver cache
+Lsass,authentication,lsa,Microsoft Corporation,windows_host,Local Security Authority Subsystem Service
+AppHostSvc,web_server,iis_helper,Microsoft Corporation,web_server,IIS Application Host Helper Service
+CryptSvc,management,cryptography,Microsoft Corporation,windows_management,Cryptographic Services (certificate cache + WinTrust)
