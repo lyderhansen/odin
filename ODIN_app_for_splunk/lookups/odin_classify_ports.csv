@@ -204,3 +204,21 @@ port,transport,expected_service,category,description
 43594,tcp,runescape,application,RuneScape / custom app
 47001,tcp,winrm-compat,remote_access,WinRM compatibility (Windows)
 49152,tcp,dcom,network,DCOM / RPC dynamic (Windows)
+389,udp,ldap,directory_services,LDAP UDP (legacy directory query)
+464,udp,kpasswd,authentication,Kerberos password change UDP
+9389,tcp,adws,directory_services,Active Directory Web Services
+8530,tcp,wsus_http,management,WSUS HTTP web service
+8531,tcp,wsus_https,management,WSUS HTTPS web service
+4011,udp,wds_pxe,deployment,WDS PXE Service
+5722,tcp,dfsr_rpc,file_sharing,DFS Replication RPC
+1688,tcp,kms,management,Microsoft Key Management Service activation
+2701,tcp,sccm_remote,management,Configuration Manager remote control
+8005,tcp,sccm_notify,management,Configuration Manager client notification (push)
+10123,tcp,sccm_cmg,management,Configuration Manager Cloud Management Gateway
+4789,udp,nvgre_vxlan,virtualization,Hyper-V network virtualization (NVGRE / VXLAN)
+2382,tcp,ssas_browser,database,SQL Server Analysis Services browser
+2383,tcp,ssas,database,SQL Server Analysis Services default instance
+808,tcp,wcf_net_tcp,application,WCF / .NET TCP service binding
+13260,tcp,dpm,management,System Center Data Protection Manager
+47001,udp,winrm_compat_udp,management,WinRM HTTP listener UDP companion
+49664,tcp,rpc_dynamic,rpc,RPC dynamic endpoint anchor (Windows ephemeral)
