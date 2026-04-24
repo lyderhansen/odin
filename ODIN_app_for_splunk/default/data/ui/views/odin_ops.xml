@@ -1,0 +1,178 @@
+<dashboard version="2" theme="dark">
+  <label>ODIN Operational Health</label>
+  <description>Fleet scan success rate, module runtime, host coverage, and truncation telemetry from TA-ODIN enumeration data.</description>
+  <definition><![CDATA[
+{
+  "title": "ODIN Operational Health",
+  "description": "Fleet scan success rate, module runtime trend, distinct host coverage, event volume per host, module-failure heatmap, and top-N truncating hosts. Source: TA-ODIN enumeration data (sourcetype=odin:enumeration).",
+  "dataSources": {
+    "ds_success_linux": {
+      "type": "ds.search",
+      "name": "Linux scan success rate (24h)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_complete os=linux earliest=-24h\n| eval is_success=if(modules_failed=0, 1, 0)\n| stats avg(is_success) AS success_rate\n| eval success_pct=round(success_rate*100, 1)\n| fields success_pct"
+      }
+    },
+    "ds_success_windows": {
+      "type": "ds.search",
+      "name": "Windows scan success rate (24h)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_complete os=windows earliest=-24h\n| eval is_success=if(modules_failed=0, 1, 0)\n| stats avg(is_success) AS success_rate\n| eval success_pct=round(success_rate*100, 1)\n| fields success_pct"
+      }
+    },
+    "ds_module_runtime_p95": {
+      "type": "ds.search",
+      "name": "Module runtime p95 by OS (7d)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_complete earliest=-7d\n| eval module_runtime=runtime_ms\n| timechart span=1h p95(module_runtime) by os"
+      }
+    },
+    "ds_distinct_hosts": {
+      "type": "ds.search",
+      "name": "Distinct hosts seen per day (30d)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_complete earliest=-30d\n| timechart span=1d dc(hostname) AS unique_hosts by os"
+      }
+    },
+    "ds_event_volume": {
+      "type": "ds.search",
+      "name": "Event volume per host per day (7d, top 20)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration earliest=-7d\n| timechart span=1d count by hostname limit=20"
+      }
+    },
+    "ds_module_failure_heatmap": {
+      "type": "ds.search",
+      "name": "Module-failure heatmap (7d)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_error earliest=-7d\n| stats count AS failure_count by module, hostname\n| sort -failure_count\n| head 100"
+      }
+    },
+    "ds_top_truncating_hosts": {
+      "type": "ds.search",
+      "name": "Top-10 truncating hosts (7d)",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=truncated earliest=-7d\n| stats count AS truncation_events by hostname\n| sort -truncation_events\n| head 10"
+      }
+    }
+  },
+  "visualizations": {
+    "viz_success_linux": {
+      "type": "splunk.singlevalue",
+      "title": "Linux Scan Success Rate (24h)",
+      "dataSources": {"primary": "ds_success_linux"},
+      "options": {
+        "majorColor": "#00CDAF",
+        "backgroundColor": "transparent",
+        "unit": "%",
+        "unitPosition": "after",
+        "majorFontSize": 56
+      }
+    },
+    "viz_success_windows": {
+      "type": "splunk.singlevalue",
+      "title": "Windows Scan Success Rate (24h)",
+      "dataSources": {"primary": "ds_success_windows"},
+      "options": {
+        "majorColor": "#7B56DB",
+        "backgroundColor": "transparent",
+        "unit": "%",
+        "unitPosition": "after",
+        "majorFontSize": 56
+      }
+    },
+    "viz_module_runtime_p95": {
+      "type": "splunk.timechart",
+      "title": "Module Runtime p95 by OS (7d)",
+      "dataSources": {"primary": "ds_module_runtime_p95"},
+      "options": {
+        "legendDisplay": "right",
+        "yAxisTitleText": "Runtime (ms, p95)",
+        "yAxisTitleVisibility": "show",
+        "xAxisTitleVisibility": "hide",
+        "showOverlayY2Axis": false
+      }
+    },
+    "viz_distinct_hosts": {
+      "type": "splunk.timechart",
+      "title": "Distinct Hosts Seen per Day (30d)",
+      "dataSources": {"primary": "ds_distinct_hosts"},
+      "options": {
+        "chartStyle": "column",
+        "stackMode": "stacked",
+        "legendDisplay": "right",
+        "yAxisTitleText": "Unique Hosts",
+        "yAxisTitleVisibility": "show",
+        "xAxisTitleVisibility": "hide"
+      }
+    },
+    "viz_event_volume": {
+      "type": "splunk.timechart",
+      "title": "Event Volume per Host per Day (7d, top 20)",
+      "dataSources": {"primary": "ds_event_volume"},
+      "options": {
+        "chartStyle": "column",
+        "stackMode": "stacked",
+        "legendDisplay": "right",
+        "yAxisTitleText": "Events",
+        "yAxisTitleVisibility": "show",
+        "xAxisTitleVisibility": "hide"
+      }
+    },
+    "viz_module_failure_heatmap": {
+      "type": "splunk.table",
+      "title": "Module-Failure Heatmap (7d)",
+      "dataSources": {"primary": "ds_module_failure_heatmap"},
+      "options": {
+        "count": 50,
+        "showRowNumbers": false,
+        "tableFormat": {
+          "rowBackgroundColors": "> table | seriesByName(\"failure_count\") | rangeValue(failureRowColors)"
+        }
+      },
+      "context": {
+        "failureRowColors": [
+          {"from": 0, "to": 1, "value": "#1a3a2a"},
+          {"from": 1, "to": 5, "value": "#3a3a1a"},
+          {"from": 5, "to": 20, "value": "#3a2a1a"},
+          {"from": 20, "to": 100000, "value": "#3a1a1a"}
+        ]
+      }
+    },
+    "viz_top_truncating_hosts": {
+      "type": "splunk.table",
+      "title": "Top-10 Truncating Hosts (7d)",
+      "dataSources": {"primary": "ds_top_truncating_hosts"},
+      "options": {
+        "count": 10,
+        "showRowNumbers": true
+      }
+    }
+  },
+  "inputs": {
+    "input_global_trp": {
+      "type": "input.timerange",
+      "title": "Time Range Override",
+      "options": {
+        "token": "global_time",
+        "defaultValue": "-7d@d,now"
+      }
+    }
+  },
+  "layout": {
+    "type": "absolute",
+    "options": {"width": 1440, "height": 1320, "display": "auto"},
+    "globalInputs": ["input_global_trp"],
+    "structure": [
+      {"item": "viz_success_linux", "type": "block", "position": {"x": 0, "y": 0, "w": 720, "h": 200}},
+      {"item": "viz_success_windows", "type": "block", "position": {"x": 720, "y": 0, "w": 720, "h": 200}},
+      {"item": "viz_module_runtime_p95", "type": "block", "position": {"x": 0, "y": 200, "w": 1440, "h": 320}},
+      {"item": "viz_distinct_hosts", "type": "block", "position": {"x": 0, "y": 520, "w": 720, "h": 320}},
+      {"item": "viz_event_volume", "type": "block", "position": {"x": 720, "y": 520, "w": 720, "h": 320}},
+      {"item": "viz_module_failure_heatmap", "type": "block", "position": {"x": 0, "y": 840, "w": 1440, "h": 320}},
+      {"item": "viz_top_truncating_hosts", "type": "block", "position": {"x": 0, "y": 1160, "w": 1440, "h": 160}}
+    ]
+  }
+}
+]]></definition>
+</dashboard>
