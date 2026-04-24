@@ -4,14 +4,14 @@ milestone: v1.0.1
 milestone_name: milestone
 current_plan: 2
 status: executing
-last_updated: "2026-04-17T13:20:12.201Z"
-last_activity: 2026-04-17
+last_updated: "2026-04-24T09:00:20Z"
+last_activity: 2026-04-24
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_plans: 4
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State — TA-ODIN
@@ -19,13 +19,13 @@ progress:
 ## Current Position
 
 - **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-07)
-- **Phase:** Phase 4 — Windows Classification Data (COMPLETE)
-- **Plan:** 04-01 + 04-02 both shipped; PROD-01 fully closed
-- **Status:** Phase 4 complete; ready to start Phase 5 (Operational Readiness)
-- **Current Plan:** 2 of 2 (Phase 4)
-- **Total Plans in Phase:** 2
-- **Progress:** [██████████] 100%
-- **Last activity:** 2026-04-17
+- **Phase:** Phase 5 — Operational Readiness (Wave 0 in flight)
+- **Plan:** Plan 05-01 (PROD-07 Linux module hygiene) **COMPLETE 2026-04-24**; Plans 05-02 + 05-03 in parallel execution by sibling agents
+- **Status:** Phase 5 Wave 0 partially complete (1/3 plans verified by their own SUMMARY); Wave 1 (Plan 04 admin docs) blocked on Wave 0 finishing
+- **Current Plan:** 1 of 4 (Phase 5; Plans 02/03 progress tracked by their own executors)
+- **Total Plans in Phase:** 4 (Wave 0: 01/02/03 parallel; Wave 1: 04)
+- **Progress:** [██▌       ] 25%
+- **Last activity:** 2026-04-24
 
 ## Milestone Scope (v1.0.1)
 
@@ -46,7 +46,7 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 4 | Windows Classification Data | PROD-01 | **Complete** (2/2 plans — 04-01 services+ports, 04-02 packages+log_sources+regression-guard) |
-| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | Not started |
+| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | **In progress** (Wave 0 mid-flight: 05-01 PROD-07 complete; 05-02 PROD-06+05 + 05-03 PROD-03 in parallel; 05-04 PROD-04 docs cluster pending Wave 1) |
 | 6 | Pilot Validation | PROD-02 | Not started |
 
 ## Accumulated Context
@@ -110,10 +110,22 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 - Four Rule 1 fixes during execution: removed embedded commas from 2 package descriptions to satisfy NF==5 AC; switched script `grep -E` to `grep -F` for literal-paren wildcard patterns; made schema-header check `tr -d '\r'`-tolerant for pre-existing CRLF in `odin_log_sources.csv`; replaced `\xc2\xa78` byte-escape with literal "section 8" to satisfy shellcheck SC2028.
 - Phase 4 left in fully-buildable, AppInspect-clean, regression-guard-protected state. Ready for Phase 5 (Operational Readiness).
 
+### Plan 05-01 outcomes (2026-04-24)
+
+- All 6 Linux module standalone fallbacks (`TA-ODIN/bin/modules/{cron,mounts,packages,ports,processes,services}.sh`) bumped from `ODIN_VERSION:-2.1.0` to `ODIN_VERSION:-1.0.0` and gained an `ODIN_MAX_EVENTS` guard inside their fallback `emit()` function (mirrors orchestrator behavior at `TA-ODIN/bin/odin.sh:55-71` for parity; closes Threat T2 standalone-version drift + Threat T3 unbounded-emission risk per plan threat model).
+- `tools/tests/check-version-sync.sh` extended with Section 3: greps each module fallback for the canonical `1.0.0` value and exits 1 on drift. Induced-drift test confirmed exit 1 with `[HARD-01 / PROD-07 DRIFT]` message; revert restores PASS. shellcheck clean.
+- Standalone-fallback gating (`if ! declare -f emit &>/dev/null`) preserved — orchestrator runs continue to use the orchestrator's `emit()` and never enter the fallback branch. Only direct module invocation (debug workflow) exercises the new code path.
+- AppInspect TA-ODIN Enterprise scope: failure=0, error=0, warning=1 (pre-existing `check_for_indexer_synced_configs`, accepted per Phase 3 D9), success=13, na=7. Artifact at `.planning/artifacts/appinspect/ta-odin-phase05-wave0-plan01.json`.
+- Full Phase 1+2+3+4 regression suite green: check-version-sync, check-two-app-split, injection-fixtures (10/10), windows-parity-harness (all dimensions), check-windows-classification.
+- 3 commits: `6b53e34` (module patches), `d75d779` (check-version-sync.sh extension), `34270fa` (AppInspect baseline artifact).
+- **PROD-07 fully closed** — sub-items (a)/(b)/(c) all delivered per plan D3 minimal scope. (d) `_common.sh` consolidation deferred to v1.1+ as planned.
+- **One cross-plan-contamination deviation** documented in 05-01-SUMMARY.md Deviation 1: Plan 03's `DOCS/RUNBOOK.md` was created untracked in the shared working tree by the parallel Plan 03 executor and was inadvertently absorbed into Plan 01's commit `d75d779` due to a `git add` race in the shared index. History rewriting was rejected because Plan 02's commit `0030812` was already on top by the time the contamination was discovered. RUNBOOK.md content is byte-identical to Plan 03's intended artifact; Plan 03 executor will reconcile attribution in their own SUMMARY. **Recommendation: future parallel-wave executors should run in separate worktrees to prevent index races.**
+- Duration ~7 min for the focused Plan 01 work.
+
 ## Todos
 
 _None. Use `/gsd-add-todo` to capture ideas as they come up during planning._
 
 ## Session Continuity
 
-_Last session: 2026-04-17 — Plan 04-02 (Wave 1 packages + log_sources + regression-guard + final AppInspect) executed end-to-end. 4/4 tasks committed (`7f5715a` packages +34, `d3b9c08` log_sources +23, `6e466fa` check-windows-classification.sh, `15ba0ac` AppInspect final baseline). Duration ~6 min. Four Rule 1 deviations documented (plan-supplied content vs plan AC mismatches: comma in description, regex grouping in fixed-string context, CRLF in pre-existing CSV, byte-escape vs shellcheck rule). AppInspect failure=0/error=0/warning=0; regression suite + new PROD-01 guard all green. PROD-01 fully closed. Next: `/gsd-plan-phase 5` to start Operational Readiness (PROD-03..PROD-07)._
+_Last session: 2026-04-24 — Plan 05-01 (Wave 0 PROD-07 Linux module standalone-fallback hygiene) executed end-to-end concurrently with Plans 05-02 + 05-03. 3/3 tasks committed (`6b53e34` module patches a+b, `d75d779` check-version-sync.sh extension c, `34270fa` AppInspect regression baseline). All gates green. PROD-07 fully closed. One cross-plan-contamination deviation (RUNBOOK.md absorbed into Plan 01's commit due to parallel git-add race; documented in 05-01-SUMMARY.md). Next: monitor Plans 05-02 + 05-03 completion; once Wave 0 fully done, spawn Plan 05-04 (Wave 1 admin docs cluster)._
