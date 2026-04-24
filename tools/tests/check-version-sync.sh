@@ -81,8 +81,38 @@ for f in \
     fi
 done
 
+# ---------------------------------------------------------------------------
+# Section 3 (PROD-07 c) — Linux module standalone-fallback version drift
+# ---------------------------------------------------------------------------
+# The 6 module files in TA-ODIN/bin/modules/*.sh each contain a standalone
+# fallback block (gated by `! declare -f emit`) that defaults ODIN_VERSION
+# when the module is run directly (debug/test workflow). After PROD-07 the
+# canonical fallback value is "1.0.0" — any other value is drift.
+declare -i module_drift=0
+for module in "$REPO_ROOT"/TA-ODIN/bin/modules/*.sh; do
+    # Find the fallback ODIN_VERSION line (shape: ODIN_VERSION="${ODIN_VERSION:-X.Y.Z}")
+    fallback_version=$(grep -E 'ODIN_VERSION="\$\{ODIN_VERSION:-' "$module" \
+        | head -1 \
+        | sed -E 's/.*ODIN_VERSION:-([^"}]+).*/\1/')
+    if [[ -z "$fallback_version" ]]; then
+        rel="${module#"$REPO_ROOT"/}"
+        echo "WARN: $rel has no standalone fallback ODIN_VERSION line"
+        continue
+    fi
+    if [[ "$fallback_version" != "$canonical" ]]; then
+        rel="${module#"$REPO_ROOT"/}"
+        echo "[HARD-01 / PROD-07 DRIFT] $rel fallback ODIN_VERSION='$fallback_version' (expected $canonical)"
+        module_drift=$((module_drift + 1))
+    fi
+done
+
+if [[ $module_drift -gt 0 ]]; then
+    echo "[HARD-01 / PROD-07 FAIL] $module_drift module(s) have stale fallback ODIN_VERSION"
+    exit 1
+fi
+
 if [[ $drift -eq 0 ]]; then
-    echo "[HARD-01 PASS] Version sync: $canonical"
+    echo "[HARD-01 PASS] Version sync: $canonical (4 sites + 6 module fallbacks)"
 fi
 
 exit $drift
