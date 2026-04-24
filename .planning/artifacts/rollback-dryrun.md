@@ -1,12 +1,12 @@
 # Rollback dry-run record
 
-Generated: 2026-04-24T10:38:51Z
-Commit: db2791b17438cc4df2b063cd25fddc63c8de2da6
+Generated: 2026-04-24T12:21:17Z
+Commit: f17d2035025d5fc628e13262b167b7e55ae8bc11
 Verdict: PASS
 
 ## Pre-toggle baseline (live odin.sh invocation)
 
-- Pre-toggle timestamp: 2026-04-24T10:38:51Z
+- Pre-toggle timestamp: 2026-04-24T12:21:17Z
 - Pre-toggle event count: 10
 
 ## Rollback patch (applied to temp copy of inputs.conf)
@@ -23,8 +23,8 @@ ALL_STANZAS_INACTIVE
 
 ## Post-revert (temp patch discarded; real file untouched)
 
-- Revert timestamp: 2026-04-24T10:38:51Z
-- Post-revert timestamp: 2026-04-24T10:38:51Z
+- Revert timestamp: 2026-04-24T12:21:17Z
+- Post-revert timestamp: 2026-04-24T12:21:17Z
 - Post-revert event count: 10
 
 ## Real-file integrity check
