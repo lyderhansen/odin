@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: milestone
-current_plan: 2
+current_plan: 4
 status: executing
-last_updated: "2026-04-24T09:00:20Z"
+last_updated: "2026-04-24T11:05:00Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State — TA-ODIN
@@ -19,12 +19,12 @@ progress:
 ## Current Position
 
 - **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-07)
-- **Phase:** Phase 5 — Operational Readiness (Wave 0 in flight)
-- **Plan:** Plan 05-01 (PROD-07 Linux module hygiene) **COMPLETE 2026-04-24**; Plans 05-02 + 05-03 in parallel execution by sibling agents
-- **Status:** Phase 5 Wave 0 partially complete (1/3 plans verified by their own SUMMARY); Wave 1 (Plan 04 admin docs) blocked on Wave 0 finishing
-- **Current Plan:** 1 of 4 (Phase 5; Plans 02/03 progress tracked by their own executors)
-- **Total Plans in Phase:** 4 (Wave 0: 01/02/03 parallel; Wave 1: 04)
-- **Progress:** [██▌       ] 25%
+- **Phase:** Phase 5 — Operational Readiness (Wave 0 COMPLETE; Wave 1 ready to start)
+- **Plan:** Plans 05-01 (PROD-07), 05-02 (PROD-05+06), 05-03 (PROD-03) all **COMPLETE 2026-04-24**; Plan 05-04 (PROD-04 admin docs cluster) ready to start as Wave 1
+- **Status:** Phase 5 Wave 0 fully complete (3/3 plans landed; AppInspect baseline preserved across all changes); Wave 1 unblocked
+- **Current Plan:** 4 of 4 (Phase 5)
+- **Total Plans in Phase:** 4 (Wave 0: 01/02/03 done; Wave 1: 04 next)
+- **Progress:** [███████▌  ] 75%
 - **Last activity:** 2026-04-24
 
 ## Milestone Scope (v1.0.1)
@@ -46,7 +46,7 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 4 | Windows Classification Data | PROD-01 | **Complete** (2/2 plans — 04-01 services+ports, 04-02 packages+log_sources+regression-guard) |
-| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | **In progress** (Wave 0 mid-flight: 05-01 PROD-07 complete; 05-02 PROD-06+05 + 05-03 PROD-03 in parallel; 05-04 PROD-04 docs cluster pending Wave 1) |
+| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | **In progress** (Wave 0 COMPLETE 2026-04-24: 05-01 PROD-07 closed, 05-02 PROD-05+06 closed, 05-03 PROD-03 closed; Wave 1 05-04 PROD-04 docs cluster ready to start) |
 | 6 | Pilot Validation | PROD-02 | Not started |
 
 ## Accumulated Context
@@ -122,10 +122,23 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 - **One cross-plan-contamination deviation** documented in 05-01-SUMMARY.md Deviation 1: Plan 03's `DOCS/RUNBOOK.md` was created untracked in the shared working tree by the parallel Plan 03 executor and was inadvertently absorbed into Plan 01's commit `d75d779` due to a `git add` race in the shared index. History rewriting was rejected because Plan 02's commit `0030812` was already on top by the time the contamination was discovered. RUNBOOK.md content is byte-identical to Plan 03's intended artifact; Plan 03 executor will reconcile attribution in their own SUMMARY. **Recommendation: future parallel-wave executors should run in separate worktrees to prevent index races.**
 - Duration ~7 min for the focused Plan 01 work.
 
+### Plan 05-02 outcomes (2026-04-24)
+
+- `ODIN_app_for_splunk/default/data/ui/views/odin_ops.xml` created — 178-line Dashboard Studio v2 view (`<dashboard version="2" theme="dark">` + JSON `<definition>`) with **7 visualization panels** covering ROADMAP §Phase 5 success criterion 5 (≥6 required): per-OS singlevalue success rate (Linux + Windows, 24h), p95 module runtime timechart (7d, by OS), distinct-hosts column timechart (30d, by OS stacked), event-volume column timechart (7d, top-20 hosts), module-failure heatmap (`splunk.table` with `rangeValue` cell-color thresholds — green/yellow/orange/red by failure count, per RESEARCH §1 fallback recommendation since `splunk.heatmap` is unproven in this codebase), top-10 truncating hosts table.
+- `tools/tests/rollback-dryrun.sh` created — 180-line shellcheck-clean executable. Patches a `mktemp` copy of `inputs.conf` with `disabled = false` → `disabled = true` over both `[script://]` stanzas (Linux + Windows); runs an inline `python3 -c` configparser emulator confirming both stanzas would be skipped by splunkd at next reload; asserts `git diff --quiet -- TA-ODIN/default/inputs.conf` (real file MUST be byte-identical to HEAD); writes `.planning/artifacts/rollback-dryrun.md` with timestamps + counts + commit hash + PASS/FAIL verdict. Induced-failure detection verified end-to-end (replacing odin.sh with empty stub → POST_COUNT=0 → VERDICT=FAIL → exit 1; restored → exit 0). Two SC info-level findings suppressed with documented disable directives (SC2329 cleanup-via-trap; SC2016 markdown-backticks-in-single-quotes).
+- `DOCS/ROLLBACK.md` created — 157-line operator-facing playbook matching `DOCS/ARCHITECTURE.md` + `DOCS/COMMANDS.md` terse style. Sections: when to roll back (tied to existing 3 alerts), Strategy A vs B comparison, Strategy A `local/inputs.conf` overlay step-by-step (both stanzas), Strategy B full uninstall step-by-step, verification SPL, reverting the rollback, dry-run artifact reference, explicit "what this does NOT cover" deferred-items section calling out PROD-02 live-fleet validation + Splunk Cloud Victoria + in-flight scan termination.
+- `.github/workflows/ci.yml` extended with new "Rollback dry-run guard" CI step inserted between version-sync and injection-fixtures (mirrors check-version-sync wiring; <2s runtime).
+- AppInspect ODIN_app_for_splunk Enterprise scope: failure=0, error=0, warning=0, success=14, not_applicable=7 — **byte-identical to Phase 4 final baseline** AND Wave 0 baseline. Artifact at `.planning/artifacts/appinspect/odin-app-phase05-wave0-plan02.json`. The new `splunk.timechart` and `splunk.table`-with-`rangeValue` viz components (not previously used in this codebase) introduced **zero** AppInspect findings.
+- Full Phase 1+2+3+4 regression suite + new PROD-05 guard all green.
+- 4 commits: `4041ef7` (odin_ops.xml dashboard), `0030812` (rollback-dryrun.sh + CI integration + initial artifact), `08863f2` (DOCS/ROLLBACK.md), `30404f5` (AppInspect baseline + Rule 1 windows-parity-harness fix + regenerated rollback artifact).
+- **PROD-05 + PROD-06 both fully closed.**
+- **One Rule 1 deviation** in `tools/tests/windows-parity-harness.sh`: pre-existing shellcheck findings (SC2164 missing `cd ... || exit` guard at line 19; SC2126 `grep | wc -l` at line 102 with existing rationale comment block) blocked the plan's `shellcheck tools/tests/*.sh` AC. Verified pre-existing via `git checkout HEAD~3 -- ... && shellcheck` — same exit 1 + same two findings. Applied minimal surgical fixes (added `|| { echo ...; exit 1; }` guard; added `# shellcheck disable=SC2126` directive citing the existing comment block above explaining WHY `grep | wc -l` was preferred over the buggy `grep -c` original). Verified harness still passes 6/6 Nyquist dimensions after fix.
+- Duration ~7 min effective execution from T1 commit (`4041ef7` 10:54:58Z) to T4 commit (`30404f5` 11:02:23Z); 129 min wall-clock (includes parallel waiting on Plan 01/03).
+
 ## Todos
 
 _None. Use `/gsd-add-todo` to capture ideas as they come up during planning._
 
 ## Session Continuity
 
-_Last session: 2026-04-24 — Plan 05-01 (Wave 0 PROD-07 Linux module standalone-fallback hygiene) executed end-to-end concurrently with Plans 05-02 + 05-03. 3/3 tasks committed (`6b53e34` module patches a+b, `d75d779` check-version-sync.sh extension c, `34270fa` AppInspect regression baseline). All gates green. PROD-07 fully closed. One cross-plan-contamination deviation (RUNBOOK.md absorbed into Plan 01's commit due to parallel git-add race; documented in 05-01-SUMMARY.md). Next: monitor Plans 05-02 + 05-03 completion; once Wave 0 fully done, spawn Plan 05-04 (Wave 1 admin docs cluster)._
+_Last session: 2026-04-24 — Plan 05-02 (Wave 0 PROD-05 + PROD-06 — ops dashboard + rollback procedure) executed end-to-end concurrently with Plans 05-01 + 05-03. 4/4 tasks committed (`4041ef7` odin_ops.xml Dashboard Studio v2 view with 7 panels, `0030812` rollback-dryrun.sh + CI integration + initial artifact, `08863f2` DOCS/ROLLBACK.md operator playbook, `30404f5` AppInspect baseline + Rule 1 windows-parity-harness fix). AppInspect Enterprise scope failure=0/error=0/warning=0 byte-identical to Phase 4 baseline — the new splunk.timechart + splunk.table-with-rangeValue viz components introduced zero AppInspect findings. Full Phase 1+2+3+4 regression suite + new PROD-05 guard all green. PROD-05 + PROD-06 both fully closed. One Rule 1 deviation (pre-existing shellcheck findings in windows-parity-harness.sh blocking plan AC; surgical fix applied). Phase 5 Wave 0 now FULLY COMPLETE (3/3 plans). Next: spawn Plan 05-04 (Wave 1 PROD-04 admin docs cluster — INSTALL.md, TROUBLESHOOTING.md, DATA-DICTIONARY.md, UPGRADE.md + README updates in both apps)._
