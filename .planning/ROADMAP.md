@@ -20,7 +20,7 @@ Three phases, executed strictly in order:
 ## Phases
 
 - [x] **Phase 4: Windows Classification Data** — Populate Windows-specific rows in the four classification lookups so Windows hosts classify to meaningful roles and produce a non-empty TA deployment matrix. **COMPLETE 2026-04-17 (Plans 04-01 + 04-02; PROD-01 closed; AppInspect Enterprise scope clean; PROD-01 regression guard added).**
-- [ ] **Phase 5: Operational Readiness** — Ship the docs, runbook, rollback procedure, and ops observability dashboard that an SRE needs to operate TA-ODIN in production without asking the original author.
+- [x] **Phase 5: Operational Readiness** — Ship the docs, runbook, rollback procedure, and ops observability dashboard that an SRE needs to operate TA-ODIN in production without asking the original author. **COMPLETE 2026-04-24 (Plans 05-01 + 05-02 + 05-03 + 05-04; PROD-03..07 all closed; AppInspect Enterprise scope clean across all changes; full Phase 1+2+3+4 regression suite green).**
 - [ ] **Phase 6: Pilot Validation** — Deploy to ≥5 Linux + ≥5 Windows real hosts via Deployment Server for a 7-day observation window and capture the telemetry that confirms fleet-deploy readiness.
 
 ## Phase Details
@@ -49,7 +49,7 @@ Three phases, executed strictly in order:
   4. `DOCS/ROLLBACK.md` documents the exact Deployment Server steps to disable TA-ODIN via `disabled = 1` in a local overlay without removing files, AND `.planning/artifacts/rollback-dryrun.md` contains a timestamped dry-run log showing (a) pre-toggle event count on a pilot host, (b) toggle applied, (c) event count drops to zero within one scan cycle, (d) toggle reverted, (e) events resume — proving the procedure is rehearsed, not theoretical.
   5. `ODIN_app_for_splunk/default/data/ui/views/odin_ops.xml` exists as a valid Dashboard Studio view, is exported via `metadata/default.meta`, contains panels for *scan success rate per OS*, *module runtime p95 per module*, *module-failure heatmap*, *event volume per host per day*, and *distinct hosts seen over time*, and the new view does not regress AppInspect: `splunk-appinspect inspect ODIN_app_for_splunk --mode precert --excluded-tags cloud` still exits with `summary.failure + summary.error = 0`.
   6. All 6 Linux modules (`TA-ODIN/bin/modules/*.sh`) use `ODIN_VERSION="${ODIN_VERSION:-1.0.0}"` in their standalone fallback (not `2.1.0`), and standalone `emit` checks `ODIN_MAX_EVENTS` and emits `type=truncated` at the cap. `check-version-sync.sh` now greps module fallbacks and fails on stale version strings. Optionally, standalone helpers are consolidated into `modules/_common.sh`. Verified by: `bash TA-ODIN/bin/modules/services.sh 2>&1 | head -1 | grep -c 'odin_version=1.0.0'` returns 1; `ODIN_MAX_EVENTS=2 bash TA-ODIN/bin/modules/services.sh 2>&1 | grep -c type=truncated` returns ≥1; `check-version-sync.sh` exits 0.
-**Plans:** 4 plans planned (Wave 0 parallel: 05-01 PROD-07 module hygiene + 05-02 PROD-06 dashboard + PROD-05 rollback + 05-03 PROD-03 runbook + SLO alert; Wave 1: 05-04 PROD-04 admin docs cluster). Wave 0 complete 2026-04-24: **05-01 complete** (PROD-07 closed: 6 module fallbacks bumped to 1.0.0 + MAX_EVENTS guard + check-version-sync.sh Section 3 drift gate); **05-02 complete** (PROD-05 + PROD-06 closed: 178-line `odin_ops.xml` Dashboard Studio v2 view with 7 panels + 180-line `tools/tests/rollback-dryrun.sh` shell-fixture validator + 157-line `DOCS/ROLLBACK.md` operator playbook + new CI hard-gate; AppInspect Enterprise scope failure=0/error=0/warning=0 byte-identical to Phase 4 baseline); **05-03 complete** (PROD-03 + SLO alert closed). Wave 1 (Plan 05-04 PROD-04) ready to start.
+**Plans:** 4 of 4 complete. Wave 0 complete 2026-04-24: **05-01 complete** (PROD-07 closed: 6 module fallbacks bumped to 1.0.0 + MAX_EVENTS guard + check-version-sync.sh Section 3 drift gate); **05-02 complete** (PROD-05 + PROD-06 closed: 178-line `odin_ops.xml` Dashboard Studio v2 view with 7 panels + 180-line `tools/tests/rollback-dryrun.sh` shell-fixture validator + 157-line `DOCS/ROLLBACK.md` operator playbook + new CI hard-gate; AppInspect Enterprise scope failure=0/error=0/warning=0 byte-identical to Phase 4 baseline); **05-03 complete** (PROD-03 + SLO alert closed). Wave 1 complete 2026-04-24: **05-04 complete** (PROD-04 closed: 4 new admin docs — INSTALL 189 lines, TROUBLESHOOTING 293 lines, DATA-DICTIONARY 300 lines, UPGRADE 217 lines — plus Documentation sections appended to both app READMEs linking all 6 Phase 5 docs; pure documentation, zero code changes, zero AppInspect impact, full regression suite green).
 **UI hint:** yes (Dashboard Studio view for PROD-06)
 
 ### Phase 6: Pilot Validation
@@ -70,7 +70,7 @@ Three phases, executed strictly in order:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 4. Windows Classification Data | 2/2 | Complete | 2026-04-17 |
-| 5. Operational Readiness | 3/4 | Wave 0 complete; Wave 1 (Plan 05-04 PROD-04) pending | — |
+| 5. Operational Readiness | 4/4 | Complete | 2026-04-24 |
 | 6. Pilot Validation | 0/TBD | Not started | — |
 
 ## Coverage

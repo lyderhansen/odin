@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: milestone
-current_plan: 4
-status: executing
-last_updated: "2026-04-24T11:05:00Z"
+current_plan: 5
+status: phase_complete
+last_updated: "2026-04-24T10:39:28Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 67
 ---
 
 # Project State — TA-ODIN
@@ -19,12 +19,12 @@ progress:
 ## Current Position
 
 - **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-07)
-- **Phase:** Phase 5 — Operational Readiness (Wave 0 COMPLETE; Wave 1 ready to start)
-- **Plan:** Plans 05-01 (PROD-07), 05-02 (PROD-05+06), 05-03 (PROD-03) all **COMPLETE 2026-04-24**; Plan 05-04 (PROD-04 admin docs cluster) ready to start as Wave 1
-- **Status:** Phase 5 Wave 0 fully complete (3/3 plans landed; AppInspect baseline preserved across all changes); Wave 1 unblocked
-- **Current Plan:** 4 of 4 (Phase 5)
-- **Total Plans in Phase:** 4 (Wave 0: 01/02/03 done; Wave 1: 04 next)
-- **Progress:** [███████▌  ] 75%
+- **Phase:** Phase 5 — Operational Readiness **COMPLETE 2026-04-24**; Phase 6 — Pilot Validation (PROD-02) ready to begin planning
+- **Plan:** Plans 05-01 (PROD-07), 05-02 (PROD-05+06), 05-03 (PROD-03), 05-04 (PROD-04) all **COMPLETE 2026-04-24** — Phase 5 fully closed; PROD-03..07 all marked complete in REQUIREMENTS.md
+- **Status:** Phase 5 fully complete (4/4 plans landed, all PROD-* requirements except PROD-02 closed; AppInspect baseline preserved across all changes; full Phase 1+2+3+4 regression suite green); milestone progress 2/3 phases = 67%
+- **Current Plan:** Phase 5 closed; next is Phase 6 (PROD-02 pilot validation)
+- **Total Plans in Phase:** 4/4 complete
+- **Progress:** [██████▋   ] 67% (2 of 3 phases complete)
 - **Last activity:** 2026-04-24
 
 ## Milestone Scope (v1.0.1)
@@ -46,8 +46,8 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 4 | Windows Classification Data | PROD-01 | **Complete** (2/2 plans — 04-01 services+ports, 04-02 packages+log_sources+regression-guard) |
-| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | **In progress** (Wave 0 COMPLETE 2026-04-24: 05-01 PROD-07 closed, 05-02 PROD-05+06 closed, 05-03 PROD-03 closed; Wave 1 05-04 PROD-04 docs cluster ready to start) |
-| 6 | Pilot Validation | PROD-02 | Not started |
+| 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | **Complete 2026-04-24** (4/4 plans: 05-01 PROD-07 closed, 05-02 PROD-05+06 closed, 05-03 PROD-03 closed, 05-04 PROD-04 closed) |
+| 6 | Pilot Validation | PROD-02 | Not started (release gate; the only requirement requiring real-host validation) |
 
 ## Accumulated Context
 
@@ -135,10 +135,32 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 - **One Rule 1 deviation** in `tools/tests/windows-parity-harness.sh`: pre-existing shellcheck findings (SC2164 missing `cd ... || exit` guard at line 19; SC2126 `grep | wc -l` at line 102 with existing rationale comment block) blocked the plan's `shellcheck tools/tests/*.sh` AC. Verified pre-existing via `git checkout HEAD~3 -- ... && shellcheck` — same exit 1 + same two findings. Applied minimal surgical fixes (added `|| { echo ...; exit 1; }` guard; added `# shellcheck disable=SC2126` directive citing the existing comment block above explaining WHY `grep | wc -l` was preferred over the buggy `grep -c` original). Verified harness still passes 6/6 Nyquist dimensions after fix.
 - Duration ~7 min effective execution from T1 commit (`4041ef7` 10:54:58Z) to T4 commit (`30404f5` 11:02:23Z); 129 min wall-clock (includes parallel waiting on Plan 01/03).
 
+### Plan 05-03 outcomes (2026-04-24)
+
+- `DOCS/RUNBOOK.md` created (395 lines) with 4 alert-response entries (truncated, exit_code=124, non-124, fleet scan success rate below SLO) — each with the 4 mandated subsections (What it means / Diagnostic SPL / Remediation / Escalation). `<TBD per organization>` placeholder used for all 4 Escalation subsections (no real org context exists).
+- `ODIN_app_for_splunk/default/savedsearches.conf` extended with 3rd alert stanza `alert_odin_fleet_scan_success_rate_below_slo` (definition-only per CONTEXT D2: `disabled = 1`, empty `cron_schedule`). SLO threshold = 95% as starting recommendation; operator tunes per-org after PROD-02 pilot baseline.
+- AppInspect ODIN_app_for_splunk Enterprise scope: failure=0, error=0, warning=0, success=14, na=7 — byte-identical to baseline. Artifact at `.planning/artifacts/appinspect/odin-app-phase05-wave0-plan03.json`.
+- 2 commits per Plan 03 wiring: `f87f328` (RUNBOOK.md + savedsearches.conf stanza). Note: RUNBOOK.md was inadvertently absorbed into Plan 01's commit `d75d779` due to a `git add` race in the shared worktree (documented in Plan 01 Deviation 1 as cross-plan-contamination); content is byte-identical to Plan 03's intended artifact.
+- **PROD-03 fully closed.**
+
+### Plan 05-04 outcomes (2026-04-24)
+
+- `DOCS/INSTALL.md` created (189 lines) — Deployment Server rollout playbook covering both apps (TA-ODIN to UFs, ODIN_app_for_splunk to indexers/SHs) with serverclass binding examples for Linux-only / Windows-only / mixed fleets; per-OS prerequisites; post-install verification SPL.
+- `DOCS/TROUBLESHOOTING.md` created (293 lines) with 12 `### Issue:` triples — 5 Linux (orchestrator-not-running, services-zero, packages-hang, mounts-NFS-hung, processes-truncated), 4 Windows (AppLocker/WDAC, packages-zero registry-perms, scheduled-task noise, UAC edge cases), 3 cross-platform (host_role-null with cross-ref to Phase 4 D-04-02 legacy role values, odin_host_inventory.csv stale, AppInspect failure).
+- `DOCS/DATA-DICTIONARY.md` created (300 lines) with 11 `## type=` subsections (one per emitted event type from Linux + Windows modules: odin_start, odin_complete, odin_error, truncated, service, port, package, cron, scheduled_task, process, mount). Cross-platform parity note (WIN-08) front-loaded; `cron` vs `scheduled_task` divergence explicitly documented as the one Nyquist parity exception. Auxiliary event types (none_found, odin_warning, privilege_warning, mount_error) appended as appendix.
+- `DOCS/UPGRADE.md` created (217 lines) — v1.0.0 -> v1.0.1 upgrade path covering all 7 PROD-* requirements (PROD-01 Windows classification, PROD-02 pilot TBD, PROD-03 runbook, PROD-04 admin docs, PROD-05 rollback, PROD-06 ops dashboard, PROD-07 module hygiene); pre-upgrade checks; in-place upgrade steps; post-upgrade verification; **alert activation procedure** for the new SLO alert (cross-ref to DOCS/RUNBOOK.md "Activating alerts" section); rollback pointer to DOCS/ROLLBACK.md.
+- Both app READMEs gained `## Documentation` sections — TA-ODIN/README.md appended after `## Support`; ODIN_app_for_splunk/README.md appended after `## Version History`. 7 `../DOCS/` links each (INSTALL, TROUBLESHOOTING, DATA-DICTIONARY, UPGRADE, RUNBOOK, ROLLBACK, ARCHITECTURE) = 14 total, exceeds AC threshold of 12. Pure additions: zero pre-existing README content removed (`git diff -- ... | grep -E '^-[^-]' | wc -l` returns 0).
+- Task 6 regression sweep: all 6 scripts green (HARD-01 PASS / HARD-07 PASS / HARD-08 10/10 / windows-parity-harness ALL DIMENSIONS PASSED / PROD-01 PASS / PROD-05 PASS) plus `shellcheck tools/tests/*.sh` exit 0. All 6 DOCS/ files >= 50 lines (smallest 157 ROLLBACK.md, largest 395 RUNBOOK.md). The rollback-dryrun.sh artifact at `.planning/artifacts/rollback-dryrun.md` was regenerated with current commit hash + timestamp (PASS verdict preserved) — expected per Plan 02 design.
+- 5 commits (1 per task except T6 — regression-only no source changes): `de4c986` (T1 INSTALL.md), `6c3033a` (T2 TROUBLESHOOTING.md), `f7b2985` (T3 DATA-DICTIONARY.md), `92a4cb1` (T4 UPGRADE.md), `db2791b` (T5 README updates).
+- **PROD-04 fully closed.** Phase 5 now FULLY COMPLETE (4/4 plans; PROD-03..07 all marked complete in REQUIREMENTS.md).
+- Zero deviations — plan executed exactly as written; no Rule 1/2/3 auto-fixes, no Rule 4 architectural escalations.
+- Pure documentation work: zero AppInspect impact (DOCS/ outside scan scope; README markdown additions tolerated), zero code changes.
+- Duration ~9 min from Task 1 commit (`de4c986` ~10:30Z) to Task 6 SUMMARY (~10:39Z).
+
 ## Todos
 
 _None. Use `/gsd-add-todo` to capture ideas as they come up during planning._
 
 ## Session Continuity
 
-_Last session: 2026-04-24 — Plan 05-02 (Wave 0 PROD-05 + PROD-06 — ops dashboard + rollback procedure) executed end-to-end concurrently with Plans 05-01 + 05-03. 4/4 tasks committed (`4041ef7` odin_ops.xml Dashboard Studio v2 view with 7 panels, `0030812` rollback-dryrun.sh + CI integration + initial artifact, `08863f2` DOCS/ROLLBACK.md operator playbook, `30404f5` AppInspect baseline + Rule 1 windows-parity-harness fix). AppInspect Enterprise scope failure=0/error=0/warning=0 byte-identical to Phase 4 baseline — the new splunk.timechart + splunk.table-with-rangeValue viz components introduced zero AppInspect findings. Full Phase 1+2+3+4 regression suite + new PROD-05 guard all green. PROD-05 + PROD-06 both fully closed. One Rule 1 deviation (pre-existing shellcheck findings in windows-parity-harness.sh blocking plan AC; surgical fix applied). Phase 5 Wave 0 now FULLY COMPLETE (3/3 plans). Next: spawn Plan 05-04 (Wave 1 PROD-04 admin docs cluster — INSTALL.md, TROUBLESHOOTING.md, DATA-DICTIONARY.md, UPGRADE.md + README updates in both apps)._
+_Last session: 2026-04-24 — Plan 05-04 (Wave 1 PROD-04 admin docs cluster) executed end-to-end. 6/6 tasks committed: `de4c986` DOCS/INSTALL.md (189 lines, Deployment Server rollout playbook), `6c3033a` DOCS/TROUBLESHOOTING.md (293 lines, 12 ### Issue triples — 5 Linux + 4 Windows + 3 cross-platform; cross-refs Phase 4 D-04-02 deferred-items legacy role values), `f7b2985` DOCS/DATA-DICTIONARY.md (300 lines, 11 ## type= subsections covering all canonical event types from Linux + Windows modules; cross-platform parity note WIN-08 front-loaded), `92a4cb1` DOCS/UPGRADE.md (217 lines, v1.0.0 -> v1.0.1 path covering all 7 PROD-* requirements + alert activation procedure cross-ref to RUNBOOK.md + rollback pointer to ROLLBACK.md), `db2791b` README updates (both apps gain ## Documentation section with 7 ../DOCS/ links each = 14 total, pure additions zero pre-existing content removed). Task 6 regression sweep: all 6 scripts exit 0 (check-version-sync HARD-01, check-two-app-split HARD-07, injection-fixtures HARD-08 10/10, windows-parity-harness all dimensions, check-windows-classification PROD-01, rollback-dryrun PROD-05) plus shellcheck clean. All 6 DOCS/ files >= 50 lines (smallest 157, largest 395). Zero deviations — plan executed exactly as written. PROD-04 fully closed; Phase 5 now FULLY COMPLETE (4/4 plans, PROD-03..07 all closed in REQUIREMENTS.md). Milestone progress: 2/3 phases = 67%. Next: spawn Phase 6 planning (PROD-02 pilot validation — release gate, requires real-host deployment to ≥5 Linux + ≥5 Windows hosts for 7-day observation window)._
