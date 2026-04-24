@@ -16,7 +16,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-cd "$REPO_ROOT"
+cd "$REPO_ROOT" || { echo "[FAIL] could not cd to $REPO_ROOT"; exit 1; }
 
 FIXTURE_DIR="tools/tests/windows-fixtures/hostA"
 BROKEN_FIXTURE_DIR="tools/tests/windows-fixtures/hostA-broken"
@@ -99,6 +99,7 @@ dimension_3_msi_hazard() {
         # the original implementation appended a second "0" and broke the
         # string comparison. Count explicitly via wc -l instead.
         local hits
+        # shellcheck disable=SC2126  # see comment above: grep -c was the buggy approach we replaced
         hits=$(grep 'Win32_Product' TA-ODIN/bin/modules/packages.ps1 2>/dev/null | wc -l | tr -d ' ')
         if [[ "$hits" == "0" ]]; then
             report 3 PASS "no Win32_Product references in packages.ps1"
