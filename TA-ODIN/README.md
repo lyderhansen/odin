@@ -223,3 +223,13 @@ bash TA-ODIN/bin/modules/services.sh
 ## Support
 
 Contact: Your Organization
+
+## Documentation
+
+- [Installation](../DOCS/INSTALL.md) — Deployment Server rollout playbook
+- [Troubleshooting](../DOCS/TROUBLESHOOTING.md) — common failure modes per OS
+- [Data Dictionary](../DOCS/DATA-DICTIONARY.md) — fields per event type
+- [Upgrade](../DOCS/UPGRADE.md) — v1.0.0 → v1.0.1 upgrade path
+- [Runbook](../DOCS/RUNBOOK.md) — on-call alert response procedures
+- [Rollback](../DOCS/ROLLBACK.md) — emergency disable procedure
+- [Architecture](../DOCS/ARCHITECTURE.md) — system overview
