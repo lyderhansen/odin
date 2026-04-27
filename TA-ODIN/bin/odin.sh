@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # TA-ODIN v1.0.0 - Orchestrator Script for Linux
-# Autodiscovers and runs all modules in bin/modules/
+# Autodiscovers and runs all modules in bin/modules/*.sh (excluding _common.sh).
 #
 # Sets shared context via ODIN_* environment variables and runs each module.
 # Emits start-event, runs modules, emits completion-event with summary.
@@ -106,6 +106,12 @@ for module in "$MODULES_DIR"/*.sh; do
     [[ ! -f "$module" ]] && continue
 
     module_name="$(basename "$module" .sh)"
+
+    # Skip the shared library (sourced by modules' standalone-fallback branch,
+    # not a discoverable module itself). Mirrors Windows orchestrator at
+    # odin.ps1:114 which excludes _common.ps1 by name.
+    [[ "$module_name" == "_common" ]] && continue
+
     module_count=$((module_count + 1))
 
     # Reset per-module event counter
