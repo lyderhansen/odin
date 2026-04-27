@@ -295,3 +295,17 @@ service,ClusSvc,ha_cluster,failover_cluster,WinEventLog:Microsoft-Windows-Failov
 package,Sysmon*,security_endpoint,sysmon_operational,XmlWinEventLog:Microsoft-Windows-Sysmon/Operational,Splunk_TA_microsoft_sysmon,WinEventLog://Microsoft-Windows-Sysmon/Operational,Sysmon operational events (XML format),200,2000
 port,3389/tcp,rdp_server,rdp_session,WinEventLog:Microsoft-Windows-TerminalServices-LocalSessionManager/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-TerminalServices-LocalSessionManager/Operational,Remote Desktop session events,5,100
 port,5985/tcp,windows_management,winrm_powershell,WinEventLog:Microsoft-Windows-PowerShell/Operational,Splunk_TA_windows,WinEventLog://Microsoft-Windows-PowerShell/Operational,WinRM-driven PowerShell script block execution events,10,200
+service,crio,container_host,crio_log,crio,none,/var/log/crio/crio.log,CRI-O container runtime logs,5,100
+service,kube-proxy,kubernetes_node,kube_proxy_log,kube:container:controller,Splunk_TA_kubernetes,/var/log/kube-proxy.log,Kubernetes kube-proxy logs (runs on every node),5,100
+port,2375/tcp,container_host,docker_api_traffic,,,,Docker daemon API on port 2375 (HTTP unencrypted),,
+port,2376/tcp,container_host,docker_api_tls_traffic,,,,Docker daemon API on port 2376 (TLS),,
+port,2379/tcp,kubernetes_master,etcd_client_traffic,,,,etcd client traffic on port 2379 (Kubernetes control plane),,
+port,2380/tcp,kubernetes_master,etcd_peer_traffic,,,,etcd peer traffic on port 2380 (Kubernetes control plane),,
+port,4243/tcp,container_host,docker_api_alt_traffic,,,,Docker daemon API alternative port 4243,,
+package,docker-ce,container_host,docker_log,docker,TA_docker_simple,/var/log/docker.log,Docker CE package installed (signals container host),5,100
+package,docker.io,container_host,docker_log,docker,TA_docker_simple,/var/log/docker.log,Docker.io package installed (Debian/Ubuntu signal),5,100
+package,containerd.io,container_host,containerd_log,containerd,none,/var/log/containerd.log,containerd.io package installed (Docker repo),5,50
+package,podman,container_host,podman_log,podman,TA_docker_simple,,Podman package installed (rootless container runtime),5,100
+package,kubelet,kubernetes_node,kubelet_log,kube:container:controller,Splunk_TA_kubernetes,/var/log/kubelet.log,Kubernetes kubelet package installed,10,200
+package,kubeadm,kubernetes_master,kubeadm_log,kube:container:controller,Splunk_TA_kubernetes,,kubeadm installed (control-plane bootstrap tool),5,50
+package,k3s,kubernetes_node,k3s_log,k3s,none,/var/log/syslog,K3s lightweight Kubernetes installed,10,200
