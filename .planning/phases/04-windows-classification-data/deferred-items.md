@@ -49,6 +49,12 @@ The plan author drafted the AC against an assumed-clean baseline; the baseline w
 
 ## D-04-02 — Pre-existing Windows service rows use legacy roles (D1 violations)
 
+**Status:** ✅ **RESOLVED 2026-04-27** — 24 Windows service rows (lines 274-316) migrated to D1 host_role taxonomy in column 5 (`role`): web→web_server (3), database→database_server (5), directory→domain_controller (2), directory→identity_server (1, ADFS aligned with adfssrv), directory→certificate_server (1), dns→dns_server (1), dhcp→dhcp_server (1), infrastructure→windows_management (1), infrastructure→rdp_server (2), print→print_server (1), virtualization→virtualization_host (2), mail→mail_server (4). Total: 24 rows updated, row count preserved at 357. PROD-01 regression PASS. AppInspect Enterprise scope failure=0/error=0/warning=0 byte-identical to Phase 5 baseline.
+
+**Original analysis correction:** The `Impact` section below claimed saved searches would see two distinct `host_role` values from the lookup. This was incorrect. Tracing the lookup chain via `props.conf` confirms `role` from `odin_classify_services.csv` becomes `service_role` field on events — NOT `host_role`. The `host_role` field is derived exclusively from `odin_log_sources.csv` column 3 (which was already D1-compliant from Plan 04-02). The actual impact of the legacy values was therefore cosmetic-only on `service_role` field aggregation, not on host inventory or TA deployment matrix output.
+
+**Linux follow-up note:** ~120+ Linux rows (lines 2-273) still use the old `web`/`database`/`infrastructure`/etc. taxonomy in column 5. Same impact profile as the Windows rows (cosmetic-only on `service_role`, no effect on `host_role`). Not migrated in this commit since deferred-items D-04-02 was explicitly scoped to Windows. Could be addressed as a separate cleanup item if internal consistency across all rows is desired.
+
 **Discovered during:** Plan 04-01 Task 1 baseline scan
 **File:** `ODIN_app_for_splunk/lookups/odin_classify_services.csv`
 **Origin commit:** `da1f66e`

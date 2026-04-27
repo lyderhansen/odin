@@ -271,24 +271,24 @@ tailscaled,network,vpn,Tailscale,vpn,Tailscale mesh VPN
 nebula,network,vpn,Nebula,vpn,Nebula overlay network
 zerotier-one,network,vpn,ZeroTier,vpn,ZeroTier virtual network
 pritunl,network,vpn,Pritunl,vpn,Pritunl enterprise VPN
-W3SVC,web_server,http_server,Microsoft,web,IIS Web Service (Windows)
-IISADMIN,web_server,http_server,Microsoft,web,IIS Admin Service (Windows)
-WAS,web_server,activation,Microsoft,web,Windows Process Activation Service
-MSSQLSERVER,database,relational,Microsoft,database,Microsoft SQL Server (Windows)
-MSSQL$*,database,relational,Microsoft,database,Microsoft SQL Server named instance (Windows)
-SQLSERVERAGENT,database,relational,Microsoft,database,SQL Server Agent (Windows)
-MSSQLServerOLAPService,database,olap,Microsoft,database,SQL Server Analysis Services (Windows)
-ReportServer,database,reporting,Microsoft,database,SQL Server Reporting Services (Windows)
-NTDS,directory,active_directory,Microsoft,directory,Active Directory Domain Services (Windows)
-Netlogon,directory,active_directory,Microsoft,directory,Active Directory Netlogon (Windows)
-ADFS,directory,federation,Microsoft,directory,Active Directory Federation Services (Windows)
-CertSvc,directory,certificate,Microsoft,directory,Active Directory Certificate Services (Windows)
-DNS,network,dns,Microsoft,dns,Windows DNS Server
-DHCPServer,network,dhcp,Microsoft,dhcp,Windows DHCP Server
+W3SVC,web_server,http_server,Microsoft,web_server,IIS Web Service (Windows)
+IISADMIN,web_server,http_server,Microsoft,web_server,IIS Admin Service (Windows)
+WAS,web_server,activation,Microsoft,web_server,Windows Process Activation Service
+MSSQLSERVER,database,relational,Microsoft,database_server,Microsoft SQL Server (Windows)
+MSSQL$*,database,relational,Microsoft,database_server,Microsoft SQL Server named instance (Windows)
+SQLSERVERAGENT,database,relational,Microsoft,database_server,SQL Server Agent (Windows)
+MSSQLServerOLAPService,database,olap,Microsoft,database_server,SQL Server Analysis Services (Windows)
+ReportServer,database,reporting,Microsoft,database_server,SQL Server Reporting Services (Windows)
+NTDS,directory,active_directory,Microsoft,domain_controller,Active Directory Domain Services (Windows)
+Netlogon,directory,active_directory,Microsoft,domain_controller,Active Directory Netlogon (Windows)
+ADFS,directory,federation,Microsoft,identity_server,Active Directory Federation Services (Windows)
+CertSvc,directory,certificate,Microsoft,certificate_server,Active Directory Certificate Services (Windows)
+DNS,network,dns,Microsoft,dns_server,Windows DNS Server
+DHCPServer,network,dhcp,Microsoft,dhcp_server,Windows DHCP Server
 RemoteAccess,network,vpn,Microsoft,vpn,Windows RRAS VPN/Routing (Windows)
-WinRM,remote_access,winrm,Microsoft,infrastructure,Windows Remote Management
-TermService,remote_access,rdp,Microsoft,infrastructure,Remote Desktop Services (Windows)
-SessionEnv,remote_access,rdp,Microsoft,infrastructure,Remote Desktop Configuration (Windows)
+WinRM,remote_access,winrm,Microsoft,windows_management,Windows Remote Management
+TermService,remote_access,rdp,Microsoft,rdp_server,Remote Desktop Services (Windows)
+SessionEnv,remote_access,rdp,Microsoft,rdp_server,Remote Desktop Configuration (Windows)
 WinDefend,security,antivirus,Microsoft,security,Windows Defender Antivirus
 MsSense,security,edr,Microsoft,security,Microsoft Defender for Endpoint sensor (Windows)
 CSFalconService,security,edr,CrowdStrike,security,CrowdStrike Falcon sensor (Windows)
@@ -303,17 +303,17 @@ TaniumClient,security,management,Tanium,security,Tanium endpoint management agen
 QualysAgent,security,vulnerability,Qualys,security,Qualys Cloud Agent (Windows)
 OssecSvc,security,hids,Wazuh,security,Wazuh/OSSEC agent (Windows)
 EventLog,logging,event_log,Microsoft,logging,Windows Event Log service
-Spooler,print,spooler,Microsoft,print,Windows Print Spooler
+Spooler,print,spooler,Microsoft,print_server,Windows Print Spooler
 LanmanServer,file_server,smb,Microsoft,file_server,Windows Server (SMB file sharing)
 DFSR,file_server,replication,Microsoft,file_server,DFS Replication (Windows)
 Dfs,file_server,dfs,Microsoft,file_server,DFS Namespace (Windows)
 ClusSvc,ha_cluster,failover,Microsoft,ha_cluster,Windows Failover Cluster Service
-vmms,virtualization,hypervisor,Microsoft,virtualization,Hyper-V Virtual Machine Management (Windows)
-vmcompute,virtualization,hypervisor,Microsoft,virtualization,Hyper-V Host Compute Service (Windows)
-MSExchangeTransport,mail,transport,Microsoft,mail,Exchange Transport Service (Windows)
-MSExchangeIS,mail,store,Microsoft,mail,Exchange Information Store (Windows)
-MSExchangeMailboxAssistants,mail,mailbox,Microsoft,mail,Exchange Mailbox Assistants (Windows)
-MSExchangeServiceHost,mail,host,Microsoft,mail,Exchange Service Host (Windows)
+vmms,virtualization,hypervisor,Microsoft,virtualization_host,Hyper-V Virtual Machine Management (Windows)
+vmcompute,virtualization,hypervisor,Microsoft,virtualization_host,Hyper-V Host Compute Service (Windows)
+MSExchangeTransport,mail,transport,Microsoft,mail_server,Exchange Transport Service (Windows)
+MSExchangeIS,mail,store,Microsoft,mail_server,Exchange Information Store (Windows)
+MSExchangeMailboxAssistants,mail,mailbox,Microsoft,mail_server,Exchange Mailbox Assistants (Windows)
+MSExchangeServiceHost,mail,host,Microsoft,mail_server,Exchange Service Host (Windows)
 W32Time,time,ntp,Microsoft,infrastructure,Windows Time Service
 MpsSvc,network,firewall,Microsoft,firewall,Windows Defender Firewall
 SharedAccess,network,firewall,Microsoft,firewall,Windows Internet Connection Sharing/Firewall
