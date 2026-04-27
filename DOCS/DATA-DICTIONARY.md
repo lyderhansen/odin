@@ -68,12 +68,17 @@ fail (fail-soft per WIN-12 / Linux orchestrator design).
 - `modules_total` — count of modules dispatched this run
 - `modules_success` — count of modules that exited 0
 - `modules_failed` — count of modules that exited non-zero (including timeout 124)
+- `duration_ms` — total wall-clock orchestrator runtime in milliseconds, captured
+  immediately before the start emit and finalized immediately before the complete
+  emit. On Linux production (GNU date) this is true millisecond precision; on BSD
+  date (macOS dev environment) it falls back to second precision (rounded). Useful
+  for SLO tracking and identifying slow hosts.
 - `message` — fixed string `"TA-ODIN enumeration completed"` (or `"... completed with errors"`)
 
 **Example:**
 
 ```
-timestamp=2026-04-24T10:00:42Z hostname=web01.example.com os=linux run_id=1740100800-1234 odin_version=1.0.0 type=odin_complete modules_total=6 modules_success=6 modules_failed=0 message="TA-ODIN enumeration completed"
+timestamp=2026-04-24T10:00:42Z hostname=web01.example.com os=linux run_id=1740100800-1234 odin_version=1.0.0 type=odin_complete modules_total=6 modules_success=6 modules_failed=0 duration_ms=4823 message="TA-ODIN enumeration completed"
 ```
 
 ## type=odin_error

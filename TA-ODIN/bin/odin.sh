@@ -52,6 +52,17 @@ get_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
 
+# Get current epoch in milliseconds. GNU date (production target) supports %3N;
+# BSD date (macOS dev environment) does not, so we fall back to second precision
+# with literal "000" suffix. Used to compute duration_ms in the odin_complete
+# event for cross-platform parity with the Windows orchestrator's
+# $scanStart/$scanEnd (odin.ps1:90,197).
+if [[ "$(date +%3N 2>/dev/null)" =~ ^[0-9]+$ ]]; then
+    get_epoch_ms() { date +%s%3N; }
+else
+    get_epoch_ms() { echo "$(date +%s)000"; }
+fi
+
 # Emit a key=value event line with MAX_EVENTS guardrail
 emit() {
     # If already truncated, silently drop
@@ -81,6 +92,9 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # --- Start event ---
+# Capture scan start time for duration_ms in odin_complete (parity with Windows
+# orchestrator's $scanStart at odin.ps1:90 — captured immediately before start emit).
+ODIN_START_MS=$(get_epoch_ms)
 run_user=$(id -un 2>/dev/null || echo "unknown")
 emit "type=odin_start run_as=$run_user euid=$EUID message=\"TA-ODIN enumeration started\""
 
@@ -139,7 +153,9 @@ for module in "$MODULES_DIR"/*.sh; do
 done
 
 # --- Completion event ---
-emit "type=odin_complete modules_total=$module_count modules_success=$module_success modules_failed=$module_fail message=\"TA-ODIN enumeration completed\""
+ODIN_END_MS=$(get_epoch_ms)
+duration_ms=$((ODIN_END_MS - ODIN_START_MS))
+emit "type=odin_complete modules_total=$module_count modules_success=$module_success modules_failed=$module_fail duration_ms=$duration_ms message=\"TA-ODIN enumeration completed\""
 
 # Exit non-zero if any module failed
 [[ $module_fail -gt 0 ]] && exit 1
