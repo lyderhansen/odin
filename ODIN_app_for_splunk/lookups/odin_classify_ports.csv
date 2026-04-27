@@ -64,7 +64,6 @@ port,transport,expected_service,category,description
 4506,tcp,salt,automation,SaltStack return
 4646,tcp,nomad,orchestration,HashiCorp Nomad HTTP
 4647,tcp,nomad-rpc,orchestration,HashiCorp Nomad RPC
-5000,tcp,docker-registry,container,Docker registry
 5044,tcp,beats,logging,Elastic Beats input
 5060,tcp,sip,telephony,SIP voice/video
 5060,udp,sip,telephony,SIP voice/video (UDP)
@@ -79,7 +78,6 @@ port,transport,expected_service,category,description
 6379,tcp,redis,database,Redis cache/database
 6443,tcp,kube-api,container,Kubernetes API server
 6514,tcp,syslog-tls,logging,Syslog over TLS
-6660,tcp,irc,messaging,IRC chat
 6667,tcp,irc,messaging,IRC chat
 7474,tcp,neo4j,database,Neo4j HTTP
 7687,tcp,neo4j-bolt,database,Neo4j Bolt protocol
@@ -136,7 +134,6 @@ port,transport,expected_service,category,description
 1194,tcp,openvpn,network,OpenVPN (TCP)
 1270,tcp,scom,monitoring,SCOM agent
 1433,udp,mssql,database,Microsoft SQL Server (UDP)
-1883,tcp,mqtt,messaging,MQTT messaging
 2049,udp,nfs,file_server,NFS file system (UDP)
 3268,tcp,gc,directory,Active Directory Global Catalog
 3269,tcp,gc-ssl,directory,Active Directory Global Catalog SSL
@@ -156,7 +153,6 @@ port,transport,expected_service,category,description
 6783,tcp,weave,container,Weave Net mesh
 7443,tcp,https-alt,web_server,HTTPS alternate (Oracle/misc)
 7946,tcp,docker-swarm,container,Docker Swarm gossip
-8000,tcp,http-alt,web_server,HTTP alternate (common)
 8001,tcp,http-alt,web_server,HTTP alternate (Kong admin)
 8082,tcp,http-alt,web_server,HTTP alternate (Nexus/misc)
 8088,tcp,splunk-hec,logging,Splunk HTTP Event Collector

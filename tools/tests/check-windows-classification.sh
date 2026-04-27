@@ -23,9 +23,11 @@ for svc in NTDS ADWS DNS DHCPServer W3SVC MSSQLSERVER MSExchangeTransport Lanman
 done
 
 # Criterion 2 — ports row count grew + canonical Windows port set present
+# Baseline updated 2026-04-27 (D-04-01 closure): removed 4 pre-existing duplicate
+# (port,transport) keys from Linux/cross-platform rows. New floor: 220 (202 Linux + 18 Windows).
 ports_count=$(wc -l < "$LOOKUPS/odin_classify_ports.csv")
-if [ "$ports_count" -lt 224 ]; then
-  echo "[FAIL] odin_classify_ports.csv has $ports_count rows, expected at least 224 (206 Linux + 18 Windows)"
+if [ "$ports_count" -lt 220 ]; then
+  echo "[FAIL] odin_classify_ports.csv has $ports_count rows, expected at least 220 (202 Linux + 18 Windows)"
   fail=1
 fi
 for port in '88,tcp' '135,tcp' '139,tcp' '389,tcp' '445,tcp' '636,tcp' '1433,tcp' '3268,tcp' '3269,tcp' '3389,tcp' '5985,tcp' '5986,tcp'; do

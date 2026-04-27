@@ -8,6 +8,8 @@ changes; pre-existing failures in unrelated content are tracked here, not fixed)
 
 ## D-04-01 — Pre-existing duplicate (port, transport) keys in odin_classify_ports.csv
 
+**Status:** ✅ **RESOLVED 2026-04-27** — 4 duplicate rows removed (line 67 `5000,tcp`, line 82 `6660,tcp`, line 139 `1883,tcp`, line 159 `8000,tcp`); kept the more-descriptive variant of each pair (lines 148, 155, 86) per analysis below. `tools/tests/check-windows-classification.sh` baseline updated from 224 → 220 (202 Linux + 18 Windows). PROD-01 regression PASS. AppInspect Enterprise scope failure=0/error=0/warning=0 byte-identical to Phase 5 baseline.
+
 **Discovered during:** Plan 04-01 Task 2 verification
 **File:** `ODIN_app_for_splunk/lookups/odin_classify_ports.csv`
 **Origin commit:** `da1f66e` ("Expand all classification lookups with Windows and additional Linux technologies") — predates v1.0.1 milestone
