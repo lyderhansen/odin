@@ -14,6 +14,7 @@ during development and review.
 | File | Date | Host | OS | Modules | Events | Runtime | Notes |
 |---|---|---|---|---|---|---|---|
 | `windows11-2026-04-27_test.txt` | 2026-04-27 | `test` (VM) | Windows 11 | 6/6 success | 690 | 23.5s | First end-to-end Windows validation post-PROD-07 (d) consolidation. Validated on Microsoft Edge–heavy desktop. `modules_total=6` confirms `_common.ps1` correctly excluded from discovery. |
+| `linux_rocky-2026-04-27_test.txt` | 2026-04-27 | `e0c0ddd5630b` (Docker) | Rocky Linux 9.3 | 6/6 success | 196 | ~6s | Linux counterpart to the Windows capture above. Captured INSIDE a minimal Rocky 9 Docker container (no systemd, no application services), proving graceful degradation: cron/services emit `none_found`, packages emit 169 RPM-base events, ports show only Docker DNS resolver, processes captures the orchestrator's own subprocess tree. Note: this run was BEFORE commit `718f76b`, so `duration_ms` is absent from the `odin_complete` event. Future Linux captures should include it. |
 
 ## What these prove
 
