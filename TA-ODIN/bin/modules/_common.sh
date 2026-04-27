@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+# TA-ODIN v1.0.0 - Shared Bash Library (Linux)
+#
+# This file is sourced by every module's standalone-fallback branch when the
+# orchestrator's emit() function is not in scope (i.e., when a module is
+# invoked directly for debugging instead of via odin.sh).
+#
+# Sourcing pattern (inside each module):
+#
+#     if ! declare -f emit &>/dev/null; then
+#         # shellcheck source=_common.sh
+#         source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+#     fi
+#
+# When the orchestrator runs a module, emit() is exported via `export -f emit`
+# (see TA-ODIN/bin/odin.sh:75) so `declare -f emit` returns true and this file
+# is NEVER sourced. The gating mechanism is critical: dual-defining emit()
+# would shadow the orchestrator's truncation tracking.
+#
+# Mirrors the Windows shared library at TA-ODIN/bin/modules/_common.ps1
+# (which is dot-sourced rather than imported as a PowerShell module for
+# Constrained Language Mode safety — see _common.ps1 D2/D5 notes).
+#
+# Closes PROD-07 (d) — consolidation of standalone-fallback hygiene from
+# 6 modules into a single shared file. The pre-refactor pattern duplicated
+# this 20-line block across cron.sh, mounts.sh, packages.sh, ports.sh,
+# processes.sh, services.sh.
+
+# Standalone-context defaults — orchestrator pre-sets these via export, so the
+# parameter expansion is a no-op when invoked via odin.sh. Direct module
+# invocation (debugging) gets sensible defaults here.
+ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
+ODIN_OS="${ODIN_OS:-linux}"
+ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
+ODIN_VERSION="${ODIN_VERSION:-1.0.0}"
+ODIN_MAX_EVENTS="${ODIN_MAX_EVENTS:-50000}"
+ODIN_EVENT_COUNT=0
+
+get_timestamp() {
+    date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
+# Emit a key=value event line with MAX_EVENTS guardrail.
+# Mirrors orchestrator emit() behavior: emits exactly one type=truncated marker
+# on first cap-breach, drops subsequent events. Counter is incremented past the
+# cap on the truncated emit so subsequent events match the -ge guard but not
+# the -eq re-emit guard, preventing duplicate truncation markers.
+emit() {
+    if [[ $ODIN_EVENT_COUNT -ge $ODIN_MAX_EVENTS ]]; then
+        if [[ $ODIN_EVENT_COUNT -eq $ODIN_MAX_EVENTS ]]; then
+            echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION type=truncated message=\"Event limit reached (max=$ODIN_MAX_EVENTS). Remaining events suppressed.\""
+            ODIN_EVENT_COUNT=$((ODIN_EVENT_COUNT + 1))
+        fi
+        return 0
+    fi
+    ODIN_EVENT_COUNT=$((ODIN_EVENT_COUNT + 1))
+    echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"
+}

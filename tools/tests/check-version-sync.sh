@@ -82,37 +82,50 @@ for f in \
 done
 
 # ---------------------------------------------------------------------------
-# Section 3 (PROD-07 c) — Linux module standalone-fallback version drift
+# Section 3 (PROD-07 c+d) — Linux module standalone-fallback version drift
 # ---------------------------------------------------------------------------
-# The 6 module files in TA-ODIN/bin/modules/*.sh each contain a standalone
-# fallback block (gated by `! declare -f emit`) that defaults ODIN_VERSION
-# when the module is run directly (debug/test workflow). After PROD-07 the
-# canonical fallback value is "1.0.0" — any other value is drift.
-declare -i module_drift=0
+# After PROD-07 (d) the standalone fallback block is consolidated into
+# TA-ODIN/bin/modules/_common.sh and each module's standalone branch sources
+# it (gated by `! declare -f emit` so orchestrator runs never source the
+# library). We assert two invariants:
+#   1. _common.sh declares the canonical ODIN_VERSION default
+#   2. All 6 modules source _common.sh from their fallback gate
+COMMON_SH="$REPO_ROOT/TA-ODIN/bin/modules/_common.sh"
+if [[ ! -f "$COMMON_SH" ]]; then
+    echo "[HARD-01 / PROD-07 FAIL] _common.sh missing at $COMMON_SH"
+    exit 1
+fi
+
+common_version=$(grep -E 'ODIN_VERSION="\$\{ODIN_VERSION:-' "$COMMON_SH" \
+    | head -1 \
+    | sed -E 's/.*ODIN_VERSION:-([^"}]+).*/\1/')
+if [[ -z "$common_version" ]]; then
+    echo "[HARD-01 / PROD-07 FAIL] _common.sh has no fallback ODIN_VERSION line"
+    exit 1
+fi
+if [[ "$common_version" != "$canonical" ]]; then
+    echo "[HARD-01 / PROD-07 DRIFT] _common.sh fallback ODIN_VERSION='$common_version' (expected $canonical)"
+    exit 1
+fi
+
+# Verify each module sources _common.sh from its standalone-fallback branch
+declare -i missing_source=0
 for module in "$REPO_ROOT"/TA-ODIN/bin/modules/*.sh; do
-    # Find the fallback ODIN_VERSION line (shape: ODIN_VERSION="${ODIN_VERSION:-X.Y.Z}")
-    fallback_version=$(grep -E 'ODIN_VERSION="\$\{ODIN_VERSION:-' "$module" \
-        | head -1 \
-        | sed -E 's/.*ODIN_VERSION:-([^"}]+).*/\1/')
-    if [[ -z "$fallback_version" ]]; then
+    [[ "$(basename "$module")" == "_common.sh" ]] && continue
+    if ! grep -q 'source.*_common\.sh' "$module"; then
         rel="${module#"$REPO_ROOT"/}"
-        echo "WARN: $rel has no standalone fallback ODIN_VERSION line"
-        continue
-    fi
-    if [[ "$fallback_version" != "$canonical" ]]; then
-        rel="${module#"$REPO_ROOT"/}"
-        echo "[HARD-01 / PROD-07 DRIFT] $rel fallback ODIN_VERSION='$fallback_version' (expected $canonical)"
-        module_drift=$((module_drift + 1))
+        echo "[HARD-01 / PROD-07 FAIL] $rel does not source _common.sh"
+        missing_source=$((missing_source + 1))
     fi
 done
 
-if [[ $module_drift -gt 0 ]]; then
-    echo "[HARD-01 / PROD-07 FAIL] $module_drift module(s) have stale fallback ODIN_VERSION"
+if [[ $missing_source -gt 0 ]]; then
+    echo "[HARD-01 / PROD-07 FAIL] $missing_source module(s) missing _common.sh source line"
     exit 1
 fi
 
 if [[ $drift -eq 0 ]]; then
-    echo "[HARD-01 PASS] Version sync: $canonical (4 sites + 6 module fallbacks)"
+    echo "[HARD-01 PASS] Version sync: $canonical (4 sites + _common.sh + 6 module sources)"
 fi
 
 exit $drift

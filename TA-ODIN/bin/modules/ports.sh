@@ -15,24 +15,8 @@ export LC_ALL=C
 
 # Use orchestrator functions if available, otherwise define standalone versions
 if ! declare -f emit &>/dev/null; then
-    ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
-    ODIN_OS="${ODIN_OS:-linux}"
-    ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-    ODIN_VERSION="${ODIN_VERSION:-1.0.0}"
-    ODIN_MAX_EVENTS="${ODIN_MAX_EVENTS:-50000}"
-    ODIN_EVENT_COUNT=0
-    get_timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
-    emit() {
-        if [[ $ODIN_EVENT_COUNT -ge $ODIN_MAX_EVENTS ]]; then
-            if [[ $ODIN_EVENT_COUNT -eq $ODIN_MAX_EVENTS ]]; then
-                echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION type=truncated message=\"Event limit reached (max=$ODIN_MAX_EVENTS). Remaining events suppressed.\""
-                ODIN_EVENT_COUNT=$((ODIN_EVENT_COUNT + 1))
-            fi
-            return 0
-        fi
-        ODIN_EVENT_COUNT=$((ODIN_EVENT_COUNT + 1))
-        echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"
-    }
+    # shellcheck source=/dev/null  # _common.sh resolved via dirname BASH_SOURCE
+    source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 fi
 
 # Helper: escape double quotes and wrap values containing spaces
