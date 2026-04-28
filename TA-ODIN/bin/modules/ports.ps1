@@ -1,4 +1,4 @@
-﻿# TA-ODIN v1.0.0 - Windows listening ports enumeration module
+﻿# TA-ODIN v1.0.1 - Windows listening ports enumeration module
 # Parity target: TA-ODIN/bin/modules/ports.sh
 # Emits: type=port transport=<tcp|udp> listen_address=<ip> listen_port=<n>
 #        [process_name=<n>] [process_pid=<n>]

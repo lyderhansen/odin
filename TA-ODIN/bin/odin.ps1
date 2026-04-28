@@ -1,4 +1,4 @@
-﻿# TA-ODIN v1.0.0 - Windows Orchestrator
+﻿# TA-ODIN v1.0.1 - Windows Orchestrator
 #
 # Autodiscovers and runs all modules in bin/modules/*.ps1 (excluding _common.ps1).
 # Emits canonical type=odin_start / type=odin_complete / type=odin_error markers
@@ -56,7 +56,7 @@ $CommonLib  = Join-Path $ModulesDir '_common.ps1'
 
 if (-not (Test-Path $CommonLib)) {
     $ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
-    Write-Output "timestamp=$ts hostname=unknown os=windows run_id=error-$PID odin_version=1.0.0 type=odin_error message=`"_common.ps1 not found at $CommonLib`""
+    Write-Output "timestamp=$ts hostname=unknown os=windows run_id=error-$PID odin_version=1.0.1 type=odin_error message=`"_common.ps1 not found at $CommonLib`""
     exit 1
 }
 
@@ -69,7 +69,7 @@ if (-not $env:ODIN_RUN_ID) {
     $epoch = [int][double]((Get-Date).ToUniversalTime() - (Get-Date '1970-01-01Z').ToUniversalTime()).TotalSeconds
     $env:ODIN_RUN_ID = "$epoch-$PID"
 }
-if (-not $env:ODIN_VERSION) { $env:ODIN_VERSION = '1.0.0' }
+if (-not $env:ODIN_VERSION) { $env:ODIN_VERSION = '1.0.1' }
 
 # Populate remaining $env:ODIN_* with fallbacks (hostname, os)
 Initialize-OdinContext

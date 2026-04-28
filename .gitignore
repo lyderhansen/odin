@@ -1,3 +1,5 @@
 # macOS Finder metadata - prohibited by Splunkbase packaging standards (APPI-01)
 **/.DS_Store
 .DS_Store
+# Build artifacts — uploaded to GitHub Releases instead of committed
+.planning/artifacts/builds/

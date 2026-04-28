@@ -1,4 +1,4 @@
-﻿# TA-ODIN v1.0.0 - Windows filesystem volumes enumeration module
+﻿# TA-ODIN v1.0.1 - Windows filesystem volumes enumeration module
 # Parity target: TA-ODIN/bin/modules/mounts.sh
 # Emits: type=mount mount_device=<d> mount_point=<p> mount_type=<t>
 #        mount_size_kb=<n> mount_used_kb=<n> mount_avail_kb=<n> mount_use_pct=<n>

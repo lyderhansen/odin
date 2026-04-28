@@ -2,6 +2,94 @@
 
 All timestamps are ISO 8601 in CET timezone.
 
+> **Note on versioning history:** Entries below v1.0.1 (v1.0.0 and v2.x) are
+> from the project's pre-reset versioning scheme. The current v1.0.0 release
+> (2026-04-15, tag `v1.0.0` on `origin/main`) and v1.0.1 work are not yet
+> reflected in chronological entries below — see `.planning/HANDOFF.md` and
+> milestone-specific summaries in `.planning/phases/` for that history.
+
+---
+
+## v1.0.1-rc1 — Production Readiness (Release Candidate)
+
+**Date:** 2026-04-28
+
+### Summary
+
+Release candidate for v1.0.1. Phase 4 (Windows classification data) and Phase 5
+(operational readiness) are complete and validated. Phase 6 (PROD-02 pilot
+validation on ≥5 Linux + ≥5 Windows real hosts) is pending real infrastructure
+and will determine when full v1.0.1 (no `-rc` suffix) ships.
+
+### What's in this release
+
+- **PROD-01 — Windows classification:** 25 services, 18 ports, 34 packages, 23
+  log_source mappings added covering canonical Windows roles (web, database,
+  domain controller, mail, identity, certificate, RDP, print, virtualization,
+  Hyper-V, ADFS, RDS, SCCM, WSUS, ADCS, NPS, DFS, WDS, Failover Cluster).
+- **PROD-03 — Operational runbook:** `DOCS/RUNBOOK.md` with 4 alert response
+  procedures (truncated, exit_code=124, non-124, fleet SLO).
+- **PROD-04 — Admin documentation:** `DOCS/INSTALL.md`, `DOCS/TROUBLESHOOTING.md`,
+  `DOCS/DATA-DICTIONARY.md`, `DOCS/UPGRADE.md` covering deployment, troubleshooting,
+  field reference, and v1.0.0 → v1.0.1 upgrade path.
+- **PROD-05 — Rollback procedure:** `DOCS/ROLLBACK.md` + `tools/tests/rollback-dryrun.sh`
+  CI gate that proves rollback toggle is reversible.
+- **PROD-06 — Operations dashboard:** `ODIN_app_for_splunk/default/data/ui/views/odin_ops.xml`
+  (Dashboard Studio v2, 7 panels showing modules_failed, truncated rate,
+  duration_ms distribution, etc.).
+- **PROD-07 — Module hygiene:** Linux modules consolidated into `_common.sh`
+  shared library (mirrors Windows `_common.ps1` pattern), `MAX_EVENTS` guard
+  added to standalone fallback, `check-version-sync.sh` extended with module
+  drift detection.
+- **D-04-01 + D-04-02:** Pre-existing data-quality gaps in classification CSVs
+  closed (4 duplicate port keys removed; 24 legacy Windows service rows migrated
+  to D1 host_role taxonomy).
+- **Container Nivå 1:** 14 container/k8s signal mappings added to
+  `odin_log_sources.csv` (docker, containerd, podman, crio, kube-proxy,
+  kubelet, kubeadm, k3s services/packages + Docker API + etcd cluster ports).
+- **Cross-platform parity enhancements:** `_common.sh` consolidation,
+  `duration_ms` field added to Linux `odin_complete` event for parity with
+  Windows orchestrator, orchestrator discovery filter excludes `_common.sh`.
+
+### What's NOT in this release (known)
+
+- **PROD-02 pilot validation** — Phase 6 deferred pending real infrastructure
+  (5+5 hosts, Splunk Deployment Server, 7-day observation window). Full
+  v1.0.1 release (no `-rc`) will only tag after pilot acceptance criteria
+  (modules_failed=0 on ≥95% of events, alerts triaged, host inventory complete,
+  go/no-go release-gate report) are met.
+
+### Verification status
+
+- HARD-01 (version sync): PASS (`Version sync: 1.0.1 (4 sites + _common.sh + 6 module sources)`)
+- PROD-01 (Windows classification): PASS
+- HARD-07 (two-app split): PASS
+- PROD-05 (rollback dry-run): PASS
+- Windows parity harness: ALL DIMENSIONS PASSED
+- AppInspect TA-ODIN Enterprise scope: failure=0, error=0, warning=1 (pre-existing)
+- AppInspect ODIN_app_for_splunk Enterprise scope: failure=0, error=0, warning=0
+- shellcheck on all shell sources: clean
+
+### Manual cross-platform validation evidence
+
+- `.planning/artifacts/manual-tests/windows11-2026-04-27_test.txt` (690 events,
+  6/6 modules, 23.5s on Windows 11 VM)
+- `.planning/artifacts/manual-tests/linux_rocky-2026-04-27_test.txt` (196 events,
+  6/6 modules, ~6s on Rocky Linux 9 Docker container)
+
+These supplement (do not replace) the formal PROD-02 pilot.
+
+### Next milestones (planted as seeds)
+
+- **v1.0.2 — Host Metadata Enrichment:** 13-field `type=odin_host_info` event
+  per scan (OS distro/version/kernel/arch, hardware, network, virtualization,
+  cloud detection). Trigger: this v1.0.1-rc1 release. See
+  `.planning/seeds/v1.0.2-host-metadata-enrichment.md`.
+- **v1.1.0 — Container Observability:** Container env detection + container
+  enumeration via docker/podman/kubectl APIs + image-based classification +
+  optional cloud auto-discovery. Trigger: v1.0.2 shipped. See
+  `.planning/seeds/v1.1.0-container-observability.md`.
+
 ---
 
 ## v2.2.2 — Splunkbase TA Coverage Expansion

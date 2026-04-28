@@ -3,9 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0.1
 milestone_name: milestone
 current_plan: 5
-status: phase_complete
-last_updated: "2026-04-24T10:39:28Z"
-last_activity: 2026-04-24
+status: rc1_released
+last_updated: "2026-04-28T08:00:00Z"
+last_activity: 2026-04-28
+release_candidate: v1.0.1-rc1
 progress:
   total_phases: 3
   completed_phases: 2
@@ -19,13 +20,15 @@ progress:
 ## Current Position
 
 - **Milestone:** v1.0.1 — Production Readiness (scope PROD-01..PROD-07)
-- **Phase:** Phase 5 — Operational Readiness **COMPLETE 2026-04-24**; Phase 6 — Pilot Validation (PROD-02) ready to begin planning
-- **Plan:** Plans 05-01 (PROD-07), 05-02 (PROD-05+06), 05-03 (PROD-03), 05-04 (PROD-04) all **COMPLETE 2026-04-24** — Phase 5 fully closed; PROD-03..07 all marked complete in REQUIREMENTS.md
-- **Status:** Phase 5 fully complete (4/4 plans landed, all PROD-* requirements except PROD-02 closed; AppInspect baseline preserved across all changes; full Phase 1+2+3+4 regression suite green); milestone progress 2/3 phases = 67%
-- **Current Plan:** Phase 5 closed; next is Phase 6 (PROD-02 pilot validation)
+- **Phase:** Phase 5 — Operational Readiness **COMPLETE 2026-04-24**; Phase 6 — Pilot Validation (PROD-02) **deferred pending pilot infrastructure**
+- **Release status:** **v1.0.1-rc1 released 2026-04-28** as GitHub prerelease; full v1.0.1 (no `-rc` suffix) blocked on PROD-02 pilot acceptance criteria
+- **Plan:** Plans 05-01 (PROD-07), 05-02 (PROD-05+06), 05-03 (PROD-03), 05-04 (PROD-04) all **COMPLETE 2026-04-24** — Phase 5 fully closed; PROD-03..07 all marked complete in REQUIREMENTS.md; PROD-07 sub-item (d) closed 2026-04-27 in commit `4b7ef88`
+- **Post-Phase-5 cleanup (2026-04-27):** D-04-01 (port duplicates), D-04-02 (legacy roles), PROD-07 (d) (`_common.sh` consolidation), orchestrator discovery fix, `duration_ms` parity, container Nivå 1 (14 signals), exploration outputs (note + 2 seeds for v1.0.2 + v1.1.0), version bump to 1.0.1
+- **Status:** Phase 5 fully complete + post-phase tech-debt cleanup landed; full v1.0.1 awaits PROD-02 pilot. Milestone progress 2/3 phases = 67%
+- **Current Plan:** v1.0.1-rc1 shipped; v1.0.2 unblocked (host metadata enrichment seed); v1.0.1 full release pending Phase 6 / PROD-02
 - **Total Plans in Phase:** 4/4 complete
 - **Progress:** [██████▋   ] 67% (2 of 3 phases complete)
-- **Last activity:** 2026-04-24
+- **Last activity:** 2026-04-28
 
 ## Milestone Scope (v1.0.1)
 

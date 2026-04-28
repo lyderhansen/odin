@@ -1,4 +1,4 @@
-﻿# TA-ODIN v1.0.0 - Shared PowerShell Library (Windows)
+﻿# TA-ODIN v1.0.1 - Shared PowerShell Library (Windows)
 #
 # D2 - DOT-SOURCED LIBRARY (NEVER a PowerShell module):
 #   This file is dot-sourced directly by the orchestrator and (Wave 2) by every
@@ -146,7 +146,7 @@ function Initialize-OdinContext {
     }
     if (-not $env:ODIN_OS)      { $env:ODIN_OS = 'windows' }
     if (-not $env:ODIN_RUN_ID)  { $env:ODIN_RUN_ID = "standalone-$PID" }
-    if (-not $env:ODIN_VERSION) { $env:ODIN_VERSION = '1.0.0' }
+    if (-not $env:ODIN_VERSION) { $env:ODIN_VERSION = '1.0.1' }
 }
 
 # ---------------------------------------------------------------------------
