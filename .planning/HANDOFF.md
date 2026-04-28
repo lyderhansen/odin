@@ -1,83 +1,171 @@
-# Session Handoff — pre-compact (2026-04-25)
+# Session Handoff — pre-compact (2026-04-28)
 
-## Where we are
+## TL;DR
 
-**Milestone v1.0.1 — Production Readiness:** 2/3 phases complete = 67%.
+**Where we are:** Phase 7 (v1.0.2 — Host Info Linux) context captured, ready for planning. v1.0.1-rc1 shipped to GitHub.
 
-| Phase | Status | Closing commits |
+**Next step after compact:** `/gsd-plan-phase 7 --skip-research`
+
+**Why `--skip-research`:** Phase 7 has unusually rich pre-context (seed + CONTEXT + roadmap success criteria + canonical refs). Standalone research phase would duplicate work. Planner can build PLAN.md directly from existing artifacts.
+
+---
+
+## Active milestone tree
+
+```
+v1.0.0 ─── tagged 2026-04-15 (origin/main, GitHub release live)
+   │
+v1.0.1 ─── 67% (Phase 4 + 5 done); v1.0.1-rc1 SHIPPED 2026-04-28
+   │       Phase 6 (PROD-02 pilot) blocked on real infra
+   │
+v1.0.2 ─── ACTIVE — Host Metadata Enrichment (5 reqs, 3 phases)
+   │       Phase 7: Host Info — Linux ← READY FOR PLANNING
+   │       Phase 8: Host Info — Windows (depends on Phase 7)
+   │       Phase 9: Validation + Docs + Dashboard (depends on 7+8)
+   │
+v1.1.0 ─── seed planted (Container Observability)
+           Trigger: v1.0.2 shipped
+```
+
+## Today's commits (13 total, all pushed to origin)
+
+| # | Commit | Type |
 |---|---|---|
-| 4 — Windows Classification Data | ✓ Complete + verified (`04-VERIFICATION.md`) + UAT 10/10 (`04-UAT.md`) | `e7d9b59` |
-| 5 — Operational Readiness | ✓ Complete + verified (`05-VERIFICATION.md`) + UAT 12/12 (`05-UAT.md`) | `5e79af9` |
-| **6 — Pilot Validation (PROD-02)** | **Not started** | — |
+| 1 | `b8f7aad` | D-04-01 port duplicates closed |
+| 2 | `0e4d200` | D-04-02 legacy Windows roles closed |
+| 3 | `4b7ef88` | PROD-07 (d) `_common.sh` consolidation |
+| 4 | `9cb4894` | Orchestrator discovery filter fix |
+| 5 | `718f76b` | duration_ms cross-platform parity |
+| 6 | `78b259f` | Archive Windows 11 manual test |
+| 7 | `f3b1161` | Container Nivå 1 (14 docker/k8s signals) |
+| 8 | `041dd2f` | Strategy note + 2 seeds (v1.0.2 + v1.1.0) |
+| 9 | `a0f1de5` | Archive Rocky Linux manual test |
+| 10 | `ff19589` | **Version bump 1.0.0 → 1.0.1** |
+| 11 | `dac86b4` | **Tag v1.0.1-rc1 (annotated)** |
+| 12 | `f5abdcf` | **Open milestone v1.0.2** |
+| 13 | `a34ab0f` | **Phase 7 CONTEXT captured** |
 
-All Phase 4+5 PROD-* requirements closed (PROD-01, PROD-03..PROD-07). Only **PROD-02 pilot validation** remains.
+**GitHub release:** https://github.com/lyderhansen/odin/releases/tag/v1.0.1-rc1
+- 2 tarballs uploaded: `ODIN_app_for_splunk-1.0.1-rc1.tar.gz` (34K) + `TA-ODIN-1.0.1-rc1.tar.gz` (28K)
+- AppInspect both clean
+- Marked as prerelease
 
-## What's left in v1.0.1
+## Phase 7 — what's already decided (locked in CONTEXT)
 
-**One requirement: PROD-02** (Phase 6 — Pilot Validation).
+**Read first:** `.planning/phases/07-host-info-linux/07-CONTEXT.md`
 
-Per ROADMAP §Phase 6:
-- Deploy TA-ODIN v1.0.1 to **≥5 Linux + ≥5 Windows real hosts** via Deployment Server
-- 7-day continuous observation window
-- Acceptance: `modules_failed=0` on ≥95% of `type=odin_complete` events; every `type=truncated` and `type=odin_error` triaged + documented in `.planning/artifacts/pilot-v1.0.1/alerts-log.md`; every pilot host produces a row in `odin_host_inventory.csv` with classified role; go/no-go release-gate report at `.planning/artifacts/pilot-v1.0.1/release-gate.md`
+The 4 gray areas were discussed and decided:
 
-## Phase 6 is fundamentally different from Phase 1–5
+| ID | Area | Decision |
+|---|---|---|
+| **D-01** | Helper placement | Extend `TA-ODIN/bin/modules/_common.sh` (59 → ~250 lines) |
+| **D-02** | IMDS strategy | Sequential AWS→GCP→Azure, 1s curl timeout, 3s worst case |
+| **D-03** | Field error handling | All-strings sentinel: `unknown` (failed) vs `none` (semantic null) |
+| **D-04** | Virtualization granularity | Single field, 6-value enum (no container_runtime sub-field) |
 
-All prior phases were **desk-executable** (code, docs, dashboards, configs — no real infra needed). Phase 6 requires:
+**Pre-locked from seed (NOT discussed):**
+- 13 fields exact: `os_distro, os_version, os_pretty, os_kernel, os_arch, cpu_cores, mem_total_mb, uptime_seconds, fqdn, ip_primary, virtualization, cloud_provider, cloud_region`
+- Event name: `type=odin_host_info`
+- Event positioning: between `odin_start` and first module event
+- Per-field detection methods (see seed table)
 
-1. A working **Splunk Deployment Server** with serverclass binding authority over the pilot fleet
-2. **≥10 real hosts** (5 Linux + 5 Windows) in our fleet that we control + can observe for 7 continuous days
-3. A **Splunk indexer + search head** receiving the `odin_discovery` index from these hosts
-4. **Operator authority** to investigate and triage any alerts that fire during the pilot window
+## Canonical refs for Phase 7 (planner MUST read these)
 
-Without these, Phase 6 will stall mid-execution and create an open-loop phase with no path to closure.
+1. `.planning/phases/07-host-info-linux/07-CONTEXT.md` — All 4 decisions + code context + canonical refs (AUTHORITATIVE source)
+2. `.planning/seeds/v1.0.2-host-metadata-enrichment.md` — 13-field detection methods table (Linux + Windows)
+3. `.planning/notes/2026-04-27-host-metadata-and-container-strategy.md` — Why this milestone exists
+4. `.planning/REQUIREMENTS.md` § "v1.0.2 Requirements" — HOST-01 acceptance criteria
+5. `.planning/ROADMAP.md` § "Phase 7: Host Info — Linux" — 4 success criteria
+6. `TA-ODIN/bin/modules/_common.sh` — File to extend (current 59 lines)
+7. `TA-ODIN/bin/odin.sh` line 99 — Insertion point for `emit_host_info` call (between odin_start and root warnings)
 
-## Reality check needed before launching Phase 6
+## How to resume cleanly
 
-**Decisions to make first** (these are real-world / org-context, not code-context):
+After compact, the FASTEST path:
 
-1. **Pilot fleet selection** — which specific hosts? Real production hosts (riskier but realistic) or staged/canary hosts (safer but less representative)?
-2. **Deployment Server access** — do we have it? Who runs the rollout? (You? A platform team?)
-3. **Observation window owner** — who watches alerts during the 7 days? On-call rotation? You alone?
-4. **Failure-handling pre-commitment** — if Phase 6 surfaces a real bug (likely on first Windows-host pilot), we hotfix to v1.0.2 instead of stalling Phase 6, OR we pause Phase 6 until the bug is fixed in v1.0.1?
-5. **Alternative path** — accept v1.0.1 partial release without PROD-02 (release as v1.0.1-rc1 / pre-release on GitHub), gather operator feedback, then ship full v1.0.1 once pilot completes?
+```bash
+# Single command — uses existing CONTEXT, skips redundant research:
+/gsd-plan-phase 7 --skip-research
+```
 
-If pilot-host availability is **unknown or pending**, the right move is **NOT** to launch Phase 6 yet — it would create a stalled phase that blocks milestone closeout.
+The planner will:
+1. Read `07-CONTEXT.md` for decisions
+2. Read seed for detection methods table
+3. Read REQUIREMENTS.md HOST-01 for acceptance
+4. Generate `07-01-PLAN.md` with concrete tasks (probably 6-10 tasks)
+5. Run plan-checker for goal-backward verification
+6. Either approve or iterate
 
-## Recommended post-compact options
+After plan approval: `/gsd-execute-phase 7` runs the plan.
 
-**Option A — Pilot infra ready:** `/gsd-discuss-phase 6` to capture pilot-decision gray areas (which hosts, which serverclass, what counts as failure, etc.), then `/gsd-plan-phase 6`, then execute the pilot deployment + 7-day window.
+## What NOT to re-litigate post-compact
 
-**Option B — Pilot infra deferred:** Tag current state as `v1.0.1-rc1` (release candidate) and ship via `gh release create v1.0.1-rc1 --prerelease` for early operator feedback. Defer Phase 6 + final v1.0.1 release until real pilot infra is available. Update ROADMAP to mark v1.0.1 as "rc shipped, GA pending PROD-02".
+These were decided through discussion and are LOCKED. Do not re-ask the user:
 
-**Option C — Re-scope v1.0.1 to drop PROD-02:** Move PROD-02 to a new "v1.0.2 pilot release" milestone. Tag current state as full v1.0.1. Risk: violates the original v1.0.1 promise that pilot validation is the release gate.
+- Helper placement → `_common.sh` (NOT a new file, NOT a new lib/ directory)
+- IMDS timeout → 1s per probe (NOT 2s, NOT parallel, NOT cached)
+- Failed-detection sentinel → `unknown`/`none` strings (NOT -1, NOT empty, NOT omit)
+- Virtualization → single field with 6-value enum (NOT composite, NOT namespaced)
+- Container runtime detail → deferred to v1.1.0 (NOT in v1.0.2 scope)
+- IMDS detection caching → deferred (NOT in v1.0.2 scope)
 
-**Option D — Pause + return to other work:** Everything is committed and verified. Walk away from v1.0.1 closeout for now. Resume later via `/gsd-resume-work` or `/gsd-progress` with full context restoration.
+## Parallel-track status
 
-My current recommendation (without org context): **Option A if you have ≥10 real hosts ready this week. Option B otherwise.** Don't commit to Phase 6 unless infra availability is confirmed.
+**v1.0.1 (parallel, blocked):**
+- All Phase 4 + 5 work complete and committed
+- v1.0.1-rc1 prerelease tag live on GitHub
+- Full v1.0.1 (no `-rc` suffix) blocked on PROD-02 pilot (5+5 hosts, 7-day observation, real Splunk Deployment Server)
+- When pilot infra appears: `/gsd-discuss-phase 6` for pilot decisions, then `/gsd-plan-phase 6` + execute
 
-## Open notes (for future sessions)
+**v1.0.2 (active):**
+- 5 requirements (HOST-01..HOST-05), 3 phases (7, 8, 9)
+- Phase 7 ready for planning RIGHT NOW
+- Phase 8 (Windows) blocked on Phase 7 completion (mirrors architecture)
+- Phase 9 (docs + dashboard) blocked on Phase 7 + 8 both complete
 
-- **D-04-01 + D-04-02** — pre-existing data-quality issues in `odin_classify_*.csv` from commit `da1f66e` (pre-v1.0.1) tracked in `.planning/phases/04-windows-classification-data/deferred-items.md`. Not blockers; cleanup candidate for v1.0.2 or v1.1+.
-- **PROD-07 (d) `_common.sh` consolidation** — explicitly deferred per Phase 5 D3. v1.1+ refactor candidate.
-- **Splunk Cloud Victoria compatibility** — deferred per Phase 3 D9. Separate milestone.
-- **`odin_overview.xml` Simple-XML → Dashboard Studio conversion** — turns out it's already Studio v2 (Phase 5 RESEARCH critical finding). No work needed; remove from v1.1+ backlog.
-- **External security audit** — separate governance track, not a code milestone.
+**v1.1.0 (seed only):**
+- Container observability (env detection + container enumeration + image classification + cloud auto-discovery)
+- Trigger: v1.0.2 shipped
+
+## Reality check
+
+**Risk profile for Phase 7:** LOW
+- Fully additive (no schema changes, no behavioral changes to existing modules)
+- All decisions already validated against existing patterns (PROD-07d `_common.sh`, `duration_ms` parity work)
+- Existing regression suite catches any breakage (HARD-01, PROD-01, HARD-07, PROD-05, windows-parity-harness)
+- Estimated 3-5 hours for Phase 7 alone (helpers + orchestrator integration + tests)
+
+**No blockers.** The work is well-scoped, decisions are locked, code patterns are clear. Plan-phase should produce a clean PLAN.md with 6-10 atomic tasks.
 
 ## Pre-compact git state
 
 - Branch: `main`
-- Most recent commits visible: `5e79af9` (Phase 5 UAT+VERIFICATION), `e7d9b59` (Phase 4 UAT+VERIFICATION), Phase 5 plan + execute commits, Phase 4 plan + execute commits
-- Clean working tree (only ignorable untracked: `.claude/`, `.planning/research/`)
-- Tag pushed: `v1.0.0` on `origin/main` (commit `ad12450`)
-- Local commits since `v1.0.0` tag: ~80+ across Phase 4 + Phase 5 milestone v1.0.1 work
+- Local = `origin/main` = `a34ab0f` (synced)
+- Tags: `v1.0.0`, `v1.0.1-rc1`
+- Working tree: Clean (only ignorables — `.planning/artifacts/builds/`, `.planning/research/`, `.planning/artifacts/manual-tests/linux_sample.txt`, `.claude/`)
+- 49 commits total since `v1.0.0` (across v1.0.1 + v1.0.2 work)
 
-## Resume instructions
+## After Phase 7 ships
+
+Natural sequence:
+1. `/gsd-discuss-phase 8` (or `/gsd-plan-phase 8 --skip-research` if Phase 7 patterns are clear)
+2. Phase 8 mirrors Phase 7 in `_common.ps1` + `odin.ps1`
+3. `/gsd-discuss-phase 9` for docs/dashboard decisions
+4. Phase 9: DATA-DICTIONARY update + odin_overview.xml panels + cross-platform parity test
+5. After Phase 9 ships: tag `v1.0.2` + GitHub release + trigger v1.1.0 seed
+
+When v1.0.2 ships, `type=odin_host_info` events appear in Splunk with full host context, dramatically improving fleet observability — and lays the foundation for v1.1.0 container work.
+
+## Resume commands
 
 ```bash
-# After compact, restore full context:
-/gsd-progress       # see milestone state + next-step routing
-# OR specifically:
-/gsd-resume-work    # last-session continuity
-# Then choose Option A/B/C/D from the recommendations above.
+# Quick context restoration:
+/gsd-progress              # see milestone state + next-step routing
+
+# Direct path to next work:
+/gsd-plan-phase 7 --skip-research   # AUTHORITATIVE next step (preferred)
+
+# Alternative paths if you want different scope:
+/gsd-discuss-phase 6       # if pilot infra suddenly available
+/gsd-resume-work           # full session continuity
 ```
