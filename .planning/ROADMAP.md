@@ -23,6 +23,12 @@ Three phases, executed strictly in order:
 - [x] **Phase 5: Operational Readiness** — Ship the docs, runbook, rollback procedure, and ops observability dashboard that an SRE needs to operate TA-ODIN in production without asking the original author. **COMPLETE 2026-04-24 (Plans 05-01 + 05-02 + 05-03 + 05-04; PROD-03..07 all closed; AppInspect Enterprise scope clean across all changes; full Phase 1+2+3+4 regression suite green).**
 - [ ] **Phase 6: Pilot Validation** — Deploy to ≥5 Linux + ≥5 Windows real hosts via Deployment Server for a 7-day observation window and capture the telemetry that confirms fleet-deploy readiness.
 
+> **— v1.0.2 milestone begins (Host Metadata Enrichment) —**
+
+- [ ] **Phase 7: Host Info — Linux** — Linux orchestrator emits `type=odin_host_info` event once per scan with all 13 host metadata fields (OS identity, hardware, network, virtualization, cloud detection).
+- [ ] **Phase 8: Host Info — Windows** — Windows orchestrator emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods (Get-CimInstance, Win32_OperatingSystem, etc.).
+- [ ] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown.
+
 ## Phase Details
 
 ### Phase 4: Windows Classification Data
@@ -65,18 +71,65 @@ Three phases, executed strictly in order:
 **Plans:** TBD (1 plan expected — deploy + observe + capture artifacts)
 **UI hint:** no
 
+### Phase 7: Host Info — Linux
+**Goal:** Linux orchestrator (`TA-ODIN/bin/odin.sh`) emits exactly one `type=odin_host_info` event per scan, positioned between `type=odin_start` and the first module event, populated with all 13 host metadata fields. The event uses the standard envelope (timestamp/hostname/os/run_id/odin_version) and follows the established `key=value` format.
+**Depends on:** v1.0.1-rc1 release (HARD-01 version sync at 1.0.1 confirmed; orchestrator architecture stable).
+**Requirements:** HOST-01
+**Success Criteria** (what must be TRUE):
+  1. `bash TA-ODIN/bin/odin.sh` produces output containing exactly ONE line matching `type=odin_host_info` and the line contains all 13 named fields (`os_distro`, `os_version`, `os_pretty`, `os_kernel`, `os_arch`, `cpu_cores`, `mem_total_mb`, `uptime_seconds`, `fqdn`, `ip_primary`, `virtualization`, `cloud_provider`, `cloud_region`).
+  2. On a host without cloud metadata, IMDS probes complete cleanly within 2 seconds total (no module-timeout cascade); `cloud_provider=none` and `cloud_region=none` (or empty) are emitted.
+  3. The event ordering is deterministic: `type=odin_start` is line 1, `type=odin_host_info` is line 2, modules run after that. Verified by `bash TA-ODIN/bin/odin.sh | head -2 | tail -1 | grep -c type=odin_host_info` returns 1.
+  4. Existing v1.0.1 functionality unaffected: HARD-01, PROD-01, HARD-07, PROD-05, windows-parity-harness all still PASS; AppInspect TA-ODIN baseline preserved (failure=0, error=0, warning=1).
+**Plans:** TBD (1-2 plans expected — helper functions in `_common.sh` + orchestrator integration + IMDS timeout safety + tests)
+**UI hint:** no
+
+### Phase 8: Host Info — Windows
+**Goal:** Windows orchestrator (`TA-ODIN/bin/odin.ps1`) emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods, achieving cross-platform parity with the Linux orchestrator.
+**Depends on:** Phase 7 (Linux implementation establishes the event shape, field semantics, and IMDS timeout pattern that Windows mirrors).
+**Requirements:** HOST-02
+**Success Criteria** (what must be TRUE):
+  1. `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File TA-ODIN\bin\odin.ps1` produces output containing exactly ONE line matching `type=odin_host_info` and the line contains all 13 named fields populated via Windows-native methods (Win32_OperatingSystem, Win32_Processor, Get-NetRoute, etc.).
+  2. Cloud IMDS probes use `Invoke-RestMethod` with explicit 2s timeout; on hosts without cloud metadata the orchestrator does not hang or trigger Splunk's 120s scripted-input timeout.
+  3. Field values follow Windows conventions where appropriate: `os_distro=windows`, `os_arch` reports `amd64` or `arm64` (per `$env:PROCESSOR_ARCHITECTURE`), `virtualization` reports detected hypervisor or `baremetal`/`container`/`none`.
+  4. Existing v1.0.1 Windows functionality unaffected: AppInspect TA-ODIN baseline preserved (failure=0, error=0, warning=1).
+**Plans:** TBD (1-2 plans expected — `_common.ps1` helper additions + odin.ps1 integration + IMDS timeout safety + tests)
+**UI hint:** no
+
+### Phase 9: Validation + Docs + Dashboard
+**Goal:** Cross-platform parity validated end-to-end, DATA-DICTIONARY documents the new event type, and the odin_overview.xml dashboard surfaces the new metadata so operators can see fleet OS distribution and virtualization breakdown.
+**Depends on:** Phase 7 AND Phase 8 (both implementations must be in place before parity testing + documentation lock-in).
+**Requirements:** HOST-03, HOST-04, HOST-05
+**Success Criteria** (what must be TRUE):
+  1. New regression script (`tools/tests/check-host-info-parity.sh` or extension to `windows-parity-harness.sh`) validates that Linux and Windows orchestrators produce a `type=odin_host_info` event with the same field set (modulo platform-specific values for `os_arch`/`os_kernel`). Script exits 0 on parity, exits 1 on field-set divergence.
+  2. `DOCS/DATA-DICTIONARY.md` contains a `## type=odin_host_info` section with: descriptive overview, complete 13-field reference (description + source + example value per field), one worked example event line in the canonical envelope format, and a note on cloud-detection timeout semantics. Verified by `grep -c '^## type=odin_host_info' DOCS/DATA-DICTIONARY.md` returns 1.
+  3. `ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` adds at least 2 new dashboard panels: (a) "OS Distribution" showing `count by os_distro,os_version` from the latest `type=odin_host_info` per host, (b) "Virtualization Breakdown" showing `count by virtualization`. Verified by `grep -c '<viz' ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` increases by ≥2 vs the v1.0.1-rc1 baseline.
+  4. AppInspect on `ODIN_app_for_splunk` after dashboard changes still PASS with `failure=0, error=0, warning=0`. Saved as `.planning/artifacts/appinspect/odin-app-1.0.2-phase9.json`.
+  5. UAT cycle (`/gsd-verify-work 9`) passes with all 5 v1.0.2 requirements (HOST-01..HOST-05) marked as DONE.
+**Plans:** TBD (1-3 plans expected — parity test, docs, dashboard, UAT)
+**UI hint:** yes (Dashboard Studio panels added to existing odin_overview.xml)
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 4. Windows Classification Data | 2/2 | Complete | 2026-04-17 |
 | 5. Operational Readiness | 4/4 | Complete | 2026-04-24 |
-| 6. Pilot Validation | 0/TBD | Not started | — |
+| 6. Pilot Validation | 0/TBD | Not started — pending real infra | — |
+| 7. Host Info — Linux | 0/TBD | Not started | — |
+| 8. Host Info — Windows | 0/TBD | Not started | — |
+| 9. Validation + Docs + Dashboard | 0/TBD | Not started | — |
 
 ## Coverage
 
-- **Total v1.0.1 requirements:** 7 (PROD-01..PROD-07)
-- **Mapped:** 7/7
+### v1.0.1 — Production Readiness
+- **Total requirements:** 7 (PROD-01..PROD-07)
+- **Mapped:** 7/7 (PROD-01 → Phase 4; PROD-03..07 → Phase 5; PROD-02 → Phase 6)
+- **Orphans:** 0
+- **Duplicates:** 0
+
+### v1.0.2 — Host Metadata Enrichment
+- **Total requirements:** 5 (HOST-01..HOST-05)
+- **Mapped:** 5/5 (HOST-01 → Phase 7; HOST-02 → Phase 8; HOST-03..05 → Phase 9)
 - **Orphans:** 0
 - **Duplicates:** 0
 

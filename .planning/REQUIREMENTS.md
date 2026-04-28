@@ -163,3 +163,48 @@ The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) re
 | PROD-06 | Phase 5 | Ops observability dashboard (Dashboard Studio) |
 | PROD-07 | Phase 5 | Linux module standalone-fallback hygiene (version + MAX_EVENTS + _common.sh) |
 | PROD-02 | Phase 6 | Pilot deployment + 7-day observation window (release gate) |
+
+## Milestone v1.0.2 — Host Metadata Enrichment
+
+**Goal:** Every TA-ODIN scan emits ONE `type=odin_host_info` event with rich host metadata (13 fields covering OS identity, hardware, network, virtualization, cloud detection) so Splunk dashboards and saved searches can classify, group, and filter hosts by OS distribution, hardware profile, network identity, and runtime environment — not just by `os=linux|windows`.
+
+**Trigger:** v1.0.1-rc1 released 2026-04-28 (https://github.com/lyderhansen/odin/releases/tag/v1.0.1-rc1). Seed planted 2026-04-27 during `/gsd-explore` session — see `.planning/seeds/v1.0.2-host-metadata-enrichment.md` and `.planning/notes/2026-04-27-host-metadata-and-container-strategy.md` for decision context.
+
+**In scope this milestone:** OS identity (distro, version, pretty name, kernel, architecture), hardware metadata (cpu_cores, mem_total_mb), runtime metadata (uptime_seconds), network identity (fqdn, ip_primary), virtualization detection (kvm/vmware/hyperv/container/baremetal), cloud detection (provider + region via IMDS endpoints with timeout safety). Cross-platform parity, DATA-DICTIONARY documentation update, and dashboard panels showing OS distribution + virtualization breakdown.
+
+**Not in scope this milestone:** Container enumeration (Docker/podman/kubectl `ps` output) — deferred to v1.1.0. Cloud asset metadata (AWS Tags, GCP Labels, Azure tags) — deferred to v1.1.0 Phase 4 optional. Network topology, hardware inventory, BIOS/firmware versions — all deferred to v1.2+. v1.0.0 deferred items (test harness, reproducible packaging, Cloud Victoria, external audit, SLSA L2+) remain deferred — not in v1.0.2 scope.
+
+**Risk:** LOW — fully additive (no schema changes, no existing field semantics affected, no behavioral changes to existing modules).
+
+### v1.0.2 Requirements
+
+- [ ] **HOST-01** — Linux orchestrator emits exactly one `type=odin_host_info` event per scan, positioned between `type=odin_start` and the first module event, populated with all 13 fields: `os_distro`, `os_version`, `os_pretty`, `os_kernel`, `os_arch` (from `/etc/os-release` + `uname`), `cpu_cores` (from `nproc`), `mem_total_mb` (from `/proc/meminfo`), `uptime_seconds` (from `/proc/uptime`), `fqdn` (from `hostname -f`), `ip_primary` (from `ip route get 1.1.1.1`), `virtualization` (from `systemd-detect-virt` with dmidecode/cgroup fallback), `cloud_provider` + `cloud_region` (from IMDS endpoint probes with 2s timeout, default `none` on failure). Acceptance: `bash TA-ODIN/bin/odin.sh | grep -c '^.*type=odin_host_info'` returns 1; the event line contains all 13 named fields; AppInspect baseline preserved.
+
+- [ ] **HOST-02** — Windows orchestrator emits exactly one `type=odin_host_info` event per scan with the same 13 fields populated via Windows-native methods: `os_distro=windows`, `os_version` from `[System.Environment]::OSVersion.Version`, `os_pretty` from `(Get-CimInstance Win32_OperatingSystem).Caption`, `os_kernel` from `BuildNumber`, `os_arch` from `$env:PROCESSOR_ARCHITECTURE`, `cpu_cores` from `Win32_Processor.NumberOfCores`, `mem_total_mb` from `Win32_OperatingSystem.TotalVisibleMemorySize`, `uptime_seconds` from `LastBootUpTime` delta, `fqdn` from `[System.Net.Dns]::GetHostByName`, `ip_primary` from `Get-NetRoute 0.0.0.0/0`, `virtualization` from `Win32_ComputerSystem.Manufacturer`/`Model`, `cloud_provider` + `cloud_region` from cloud-specific IMDS via `Invoke-RestMethod` with 2s timeout. Acceptance: `powershell.exe -ExecutionPolicy Bypass -File odin.ps1 | Select-String 'type=odin_host_info'` returns exactly 1 line containing all 13 named fields; AppInspect baseline preserved.
+
+- [ ] **HOST-03** — Cross-platform parity verified: Linux + Windows produce a `type=odin_host_info` event with the same field set (modulo platform-specific values like `os_arch=x86_64` vs `amd64`). Cloud IMDS probes time out cleanly within 2s on hosts WITHOUT cloud metadata (no false positives, no hangs, no module timeouts triggered). Acceptance: new regression script `tools/tests/check-host-info-parity.sh` (or extension to `windows-parity-harness.sh`) validates field-set equivalence between Linux + Windows test fixtures.
+
+- [ ] **HOST-04** — `DOCS/DATA-DICTIONARY.md` updated with full `## type=odin_host_info` section: descriptive overview, complete field reference (all 13 fields with description, source, and example value per field), a worked example event line, and a note on cloud-detection timeout semantics. Acceptance: `grep -c '^## type=odin_host_info' DOCS/DATA-DICTIONARY.md` returns 1; field list matches what HOST-01/HOST-02 emit; example event line is byte-format-correct.
+
+- [ ] **HOST-05** — `ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` adds at least 2 new dashboard panels: (a) "OS Distribution" pie/column chart showing `count by os_distro,os_version` from latest `type=odin_host_info` per host, (b) "Virtualization Breakdown" panel showing `count by virtualization` (kvm/vmware/hyperv/container/baremetal/none). Acceptance: dashboard renders with test data in a local Splunk instance; AppInspect on `ODIN_app_for_splunk` baseline preserved (failure=0, error=0, warning=0).
+
+### Deferred to v1.0.3 / v1.1+
+
+- Container enumeration (Docker/podman/kubectl `ps`) — see `.planning/seeds/v1.1.0-container-observability.md`
+- Cloud asset metadata (tags, labels, IAM role) — v1.1.0 Phase 4 optional
+- Network topology (route table, DNS, gateway) — v1.2+
+- Hardware inventory (PCI/GPU/NVMe) — v1.2+
+- BIOS/firmware versions — v1.2+ (security-audit territory)
+- All v1.0.0 deferred items (group D test harness residual, group G reproducible packaging, Splunk Cloud Victoria, external security audit, SLSA L2+) remain deferred — not in v1.0.2 scope
+
+### Traceability (v1.0.2)
+
+| REQ-ID | Phase | Notes |
+|--------|-------|-------|
+| HOST-01 | Phase 7 | Linux orchestrator implementation — 13-field event emission |
+| HOST-02 | Phase 8 | Windows orchestrator implementation — parity with Linux |
+| HOST-03 | Phase 9 | Cross-platform parity validation + IMDS timeout safety |
+| HOST-04 | Phase 9 | DATA-DICTIONARY.md update — type=odin_host_info field reference |
+| HOST-05 | Phase 9 | odin_overview.xml dashboard panels (OS Distribution + Virtualization) |
+
+---
