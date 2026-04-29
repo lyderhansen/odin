@@ -470,3 +470,67 @@ function Invoke-OdinCloudImds {
     if ($result) { return $result }
     return "none|none"
 }
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → emit_host_info
+# THE ONLY function that emits type=odin_host_info. Calls each detection helper
+# exactly once, splits pipe-separated returns, then issues a single Invoke-OdinEmit
+# with all 13 fields concatenated.
+#
+# Field order in event (matches seed table v1.0.2-host-metadata-enrichment.md
+# AND Phase 7's Linux emit_host_info — mandatory for cross-platform parity):
+#   os_distro os_version os_pretty os_kernel os_arch
+#   cpu_cores mem_total_mb uptime_seconds
+#   fqdn ip_primary virtualization
+#   cloud_provider cloud_region
+#
+# Counts toward $script:ODIN_MAX_EVENTS via Invoke-OdinEmit (1 event budget).
+# Truncation marker safety preserved (Pattern 3 — same as Phase 7 D-01).
+function Invoke-OdinEmitHostInfo {
+    # Detection (each helper returns pipe-separated values for its field group).
+    # Capture result first, then split — avoids PowerShell parsing -split as argument.
+    $osPair = (Get-OdinOsDistro) -split '\|'
+    $os_distro  = $osPair[0]
+    $os_version = $osPair[1]
+    $os_pretty  = $osPair[2]
+
+    $kernPair = (Get-OdinOsKernelArch) -split '\|'
+    $os_kernel = $kernPair[0]
+    $os_arch   = $kernPair[1]
+
+    $hwPair = (Get-OdinHardware) -split '\|'
+    $cpu_cores    = $hwPair[0]
+    $mem_total_mb = $hwPair[1]
+
+    $uptime_seconds = Get-OdinRuntimeUptime
+
+    $netPair = (Get-OdinNetwork) -split '\|'
+    $fqdn       = $netPair[0]
+    $ip_primary = $netPair[1]
+
+    $virtualization = Get-OdinVirtualization
+
+    $cloudPair = (Invoke-OdinCloudImds) -split '\|'
+    $cloud_provider = $cloudPair[0]
+    $cloud_region   = $cloudPair[1]
+
+    # Build event line via Invoke-OdinEmit (NOT Write-Output — preserves
+    # MAX_EVENTS guardrail + standard timestamp/hostname/os/run_id envelope).
+    # Format-OdinValue handles space-quoting for fields that may contain spaces
+    # (only os_pretty in practice — e.g., "Microsoft Windows 11 Pro").
+    $line = "type=odin_host_info " +
+            "os_distro=$(Format-OdinValue $os_distro) " +
+            "os_version=$(Format-OdinValue $os_version) " +
+            "os_pretty=$(Format-OdinValue $os_pretty) " +
+            "os_kernel=$(Format-OdinValue $os_kernel) " +
+            "os_arch=$os_arch " +
+            "cpu_cores=$cpu_cores " +
+            "mem_total_mb=$mem_total_mb " +
+            "uptime_seconds=$uptime_seconds " +
+            "fqdn=$(Format-OdinValue $fqdn) " +
+            "ip_primary=$ip_primary " +
+            "virtualization=$virtualization " +
+            "cloud_provider=$cloud_provider " +
+            "cloud_region=$(Format-OdinValue $cloud_region)"
+
+    Invoke-OdinEmit $line
+}
