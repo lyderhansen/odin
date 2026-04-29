@@ -111,3 +111,39 @@ detect_os_kernel_arch() {
     [[ -z "$arch" ]] && arch="unknown"
     echo "${kernel}|${arch}"
 }
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Get-OdinHardware
+# Returns: pipe-separated "cpu_cores|mem_total_mb" (2 of the 13 fields).
+# Detection: nproc + /proc/meminfo. Numbers stay as strings even on failure
+# (D-03: "unknown" not -1).
+detect_hardware() {
+    local cores mem_mb
+    if command -v nproc >/dev/null 2>&1; then
+        cores=$(timeout 2 nproc 2>/dev/null) || cores="unknown"
+    else
+        cores="unknown"
+    fi
+    [[ -z "$cores" || ! "$cores" =~ ^[0-9]+$ ]] && cores="unknown"
+
+    if [[ -r /proc/meminfo ]]; then
+        mem_mb=$(awk '/^MemTotal:/{print int($2/1024); exit}' /proc/meminfo 2>/dev/null) || mem_mb="unknown"
+        [[ -z "$mem_mb" || ! "$mem_mb" =~ ^[0-9]+$ ]] && mem_mb="unknown"
+    else
+        mem_mb="unknown"
+    fi
+    echo "${cores}|${mem_mb}"
+}
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Get-OdinRuntimeUptime
+# Returns: a single integer string OR "unknown" (1 of the 13 fields).
+# Detection: /proc/uptime first column (seconds since boot, floating point → int).
+detect_runtime_uptime() {
+    local uptime
+    if [[ -r /proc/uptime ]]; then
+        uptime=$(awk '{print int($1); exit}' /proc/uptime 2>/dev/null) || uptime="unknown"
+        [[ -z "$uptime" || ! "$uptime" =~ ^[0-9]+$ ]] && uptime="unknown"
+    else
+        uptime="unknown"
+    fi
+    echo "$uptime"
+}
