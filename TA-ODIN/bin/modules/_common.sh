@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# TA-ODIN v1.0.1 - Shared Bash Library (Linux)
+# TA-ODIN v1.0.2 - Shared Bash Library (Linux)
 #
 # This file is sourced by every module's standalone-fallback branch when the
 # orchestrator's emit() function is not in scope (i.e., when a module is
@@ -43,7 +43,7 @@
 ODIN_HOSTNAME="${ODIN_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
 ODIN_OS="${ODIN_OS:-linux}"
 ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
-ODIN_VERSION="${ODIN_VERSION:-1.0.1}"
+ODIN_VERSION="${ODIN_VERSION:-1.0.2}"
 ODIN_MAX_EVENTS="${ODIN_MAX_EVENTS:-50000}"
 ODIN_EVENT_COUNT=0
 ODIN_IMDS_TIMEOUT="${ODIN_IMDS_TIMEOUT:-1}"   # seconds per cloud probe (D-02: AWS→GCP→Azure)

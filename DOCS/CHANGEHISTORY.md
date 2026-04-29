@@ -10,11 +10,12 @@ All timestamps are ISO 8601 in CET timezone.
 
 ---
 
-## v1.0.2-wip — Host Metadata Enrichment (Linux + Windows)
+## v1.0.2 — Host Metadata Enrichment (Linux + Windows)
 
-**Date:** 2026-04-29T08:59:00+02:00
-**Phase:** 7 — Host Info — Linux
-**Requirement:** HOST-01
+**Release Date:** 2026-04-29 (UAT signed off; v1.0.2-rc1 candidate)
+**Phases:** 7 (Linux orchestrator) + 8 (Windows orchestrator) + 9 (Validation + Docs + Dashboard)
+**Requirements:** HOST-01..HOST-05 (all 5 closed 2026-04-29)
+**Initial milestone work began:** 2026-04-29T08:59:00+02:00 (Phase 7 / HOST-01)
 
 ### Added
 
