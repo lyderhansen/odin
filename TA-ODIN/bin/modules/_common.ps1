@@ -254,3 +254,52 @@ function Get-OdinOsKernelArch {
 
     return "${kernel}|${arch}"
 }
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → detect_hardware
+# Returns: pipe-separated "cpu_cores|mem_total_mb" (2 of the 13 fields).
+# cpu_cores sums NumberOfCores across processors (multi-socket aware).
+# mem_total_mb converts TotalVisibleMemorySize (KB) to MB via integer division.
+function Get-OdinHardware {
+    $cores = "unknown"
+    $memMb = "unknown"
+
+    try {
+        $procs = Get-CimInstance -ClassName Win32_Processor -ErrorAction Stop
+        $sum = ($procs | Measure-Object -Property NumberOfCores -Sum).Sum
+        if ($sum -and $sum -gt 0) { $cores = "$sum" }
+    } catch {
+        $cores = "unknown"
+    }
+
+    try {
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+        if ($os.TotalVisibleMemorySize -and $os.TotalVisibleMemorySize -gt 0) {
+            $memMb = [string][int]($os.TotalVisibleMemorySize / 1024)
+        }
+    } catch {
+        $memMb = "unknown"
+    }
+
+    return "${cores}|${memMb}"
+}
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → detect_runtime_uptime
+# Returns: a single integer string OR "unknown" (1 of the 13 fields).
+# Detection: (Get-Date) - LastBootUpTime → TotalSeconds (cast to int).
+function Get-OdinRuntimeUptime {
+    $uptime = "unknown"
+
+    try {
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+        if ($os.LastBootUpTime) {
+            $delta = ((Get-Date) - $os.LastBootUpTime).TotalSeconds
+            if ($delta -and $delta -gt 0) {
+                $uptime = "$([int]$delta)"
+            }
+        }
+    } catch {
+        $uptime = "unknown"
+    }
+
+    return $uptime
+}
