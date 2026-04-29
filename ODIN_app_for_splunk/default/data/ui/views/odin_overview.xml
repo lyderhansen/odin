@@ -99,6 +99,13 @@
         "extend": "ds_base",
         "query": "| stats values(signal_type) AS detected_by, values(signal_value) AS signals, values(sourcetype) AS sourcetypes, values(log_path) AS log_paths, values(recommended_ta) AS recommended_ta by hostname, host_role, log_source\n| eval detected_by=mvjoin(detected_by, \", \"), signals=mvjoin(signals, \", \"), sourcetypes=mvjoin(sourcetypes, \", \"), log_paths=mvjoin(log_paths, \", \")\n| sort hostname, host_role\n| rename hostname AS Host, host_role AS Role, log_source AS \"Log Source\", detected_by AS \"Detected By\", signals AS Signals, sourcetypes AS Sourcetypes, log_paths AS \"Log Paths\", recommended_ta AS TA"
       }
+    },
+    "ds_host_info": {
+      "type": "ds.search",
+      "name": "Host Info Latest Per Host",
+      "options": {
+        "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_host_info\n| dedup hostname sortby -_time"
+      }
     }
   },
   "visualizations": {
