@@ -43,7 +43,11 @@ $script:ODIN_MAX_EVENTS = [int]$env:ODIN_MAX_EVENTS
 if (-not $env:ODIN_MODULE_TIMEOUT) { $env:ODIN_MODULE_TIMEOUT = '90' }
 $script:ODIN_MODULE_TIMEOUT = [int]$env:ODIN_MODULE_TIMEOUT
 
-# D-05 (Phase 8 mirror of Phase 7 D-02): seconds per cloud probe (1s × 3 sequential = 3s worst case)
+# D-05 (Phase 8 mirror of Phase 7 D-02): seconds per cloud probe (1s × 3 sequential).
+# AWS IMDSv2 requires 2 sequential calls (token PUT + region GET).
+# Worst-case total on a non-cloud host: 4s (AWS: 2×1s + GCP: 1s + Azure: 1s).
+# Non-cloud hosts typically resolve in 3s — the token endpoint fails immediately,
+# so the second AWS call is never made. (3-4s worst case)
 if (-not $env:ODIN_IMDS_TIMEOUT) { $env:ODIN_IMDS_TIMEOUT = '1' }
 $script:ODIN_IMDS_TIMEOUT = [int]$env:ODIN_IMDS_TIMEOUT
 
@@ -394,9 +398,10 @@ function Get-OdinVirtualization {
     }
 }
 
-# --- Cloud IMDS probes (D-05: sequential AWS→GCP→Azure, 1s timeout each) ---
+# --- Cloud IMDS probes (D-05: sequential AWS→GCP→Azure, 1s timeout each, 3-4s worst case) ---
 # Internal helpers, called only by Invoke-OdinCloudImds. Each returns
 # "provider|region" on success or $null on failure (caller cascades).
+# AWS IMDSv2 makes 2 sequential calls (token+region); GCP and Azure make 1 each.
 
 # AWS IMDSv2 (token-based, more secure than v1).
 # Two sequential calls: PUT token, GET region. PSCL note: Invoke-RestMethod
