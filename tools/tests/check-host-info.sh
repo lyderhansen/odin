@@ -5,8 +5,8 @@
 #   1. Exactly ONE type=odin_host_info event per scan
 #   2. All 13 named fields present in that event
 #   3. Event positioned as #2 (between odin_start and module events)
-#   4. Total IMDS budget on non-cloud hosts is ≤3s overhead (D-02: 1s × 3
-#      sequential probes — relaxed from ROADMAP's original 2s).
+#   4. Total IMDS budget on non-cloud hosts is ≤4s overhead (D-02: AWS IMDSv2
+#      = 2 sequential calls + GCP 1s + Azure 1s; non-cloud typically 3s).
 #      NOTE: this script does NOT measure timing — that check lives in the
 #      plan-level <verification> block. This file verifies field correctness
 #      (event count, all 13 fields present, positioning, virt enum, cloud
@@ -61,28 +61,38 @@ else
 fi
 
 # --- Check 4: virtualization value is in D-04 enum ---
-virt_val=$(echo "$host_info_line" | grep -oE 'virtualization=[^ ]+' | cut -d= -f2)
-case "$virt_val" in
-    baremetal|kvm|vmware|hyperv|xen|container|unknown)
-        echo "[HOST-01 PASS] virtualization=$virt_val is in D-04 enum"
-        ;;
-    *)
-        echo "[HOST-01 FAIL] virtualization=$virt_val is NOT in D-04 enum (baremetal|kvm|vmware|hyperv|xen|container|unknown)"
-        fail=1
-        ;;
-esac
+# Guard: skip if host_info_line is empty (Check 1 already reported the missing event).
+if [[ -n "$host_info_line" ]]; then
+    virt_val=$(echo "$host_info_line" | grep -oE 'virtualization=[^ ]+' | cut -d= -f2)
+    case "$virt_val" in
+        baremetal|kvm|vmware|hyperv|xen|container|unknown)
+            echo "[HOST-01 PASS] virtualization=$virt_val is in D-04 enum"
+            ;;
+        *)
+            echo "[HOST-01 FAIL] virtualization=$virt_val is NOT in D-04 enum (baremetal|kvm|vmware|hyperv|xen|container|unknown)"
+            fail=1
+            ;;
+    esac
+else
+    echo "[HOST-01 SKIP] virtualization enum check skipped — no event to inspect (see Check 1)"
+fi
 
 # --- Check 5: cloud_provider sentinel discipline (none or aws|gcp|azure) ---
-cloud_val=$(echo "$host_info_line" | grep -oE 'cloud_provider=[^ ]+' | cut -d= -f2)
-case "$cloud_val" in
-    none|aws|gcp|azure|unknown)
-        echo "[HOST-01 PASS] cloud_provider=$cloud_val honors D-03 sentinel discipline"
-        ;;
-    *)
-        echo "[HOST-01 FAIL] cloud_provider=$cloud_val is NOT a valid value (none|aws|gcp|azure|unknown)"
-        fail=1
-        ;;
-esac
+# Guard: skip if host_info_line is empty (Check 1 already reported the missing event).
+if [[ -n "$host_info_line" ]]; then
+    cloud_val=$(echo "$host_info_line" | grep -oE 'cloud_provider=[^ ]+' | cut -d= -f2)
+    case "$cloud_val" in
+        none|aws|gcp|azure|unknown)
+            echo "[HOST-01 PASS] cloud_provider=$cloud_val honors D-03 sentinel discipline"
+            ;;
+        *)
+            echo "[HOST-01 FAIL] cloud_provider=$cloud_val is NOT a valid value (none|aws|gcp|azure|unknown)"
+            fail=1
+            ;;
+    esac
+else
+    echo "[HOST-01 SKIP] cloud_provider sentinel check skipped — no event to inspect (see Check 1)"
+fi
 
 if [[ $fail -eq 0 ]]; then
     echo "[HOST-01 PASS] All checks passed"
