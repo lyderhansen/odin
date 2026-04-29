@@ -180,3 +180,77 @@ if ($env:ODIN_TEST_FIXTURE) {
         . $stubsPath
     }
 }
+
+# ============================================================================
+# Phase 8 / HOST-02: Host metadata detection helpers (v1.0.2)
+# ============================================================================
+# These helpers are called by Invoke-OdinEmitHostInfo to populate the 13-field
+# type=odin_host_info event. Each helper:
+#   - Returns ONE pipe-separated string OR a single value
+#   - Returns "unknown" on detection failure (D-03 — system error sentinel)
+#   - Returns "none" only for semantic null (e.g., no cloud detected)
+#   - Wraps every CIM/Net call in try/catch (D-07 — PSCL graceful degradation)
+#   - Mirrors a corresponding bash helper in TA-ODIN/bin/modules/_common.sh
+# ============================================================================
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → detect_os_distro
+# Returns: pipe-separated "distro|version|pretty" (3 of the 13 fields).
+# os_distro is hardcoded "windows" (no parsing needed — Win32_OS.Caption always
+# starts with "Microsoft Windows"). os_version uses [System.Environment] with
+# fallback to Win32_OperatingSystem.Version (PSCL may block type accelerator).
+function Get-OdinOsDistro {
+    $distro = "windows"
+    $version = "unknown"
+    $pretty = "unknown"
+
+    # Try [System.Environment] first (faster, no CIM call). PSCL may block this.
+    try {
+        $v = [System.Environment]::OSVersion.Version
+        if ($v) { $version = "$($v.Major).$($v.Minor).$($v.Build)" }
+    } catch {
+        # PSCL or other failure — fallback to CIM
+        try {
+            $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+            if ($os.Version) { $version = $os.Version }
+        } catch {
+            $version = "unknown"
+        }
+    }
+
+    try {
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+        if ($os.Caption) { $pretty = $os.Caption.Trim() }
+    } catch {
+        $pretty = "unknown"
+    }
+
+    return "${distro}|${version}|${pretty}"
+}
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → detect_os_kernel_arch
+# Returns: pipe-separated "kernel|arch" (2 of the 13 fields).
+# os_kernel uses Win32_OperatingSystem.BuildNumber (e.g., "26100"); concat with
+# patch level if available. os_arch uses $env:PROCESSOR_ARCHITECTURE lowercased
+# to match Linux x86_64/aarch64 convention (windows reports AMD64/ARM64).
+function Get-OdinOsKernelArch {
+    $kernel = "unknown"
+    $arch = "unknown"
+
+    try {
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+        if ($os.BuildNumber) { $kernel = $os.BuildNumber }
+    } catch {
+        $kernel = "unknown"
+    }
+
+    try {
+        if ($env:PROCESSOR_ARCHITECTURE) {
+            $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+        }
+    } catch {
+        $arch = "unknown"
+    }
+    if (-not $arch) { $arch = "unknown" }
+
+    return "${kernel}|${arch}"
+}
