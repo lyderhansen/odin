@@ -12,6 +12,15 @@
 #      sentinel). Adding a runtime measurement here is a future enhancement.
 #
 # Exit 0 when all checks pass, non-zero otherwise.
+#
+# String convention (PS5.1 parser compatibility):
+#   Windows PowerShell 5.1 has a parser quirk where `Write-Host "[HOST-02 ...]"`
+#   (literal brackets at the start of a double-quoted string) intermittently
+#   triggers "MissingArrayIndexExpression" parse errors inside `if`-block
+#   contexts. To stay compatible with both PS5.1 and PS7+, this file uses:
+#     - Static literals  → single-quoted: '[HOST-02 PASS] ...'
+#     - Dynamic strings  → -f format:     ('[HOST-02 FAIL] ... {0}' -f $var)
+#   Both forms parse cleanly on every PowerShell version.
 
 $ErrorActionPreference = 'Continue'  # Don't halt on individual check failures
 
@@ -19,7 +28,7 @@ $ErrorActionPreference = 'Continue'  # Don't halt on individual check failures
 # $IsLinux / $IsMacOS are PS7+ automatic variables. On PS5.1 (Windows-only) they are
 # undefined ($null), so ($IsLinux -or $IsMacOS) evaluates to $false — correct behaviour.
 if ($IsLinux -or $IsMacOS) {
-    Write-Host "[HOST-02 SKIP] Windows-only test — skipping on $([System.Runtime.InteropServices.RuntimeInformation]::OSDescription)"
+    Write-Host ('[HOST-02 SKIP] Windows-only test — skipping on {0}' -f [System.Runtime.InteropServices.RuntimeInformation]::OSDescription)
     exit 0
 }
 
@@ -40,7 +49,7 @@ $hostInfoCount = ([regex]::Matches($out, 'type=odin_host_info')).Count
 if ($hostInfoCount -eq 1) {
     Write-Host '[HOST-02 PASS] exactly 1 type=odin_host_info event emitted'
 } else {
-    Write-Host "[HOST-02 FAIL] expected 1 type=odin_host_info event, got $hostInfoCount"
+    Write-Host ('[HOST-02 FAIL] expected 1 type=odin_host_info event, got {0}' -f $hostInfoCount)
     $fail = 1
 }
 
@@ -53,7 +62,7 @@ $hostInfoLine = ($out -split "`n" | Where-Object { $_ -match 'type=odin_host_inf
 # SKIP guard (WR-03): when no event was emitted, Check 1 already reported FAIL.
 # Iterating 13 fields against an empty string produces 13 misleading FAILs.
 if (-not $hostInfoLine) {
-    Write-Host "[HOST-02 SKIP] field presence check skipped — no event to inspect (see Check 1)"
+    Write-Host '[HOST-02 SKIP] field presence check skipped — no event to inspect (see Check 1)'
 } else {
     $missingFields = @()
     foreach ($field in $expectedFields) {
@@ -62,9 +71,9 @@ if (-not $hostInfoLine) {
         }
     }
     if ($missingFields.Count -eq 0) {
-        Write-Host "[HOST-02 PASS] all 13 named fields present in event"
+        Write-Host '[HOST-02 PASS] all 13 named fields present in event'
     } else {
-        Write-Host "[HOST-02 FAIL] missing fields: $($missingFields -join ', ')"
+        Write-Host ('[HOST-02 FAIL] missing fields: {0}' -f ($missingFields -join ', '))
         $fail = 1
     }
 }
@@ -73,24 +82,24 @@ if (-not $hostInfoLine) {
 $timestampLines = $out -split "`n" | Where-Object { $_ -match '^timestamp=' }
 $event2 = if ($timestampLines.Count -ge 2) { $timestampLines[1] } else { '' }
 if ($event2 -match 'type=odin_host_info') {
-    Write-Host "[HOST-02 PASS] host_info is event #2 (between odin_start and module events)"
+    Write-Host '[HOST-02 PASS] host_info is event #2 (between odin_start and module events)'
 } else {
-    Write-Host "[HOST-02 FAIL] event #2 is not type=odin_host_info — positioning broken"
-    Write-Host "             event #2 was: $event2"
+    Write-Host '[HOST-02 FAIL] event #2 is not type=odin_host_info — positioning broken'
+    Write-Host ('             event #2 was: {0}' -f $event2)
     $fail = 1
 }
 
 # --- Check 4: virtualization value is in D-04 enum (SKIP if event missing per WR-03) ---
 if (-not $hostInfoLine) {
-    Write-Host "[HOST-02 SKIP] virtualization enum check skipped — no event to inspect"
+    Write-Host '[HOST-02 SKIP] virtualization enum check skipped — no event to inspect'
 } else {
     $virtMatch = [regex]::Match($hostInfoLine, 'virtualization=(\S+)')
     $virtVal = if ($virtMatch.Success) { $virtMatch.Groups[1].Value } else { '' }
     $validVirt = @('baremetal', 'kvm', 'vmware', 'hyperv', 'xen', 'container', 'unknown')
     if ($virtVal -in $validVirt) {
-        Write-Host "[HOST-02 PASS] virtualization=$virtVal is in D-04 enum"
+        Write-Host ('[HOST-02 PASS] virtualization={0} is in D-04 enum' -f $virtVal)
     } else {
-        Write-Host "[HOST-02 FAIL] virtualization=$virtVal is NOT in D-04 enum (baremetal|kvm|vmware|hyperv|xen|container|unknown)"
+        Write-Host ('[HOST-02 FAIL] virtualization={0} is NOT in D-04 enum (baremetal|kvm|vmware|hyperv|xen|container|unknown)' -f $virtVal)
         $fail = 1
     }
 }
@@ -103,14 +112,14 @@ if (-not $hostInfoLine) {
     $cloudVal = if ($cloudMatch.Success) { $cloudMatch.Groups[1].Value } else { '' }
     $validCloud = @('none', 'aws', 'gcp', 'azure', 'unknown')
     if ($cloudVal -in $validCloud) {
-        Write-Host "[HOST-02 PASS] cloud_provider=$cloudVal honors D-03 sentinel discipline"
+        Write-Host ('[HOST-02 PASS] cloud_provider={0} honors D-03 sentinel discipline' -f $cloudVal)
     } else {
-        Write-Host "[HOST-02 FAIL] cloud_provider=$cloudVal is NOT a valid value (none|aws|gcp|azure|unknown)"
+        Write-Host ('[HOST-02 FAIL] cloud_provider={0} is NOT a valid value (none|aws|gcp|azure|unknown)' -f $cloudVal)
         $fail = 1
     }
 }
 
 if ($fail -eq 0) {
-    Write-Host "[HOST-02 PASS] All checks passed"
+    Write-Host '[HOST-02 PASS] All checks passed'
 }
 exit $fail
