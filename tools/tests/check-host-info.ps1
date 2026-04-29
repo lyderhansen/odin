@@ -15,13 +15,24 @@
 
 $ErrorActionPreference = 'Continue'  # Don't halt on individual check failures
 
+# Platform guard — this test requires Windows (Windows-only CIM, odin.ps1 orchestrator)
+# $IsLinux / $IsMacOS are PS7+ automatic variables. On PS5.1 (Windows-only) they are
+# undefined ($null), so ($IsLinux -or $IsMacOS) evaluates to $false — correct behaviour.
+if ($IsLinux -or $IsMacOS) {
+    Write-Host "[HOST-02 SKIP] Windows-only test — skipping on $([System.Runtime.InteropServices.RuntimeInformation]::OSDescription)"
+    exit 0
+}
+
 # Resolve repo root from script location
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $fail = 0
 
 # --- Run the orchestrator and capture output ---
 $orchestratorPath = Join-Path $RepoRoot 'TA-ODIN' 'bin' 'odin.ps1'
-$out = & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
+# Use pwsh if available (PS Core 7+), fall back to powershell.exe (PS5.1 on Windows).
+# This avoids command-not-found on Linux/macOS CI that has pwsh but not powershell.exe.
+$psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { 'pwsh' } else { 'powershell.exe' }
+$out = & $psExe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
     -File $orchestratorPath 2>&1 | Out-String
 
 # --- Check 1: exactly ONE type=odin_host_info event ---
