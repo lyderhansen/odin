@@ -202,9 +202,9 @@ The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) re
 | REQ-ID | Phase | Notes |
 |--------|-------|-------|
 | HOST-01 | Phase 7 | Linux orchestrator implementation — 13-field event emission | **CLOSED 2026-04-29** |
-| HOST-02 | Phase 8 | Windows orchestrator implementation — parity with Linux |
-| HOST-03 | Phase 9 | Cross-platform parity validation + IMDS timeout safety |
-| HOST-04 | Phase 9 | DATA-DICTIONARY.md update — type=odin_host_info field reference |
-| HOST-05 | Phase 9 | odin_overview.xml dashboard panels (OS Distribution + Virtualization) |
+| HOST-02 | Phase 8 | Windows orchestrator implementation — parity with Linux | **CLOSED 2026-04-29** (UAT verified on Windows 11 ARM64 / VMware / PS5.1) |
+| HOST-03 | Phase 9 | Cross-platform parity validation + IMDS timeout safety | **CLOSED 2026-04-29** |
+| HOST-04 | Phase 9 | DATA-DICTIONARY.md update — type=odin_host_info field reference | **CLOSED 2026-04-29** |
+| HOST-05 | Phase 9 | odin_overview.xml dashboard panels (OS Distribution + Virtualization) | **CLOSED 2026-04-29** |
 
 ---

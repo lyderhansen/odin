@@ -117,7 +117,7 @@ Three phases, executed strictly in order:
 | 6. Pilot Validation | 0/TBD | Not started — pending real infra | — |
 | 7. Host Info — Linux | 1/1 | Complete | 2026-04-29 |
 | 8. Host Info — Windows | 1/1 | Complete | 2026-04-29 |
-| 9. Validation + Docs + Dashboard | 1/3 | Executing (09-01 HOST-03 done) | — |
+| 9. Validation + Docs + Dashboard | 3/3 | Complete (HOST-03/04/05 closed; UAT signed off 2026-04-29) | 2026-04-29 |
 
 ## Coverage
 
