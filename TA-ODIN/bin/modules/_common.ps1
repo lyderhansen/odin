@@ -352,3 +352,44 @@ function Get-OdinNetwork {
 
     return "${fqdn}|${ip}"
 }
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → detect_virt
+# Returns one of: baremetal | kvm | vmware | hyperv | xen | container | unknown (D-04)
+# Single field, 7-value enum. Matches Phase 7's enum exactly for parity.
+# Detection cascade:
+#   1. Win32_ComputerSystem.Manufacturer + .Model wildcard match
+#   2. Win32_OperatingSystem.OperatingSystemSKU container detection
+#   3. Default to baremetal if no virt signal
+#   "unknown" only when CIM call fails entirely (PSCL or RPC error per D-07)
+function Get-OdinVirtualization {
+    try {
+        $cs = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+        $signature = "$($cs.Manufacturer) $($cs.Model)"
+
+        switch -Wildcard ($signature) {
+            "*Microsoft*Virtual*"      { return "hyperv" }
+            "*VMware*"                 { return "vmware" }
+            "*QEMU*"                   { return "kvm" }
+            "*Xen*"                    { return "xen" }
+            "*Amazon EC2*"             { return "kvm" }    # EC2 nitro instances
+            "*Google*Compute Engine*"  { return "kvm" }    # GCE
+        }
+
+        # No hypervisor signature — check for Windows Container OS edition
+        try {
+            $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+            # Container SKU values: 0x00000131 (Server Core Container), 0x00000132 (Nano Container)
+            if ($os.OperatingSystemSKU -in @(0x00000131, 0x00000132)) {
+                return "container"
+            }
+        } catch {
+            # Container check failed — fall through to baremetal
+        }
+
+        # No virt signal + no container — assume baremetal
+        return "baremetal"
+    } catch {
+        # Win32_ComputerSystem unavailable (PSCL or RPC failure) — D-07 sentinel
+        return "unknown"
+    }
+}
