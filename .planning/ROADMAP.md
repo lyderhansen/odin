@@ -26,8 +26,8 @@ Three phases, executed strictly in order:
 > **— v1.0.2 milestone begins (Host Metadata Enrichment) —**
 
 - [x] **Phase 7: Host Info — Linux** — Linux orchestrator emits `type=odin_host_info` event once per scan with all 13 host metadata fields (OS identity, hardware, network, virtualization, cloud detection). **COMPLETE 2026-04-29** (1/1 plans — HOST-01 closed)
-- [ ] **Phase 8: Host Info — Windows** — Windows orchestrator emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods (Get-CimInstance, Win32_OperatingSystem, etc.).
-- [ ] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown.
+- [x] **Phase 8: Host Info — Windows** — Windows orchestrator emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods (Get-CimInstance, Win32_OperatingSystem, etc.). **COMPLETE 2026-04-29** (1/1 plans — HOST-02 closed)
+- [ ] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown. **EXECUTING** (1/3 plans — 09-01 HOST-03 done; 09-02 HOST-04 and 09-03 HOST-05 pending)
 
 ## Phase Details
 
@@ -92,7 +92,7 @@ Three phases, executed strictly in order:
   2. Cloud IMDS probes use `Invoke-RestMethod` with explicit 2s timeout; on hosts without cloud metadata the orchestrator does not hang or trigger Splunk's 120s scripted-input timeout.
   3. Field values follow Windows conventions where appropriate: `os_distro=windows`, `os_arch` reports `amd64` or `arm64` (per `$env:PROCESSOR_ARCHITECTURE`), `virtualization` reports detected hypervisor or `baremetal`/`container`/`none`.
   4. Existing v1.0.1 Windows functionality unaffected: AppInspect TA-ODIN baseline preserved (failure=0, error=0, warning=1).
-**Plans:** TBD (1-2 plans expected — `_common.ps1` helper additions + odin.ps1 integration + IMDS timeout safety + tests)
+**Plans:** 1 of 1 complete (08-01 HOST-02 closed: _common.ps1 extended 178→536 lines, 8 PS helpers, Invoke-OdinEmitHostInfo, odin.ps1 integration, check-host-info.ps1)
 **UI hint:** no
 
 ### Phase 9: Validation + Docs + Dashboard
@@ -105,7 +105,7 @@ Three phases, executed strictly in order:
   3. `ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` adds at least 2 new dashboard panels: (a) "OS Distribution" showing `count by os_distro,os_version` from the latest `type=odin_host_info` per host, (b) "Virtualization Breakdown" showing `count by virtualization`. Verified by `grep -c '<viz' ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` increases by ≥2 vs the v1.0.1-rc1 baseline.
   4. AppInspect on `ODIN_app_for_splunk` after dashboard changes still PASS with `failure=0, error=0, warning=0`. Saved as `.planning/artifacts/appinspect/odin-app-1.0.2-phase9.json`.
   5. UAT cycle (`/gsd-verify-work 9`) passes with all 5 v1.0.2 requirements (HOST-01..HOST-05) marked as DONE.
-**Plans:** TBD (1-3 plans expected — parity test, docs, dashboard, UAT)
+**Plans:** 1 of 3 complete (09-01 HOST-03 done: check-host-info-parity.sh created; 09-02 HOST-04 pending: DATA-DICTIONARY.md; 09-03 HOST-05 pending: odin_overview.xml dashboard panels)
 **UI hint:** yes (Dashboard Studio panels added to existing odin_overview.xml)
 
 ## Progress
@@ -116,8 +116,8 @@ Three phases, executed strictly in order:
 | 5. Operational Readiness | 4/4 | Complete | 2026-04-24 |
 | 6. Pilot Validation | 0/TBD | Not started — pending real infra | — |
 | 7. Host Info — Linux | 1/1 | Complete | 2026-04-29 |
-| 8. Host Info — Windows | 0/TBD | Not started | — |
-| 9. Validation + Docs + Dashboard | 0/TBD | Not started | — |
+| 8. Host Info — Windows | 1/1 | Complete | 2026-04-29 |
+| 9. Validation + Docs + Dashboard | 1/3 | Executing (09-01 HOST-03 done) | — |
 
 ## Coverage
 
