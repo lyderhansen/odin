@@ -3,29 +3,29 @@ gsd_state_version: 1.0
 milestone: v1.0.2
 milestone_name: host-metadata-enrichment
 status: executing
-last_updated: "2026-04-29T09:20:03.429Z"
+last_updated: "2026-04-29T10:05:13.409Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 16
-  completed_plans: 15
-  percent: 94
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State — TA-ODIN
 
 ## Current Position
 
-Phase: 07 (host-info-linux) — COMPLETE
-Plan: 1 of 1 — COMPLETE
+Phase: 09 (validation-docs-dashboard) — NOT STARTED
+Plan: 0 of N (Phase 9 planning pending)
 
 - **Active milestone:** **v1.0.2 — Host Metadata Enrichment** (5 requirements HOST-01..HOST-05; 3 phases 7/8/9; opened 2026-04-28)
 - **Parallel/blocked milestone:** v1.0.1 — Production Readiness — **v1.0.1-rc1 released 2026-04-28** as GitHub prerelease; full v1.0.1 (no `-rc` suffix) blocked on Phase 6 (PROD-02) pilot acceptance criteria pending real infrastructure
-- **Phase:** Phase 7 — Host Info — Linux **COMPLETE 2026-04-29** (1/1 plans: 07-01 HOST-01 emit_host_info with 13 fields)
-- **Plan:** 07-01 COMPLETE — _common.sh extended (60→338 lines), emit_host_info wired into odin.sh, regression test created
-- **Status:** Ready to execute
-- **Total Plans in Phase 7:** 1/1 COMPLETE
+- **Phase:** Phase 8 — Host Info — Windows **COMPLETE 2026-04-29** (1/1 plans: 08-01 HOST-02 Invoke-OdinEmitHostInfo with 13 fields + 8 PS helpers)
+- **Plan:** 08-01 COMPLETE — _common.ps1 extended (178→536 lines), Invoke-OdinEmitHostInfo wired into odin.ps1, check-host-info.ps1 created
+- **Status:** Phase 8 COMPLETE; awaiting Phase 9 planning (Validation + Docs + Dashboard)
+- **Total Plans in Phase 8:** 1/1 COMPLETE
 
 ### v1.0.1 status (parallel — blocked on infra)
 
@@ -37,10 +37,10 @@ Plan: 1 of 1 — COMPLETE
 ### v1.0.2 status (active)
 
 - Phase 7 — Host Info — Linux: **COMPLETE 2026-04-29** (1/1 plans — 07-01 HOST-01 emit_host_info 13 fields)
-- Phase 8 — Host Info — Windows: NOT STARTED (depends on Phase 7)
+- Phase 8 — Host Info — Windows: **COMPLETE 2026-04-29** (1/1 plans — 08-01 HOST-02 Invoke-OdinEmitHostInfo 13 fields)
 - Phase 9 — Validation + Docs + Dashboard: NOT STARTED (depends on Phase 7 + 8)
 
-- **Progress (v1.0.2):** [###       ] 33% (1 of 3 phases complete)
+- **Progress (v1.0.2):** [######    ] 67% (2 of 3 phases complete)
 - **Last activity:** 2026-04-29
 
 ## Milestone Scope (v1.0.1)
@@ -179,4 +179,4 @@ _None. Use `/gsd-add-todo` to capture ideas as they come up during planning._
 
 ## Session Continuity
 
-_Last session: 2026-04-29 — Plan 07-01 (HOST-01: emit_host_info Linux) executed end-to-end. 10/10 tasks committed: `0177469` (T1 idempotent _common.sh), `4fb4553` (T2 OS detection), `01b09e0` (T3 hardware+runtime), `43f1279` (T4 network), `7e0ac96` (T5 virtualization), `7b57a5a` (T6 IMDS cloud probe), `8801f62` (T7 emit_host_info aggregator), `295e15b` (T8 odin.sh integration), `b47c01d` (T9 regression test), `13d73e9` (T10 changelog). _common.sh extended from 60 to 338 lines with 8 detection helpers. type=odin_host_info event emitted as event #2 with all 13 fields. check-host-info.sh exits 0 with 6 PASS markers. Zero deviations. Phase 7 COMPLETE; next: Phase 8 (Host Info — Windows). Previously: Plan 05-04 (Wave 1 PROD-04 admin docs cluster) executed end-to-end. 6/6 tasks committed: `de4c986` DOCS/INSTALL.md (189 lines, Deployment Server rollout playbook), `6c3033a` DOCS/TROUBLESHOOTING.md (293 lines, 12 ### Issue triples — 5 Linux + 4 Windows + 3 cross-platform; cross-refs Phase 4 D-04-02 deferred-items legacy role values), `f7b2985` DOCS/DATA-DICTIONARY.md (300 lines, 11 ## type= subsections covering all canonical event types from Linux + Windows modules; cross-platform parity note WIN-08 front-loaded), `92a4cb1` DOCS/UPGRADE.md (217 lines, v1.0.0 -> v1.0.1 path covering all 7 PROD-* requirements + alert activation procedure cross-ref to RUNBOOK.md + rollback pointer to ROLLBACK.md), `db2791b` README updates (both apps gain ## Documentation section with 7 ../DOCS/ links each = 14 total, pure additions zero pre-existing content removed). Task 6 regression sweep: all 6 scripts exit 0 (check-version-sync HARD-01, check-two-app-split HARD-07, injection-fixtures HARD-08 10/10, windows-parity-harness all dimensions, check-windows-classification PROD-01, rollback-dryrun PROD-05) plus shellcheck clean. All 6 DOCS/ files >= 50 lines (smallest 157, largest 395). Zero deviations — plan executed exactly as written. PROD-04 fully closed; Phase 5 now FULLY COMPLETE (4/4 plans, PROD-03..07 all closed in REQUIREMENTS.md). Milestone progress: 2/3 phases = 67%. Next: spawn Phase 6 planning (PROD-02 pilot validation — release gate, requires real-host deployment to ≥5 Linux + ≥5 Windows hosts for 7-day observation window)._
+_Last session: 2026-04-29 — Plan 08-01 (HOST-02: Invoke-OdinEmitHostInfo Windows) executed end-to-end. 10/10 tasks committed: `1b74c08` (T1 ODIN_IMDS_TIMEOUT), `9478668` (T2 OS detection), `6b62678` (T3 hardware+runtime), `5e55e72` (T4 network), `a95558f` (T5 virtualization), `d1a6dae` (T6 IMDS cloud probe), `cdf09b4` (T7 Invoke-OdinEmitHostInfo aggregator + Rule 1 fix), `dbe24d7` (T8 odin.ps1 integration), `4f32b6d` (T9 regression test), `b4bc0a9` (T10 changelog). _common.ps1 extended from 178 to 536 lines with 8 PowerShell mirror helpers. type=odin_host_info event emitted as event #2 with all 13 fields. Windows parity harness ALL DIMENSIONS PASSED, Linux regression tests all green. Phase 8 COMPLETE; next: Phase 9 (Validation + Docs + Dashboard). Previously: Plan 07-01 (HOST-01: emit_host_info Linux) executed end-to-end. 10/10 tasks committed: `0177469` (T1 idempotent _common.sh), `4fb4553` (T2 OS detection), `01b09e0` (T3 hardware+runtime), `43f1279` (T4 network), `7e0ac96` (T5 virtualization), `7b57a5a` (T6 IMDS cloud probe), `8801f62` (T7 emit_host_info aggregator), `295e15b` (T8 odin.sh integration), `b47c01d` (T9 regression test), `13d73e9` (T10 changelog). _common.sh extended from 60 to 338 lines with 8 detection helpers. type=odin_host_info event emitted as event #2 with all 13 fields. check-host-info.sh exits 0 with 6 PASS markers. Zero deviations. Phase 7 COMPLETE; next: Phase 8 (Host Info — Windows). Previously: Plan 05-04 (Wave 1 PROD-04 admin docs cluster) executed end-to-end. 6/6 tasks committed: `de4c986` DOCS/INSTALL.md (189 lines, Deployment Server rollout playbook), `6c3033a` DOCS/TROUBLESHOOTING.md (293 lines, 12 ### Issue triples — 5 Linux + 4 Windows + 3 cross-platform; cross-refs Phase 4 D-04-02 deferred-items legacy role values), `f7b2985` DOCS/DATA-DICTIONARY.md (300 lines, 11 ## type= subsections covering all canonical event types from Linux + Windows modules; cross-platform parity note WIN-08 front-loaded), `92a4cb1` DOCS/UPGRADE.md (217 lines, v1.0.0 -> v1.0.1 path covering all 7 PROD-* requirements + alert activation procedure cross-ref to RUNBOOK.md + rollback pointer to ROLLBACK.md), `db2791b` README updates (both apps gain ## Documentation section with 7 ../DOCS/ links each = 14 total, pure additions zero pre-existing content removed). Task 6 regression sweep: all 6 scripts exit 0 (check-version-sync HARD-01, check-two-app-split HARD-07, injection-fixtures HARD-08 10/10, windows-parity-harness all dimensions, check-windows-classification PROD-01, rollback-dryrun PROD-05) plus shellcheck clean. All 6 DOCS/ files >= 50 lines (smallest 157, largest 395). Zero deviations — plan executed exactly as written. PROD-04 fully closed; Phase 5 now FULLY COMPLETE (4/4 plans, PROD-03..07 all closed in REQUIREMENTS.md). Milestone progress: 2/3 phases = 67%. Next: spawn Phase 6 planning (PROD-02 pilot validation — release gate, requires real-host deployment to ≥5 Linux + ≥5 Windows hosts for 7-day observation window)._
