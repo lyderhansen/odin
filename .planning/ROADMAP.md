@@ -25,7 +25,7 @@ Three phases, executed strictly in order:
 
 > **— v1.0.2 milestone begins (Host Metadata Enrichment) —**
 
-- [ ] **Phase 7: Host Info — Linux** — Linux orchestrator emits `type=odin_host_info` event once per scan with all 13 host metadata fields (OS identity, hardware, network, virtualization, cloud detection).
+- [x] **Phase 7: Host Info — Linux** — Linux orchestrator emits `type=odin_host_info` event once per scan with all 13 host metadata fields (OS identity, hardware, network, virtualization, cloud detection). **COMPLETE 2026-04-29** (1/1 plans — HOST-01 closed)
 - [ ] **Phase 8: Host Info — Windows** — Windows orchestrator emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods (Get-CimInstance, Win32_OperatingSystem, etc.).
 - [ ] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown.
 
@@ -115,7 +115,7 @@ Three phases, executed strictly in order:
 | 4. Windows Classification Data | 2/2 | Complete | 2026-04-17 |
 | 5. Operational Readiness | 4/4 | Complete | 2026-04-24 |
 | 6. Pilot Validation | 0/TBD | Not started — pending real infra | — |
-| 7. Host Info — Linux | 0/TBD | Not started | — |
+| 7. Host Info — Linux | 1/1 | Complete | 2026-04-29 |
 | 8. Host Info — Windows | 0/TBD | Not started | — |
 | 9. Validation + Docs + Dashboard | 0/TBD | Not started | — |
 

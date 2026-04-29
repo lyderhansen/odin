@@ -178,7 +178,7 @@ The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) re
 
 ### v1.0.2 Requirements
 
-- [ ] **HOST-01** — Linux orchestrator emits exactly one `type=odin_host_info` event per scan, positioned between `type=odin_start` and the first module event, populated with all 13 fields: `os_distro`, `os_version`, `os_pretty`, `os_kernel`, `os_arch` (from `/etc/os-release` + `uname`), `cpu_cores` (from `nproc`), `mem_total_mb` (from `/proc/meminfo`), `uptime_seconds` (from `/proc/uptime`), `fqdn` (from `hostname -f`), `ip_primary` (from `ip route get 1.1.1.1`), `virtualization` (from `systemd-detect-virt` with dmidecode/cgroup fallback), `cloud_provider` + `cloud_region` (from IMDS endpoint probes with 2s timeout, default `none` on failure). Acceptance: `bash TA-ODIN/bin/odin.sh | grep -c '^.*type=odin_host_info'` returns 1; the event line contains all 13 named fields; AppInspect baseline preserved.
+- [x] **HOST-01** — Linux orchestrator emits exactly one `type=odin_host_info` event per scan, positioned between `type=odin_start` and the first module event, populated with all 13 fields: `os_distro`, `os_version`, `os_pretty`, `os_kernel`, `os_arch` (from `/etc/os-release` + `uname`), `cpu_cores` (from `nproc`), `mem_total_mb` (from `/proc/meminfo`), `uptime_seconds` (from `/proc/uptime`), `fqdn` (from `hostname -f`), `ip_primary` (from `ip route get 1.1.1.1`), `virtualization` (from `systemd-detect-virt` with dmidecode/cgroup fallback), `cloud_provider` + `cloud_region` (from IMDS endpoint probes with 1s timeout, default `none` on failure). Acceptance: `bash TA-ODIN/bin/odin.sh | grep -c '^.*type=odin_host_info'` returns 1; the event line contains all 13 named fields; AppInspect baseline preserved. **CLOSED 2026-04-29 by Plan 07-01.**
 
 - [ ] **HOST-02** — Windows orchestrator emits exactly one `type=odin_host_info` event per scan with the same 13 fields populated via Windows-native methods: `os_distro=windows`, `os_version` from `[System.Environment]::OSVersion.Version`, `os_pretty` from `(Get-CimInstance Win32_OperatingSystem).Caption`, `os_kernel` from `BuildNumber`, `os_arch` from `$env:PROCESSOR_ARCHITECTURE`, `cpu_cores` from `Win32_Processor.NumberOfCores`, `mem_total_mb` from `Win32_OperatingSystem.TotalVisibleMemorySize`, `uptime_seconds` from `LastBootUpTime` delta, `fqdn` from `[System.Net.Dns]::GetHostByName`, `ip_primary` from `Get-NetRoute 0.0.0.0/0`, `virtualization` from `Win32_ComputerSystem.Manufacturer`/`Model`, `cloud_provider` + `cloud_region` from cloud-specific IMDS via `Invoke-RestMethod` with 2s timeout. Acceptance: `powershell.exe -ExecutionPolicy Bypass -File odin.ps1 | Select-String 'type=odin_host_info'` returns exactly 1 line containing all 13 named fields; AppInspect baseline preserved.
 
@@ -201,7 +201,7 @@ The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) re
 
 | REQ-ID | Phase | Notes |
 |--------|-------|-------|
-| HOST-01 | Phase 7 | Linux orchestrator implementation — 13-field event emission |
+| HOST-01 | Phase 7 | Linux orchestrator implementation — 13-field event emission | **CLOSED 2026-04-29** |
 | HOST-02 | Phase 8 | Windows orchestrator implementation — parity with Linux |
 | HOST-03 | Phase 9 | Cross-platform parity validation + IMDS timeout safety |
 | HOST-04 | Phase 9 | DATA-DICTIONARY.md update — type=odin_host_info field reference |
