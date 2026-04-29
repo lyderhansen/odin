@@ -113,6 +113,13 @@
         "extend": "ds_host_info",
         "query": "| stats count by os_distro, os_version\n| sort - count\n| eval label = os_distro . \" \" . os_version"
       }
+    },
+    "ds_chain_virtualization": {
+      "type": "ds.chain",
+      "options": {
+        "extend": "ds_host_info",
+        "query": "| stats count by virtualization\n| sort - count"
+      }
     }
   },
   "visualizations": {
@@ -246,6 +253,19 @@
         "showDonutHole": true,
         "showLegend": true,
         "legendDisplay": "right"
+      }
+    },
+    "viz_virtualization_breakdown": {
+      "type": "splunk.column",
+      "title": "Virtualization Breakdown",
+      "description": "Fleet-wide breakdown by virtualization platform (D-04 enum: baremetal|kvm|vmware|hyperv|xen|container|unknown). Source: latest type=odin_host_info per host.",
+      "dataSources": {
+        "primary": "ds_chain_virtualization"
+      },
+      "options": {
+        "xAxisTitle": "Virtualization Platform",
+        "yAxisTitle": "Host Count",
+        "showLegend": false
       }
     }
   },
