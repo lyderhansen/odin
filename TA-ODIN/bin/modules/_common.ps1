@@ -432,7 +432,11 @@ function Get-OdinGcpImds {
             -TimeoutSec $script:ODIN_IMDS_TIMEOUT `
             -UseBasicParsing -ErrorAction Stop
         if (-not $zone) { return $null }
-        # Extract last path segment, strip trailing -letter suffix
+        # Strip whitespace including \r\n that Invoke-RestMethod may include
+        # in text/plain HTTP responses on Windows (CR-01)
+        $zone = $zone.ToString().Trim()
+        if (-not $zone) { return $null }
+        # Extract last path segment, strip trailing -letter zone suffix
         $lastSegment = ($zone -split '/')[-1]
         $region = $lastSegment -replace '-[a-z]$', ''
         if (-not $region) { return $null }
