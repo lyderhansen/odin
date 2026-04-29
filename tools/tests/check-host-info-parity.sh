@@ -41,9 +41,12 @@ fi
 # --- Extract field NAMES (regex: lowercase_word= — names only, not values) ---
 # grep -oE '[a-z_]+=' matches each field_name= occurrence.
 # sed 's/=$//' strips the trailing '=' so we compare bare names.
+# grep -vE removes the common envelope fields (timestamp, hostname, os, run_id,
+# odin_version, type) so field_count reflects the 13 type-specific fields only.
 # sort -u deduplicates and orders alphabetically for diff stability.
-linux_fields=$(echo "$linux_event"  | grep -oE '[a-z_]+=' | sed 's/=$//' | sort -u)
-windows_fields=$(echo "$windows_event" | grep -oE '[a-z_]+=' | sed 's/=$//' | sort -u)
+_envelope='^(timestamp|hostname|os|run_id|odin_version|type)$'
+linux_fields=$(echo "$linux_event"  | grep -oE '[a-z_]+=' | sed 's/=$//' | grep -vE "$_envelope" | sort -u)
+windows_fields=$(echo "$windows_event" | grep -oE '[a-z_]+=' | sed 's/=$//' | grep -vE "$_envelope" | sort -u)
 
 # --- Diff field sets ---
 diff_out=$(diff <(echo "$linux_fields") <(echo "$windows_fields"))
