@@ -393,3 +393,80 @@ function Get-OdinVirtualization {
         return "unknown"
     }
 }
+
+# --- Cloud IMDS probes (D-05: sequential AWS→GCP→Azure, 1s timeout each) ---
+# Internal helpers, called only by Invoke-OdinCloudImds. Each returns
+# "provider|region" on success or $null on failure (caller cascades).
+
+# AWS IMDSv2 (token-based, more secure than v1).
+# Two sequential calls: PUT token, GET region. PSCL note: Invoke-RestMethod
+# is allowed in ConstrainedLanguage Mode (no .NET reflection).
+function Get-OdinAwsImds {
+    try {
+        $tokenUrl = "http://169.254.169.254/latest/api/token"
+        $token = Invoke-RestMethod -Method Put -Uri $tokenUrl `
+            -Headers @{ "X-aws-ec2-metadata-token-ttl-seconds" = "60" } `
+            -TimeoutSec $script:ODIN_IMDS_TIMEOUT `
+            -UseBasicParsing -ErrorAction Stop
+        if (-not $token) { return $null }
+
+        $regionUrl = "http://169.254.169.254/latest/meta-data/placement/region"
+        $region = Invoke-RestMethod -Method Get -Uri $regionUrl `
+            -Headers @{ "X-aws-ec2-metadata-token" = $token } `
+            -TimeoutSec $script:ODIN_IMDS_TIMEOUT `
+            -UseBasicParsing -ErrorAction Stop
+        if (-not $region) { return $null }
+        return "aws|$region"
+    } catch {
+        return $null
+    }
+}
+
+# GCP metadata server (header-gated, requires Metadata-Flavor: Google).
+# Returns zone like "projects/PROJECT_NUM/zones/europe-west1-b" → strip to region.
+function Get-OdinGcpImds {
+    try {
+        $url = "http://metadata.google.internal/computeMetadata/v1/instance/zone"
+        $zone = Invoke-RestMethod -Method Get -Uri $url `
+            -Headers @{ "Metadata-Flavor" = "Google" } `
+            -TimeoutSec $script:ODIN_IMDS_TIMEOUT `
+            -UseBasicParsing -ErrorAction Stop
+        if (-not $zone) { return $null }
+        # Extract last path segment, strip trailing -letter suffix
+        $lastSegment = ($zone -split '/')[-1]
+        $region = $lastSegment -replace '-[a-z]$', ''
+        if (-not $region) { return $null }
+        return "gcp|$region"
+    } catch {
+        return $null
+    }
+}
+
+# Azure IMDS (api-version param required).
+function Get-OdinAzureImds {
+    try {
+        $url = "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text"
+        $region = Invoke-RestMethod -Method Get -Uri $url `
+            -Headers @{ "Metadata" = "true" } `
+            -TimeoutSec $script:ODIN_IMDS_TIMEOUT `
+            -UseBasicParsing -ErrorAction Stop
+        if (-not $region) { return $null }
+        return "azure|$region"
+    } catch {
+        return $null
+    }
+}
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → probe_cloud_imds
+# Returns: pipe-separated "provider|region" (2 of the 13 fields).
+# Sequential probe order: AWS → GCP → Azure (D-05 mirror of Phase 7 D-02).
+# All three fail (non-cloud or PSCL block): returns "none|none" (semantic null per D-03).
+function Invoke-OdinCloudImds {
+    $result = Get-OdinAwsImds
+    if ($result) { return $result }
+    $result = Get-OdinGcpImds
+    if ($result) { return $result }
+    $result = Get-OdinAzureImds
+    if ($result) { return $result }
+    return "none|none"
+}
