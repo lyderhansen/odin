@@ -50,17 +50,23 @@ $expectedFields = @('os_distro', 'os_version', 'os_pretty', 'os_kernel', 'os_arc
                     'fqdn', 'ip_primary', 'virtualization',
                     'cloud_provider', 'cloud_region')
 $hostInfoLine = ($out -split "`n" | Where-Object { $_ -match 'type=odin_host_info' } | Select-Object -First 1)
-$missingFields = @()
-foreach ($field in $expectedFields) {
-    if ($hostInfoLine -notmatch "$field=") {
-        $missingFields += $field
-    }
-}
-if ($missingFields.Count -eq 0) {
-    Write-Host "[HOST-02 PASS] all 13 named fields present in event"
+# SKIP guard (WR-03): when no event was emitted, Check 1 already reported FAIL.
+# Iterating 13 fields against an empty string produces 13 misleading FAILs.
+if (-not $hostInfoLine) {
+    Write-Host "[HOST-02 SKIP] field presence check skipped — no event to inspect (see Check 1)"
 } else {
-    Write-Host "[HOST-02 FAIL] missing fields: $($missingFields -join ', ')"
-    $fail = 1
+    $missingFields = @()
+    foreach ($field in $expectedFields) {
+        if ($hostInfoLine -notmatch "$field=") {
+            $missingFields += $field
+        }
+    }
+    if ($missingFields.Count -eq 0) {
+        Write-Host "[HOST-02 PASS] all 13 named fields present in event"
+    } else {
+        Write-Host "[HOST-02 FAIL] missing fields: $($missingFields -join ', ')"
+        $fail = 1
+    }
 }
 
 # --- Check 3: host_info is event #2 (right after odin_start) ---
