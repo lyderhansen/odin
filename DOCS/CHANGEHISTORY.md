@@ -10,6 +10,49 @@ All timestamps are ISO 8601 in CET timezone.
 
 ---
 
+## v1.0.2-wip — Host Metadata Enrichment (Linux)
+
+**Date:** 2026-04-29T08:59:00+02:00
+**Phase:** 7 — Host Info — Linux
+**Requirement:** HOST-01
+
+### Added
+
+- New event type `type=odin_host_info` emitted exactly once per scan, positioned as event #2 (between `type=odin_start` and module events).
+- 13 host metadata fields: `os_distro`, `os_version`, `os_pretty`, `os_kernel`, `os_arch`, `cpu_cores`, `mem_total_mb`, `uptime_seconds`, `fqdn`, `ip_primary`, `virtualization`, `cloud_provider`, `cloud_region`.
+- `TA-ODIN/bin/modules/_common.sh` extended (~60 → ~250 lines) with 8 detection helpers: `detect_os_distro`, `detect_os_kernel_arch`, `detect_hardware`, `detect_runtime_uptime`, `detect_network`, `detect_virt`, `probe_cloud_imds`, `emit_host_info`.
+- `ODIN_IMDS_TIMEOUT` environment variable (default 1s) for D-02 cloud-probe budget.
+- New regression test `tools/tests/check-host-info.sh` validating HOST-01 success criteria.
+
+### Locked decisions (from `.planning/phases/07-host-info-linux/07-CONTEXT.md`)
+
+- **D-01:** Helper placement — extend `_common.sh` (single shared library, mirrors PROD-07d pattern).
+- **D-02:** IMDS strategy — sequential AWS→GCP→Azure with 1s curl timeout (worst case 3s on non-cloud).
+- **D-03:** Field error handling — all-strings sentinel (`unknown` for system failure, `none` for semantic null).
+- **D-04:** Virtualization — single field with 7-value enum (`baremetal|kvm|vmware|hyperv|xen|container|unknown`).
+
+### Implementation notes
+
+- `_common.sh` is now an idempotent library (its `emit`/`get_timestamp` definitions are guarded by `if ! declare -f` so the orchestrator's richer `emit()` with `ODIN_EVENTS_TRUNCATED` flag is preserved when sourced from `odin.sh`).
+- Each new helper documents its Phase 8 PowerShell mirror name in the comment header (e.g., `detect_virt` → `Get-OdinVirtualization`) so Phase 8 becomes a mechanical port.
+- Fully additive: no existing module behavior, no existing event shape, no existing schema affected. AppInspect baseline preserved (failure=0, error=0, warning=1).
+
+### Decision change record
+
+**ROADMAP Phase 7 success criterion 2 was relaxed from "≤2s IMDS budget" to "≤3s IMDS budget"** to align with locked decision D-02 (sequential AWS→GCP→Azure with 1s curl timeout each = 3s worst case). The original 2s claim in ROADMAP predates the discuss-phase D-02 decision. Per discuss-phase precedence, CONTEXT.md decisions override ROADMAP success criteria for HOW questions. The 3s budget remains well within the orchestrator's 90s per-module budget AND Splunk's 120s scripted-input timeout.
+
+### Files changed
+
+- `TA-ODIN/bin/modules/_common.sh` (extended)
+- `TA-ODIN/bin/odin.sh` (source `_common.sh` after `export -f emit`; insert `emit_host_info` between `odin_start` and root warnings)
+- `tools/tests/check-host-info.sh` (new)
+
+### Phase 8 (Windows mirror) prerequisites
+
+This entry is a building block for Phase 8 (Windows orchestrator emits the same event from `_common.ps1` + `odin.ps1`) and Phase 9 (DATA-DICTIONARY update + dashboard panels + cross-platform parity test). v1.0.2 is not shippable until all 3 phases complete.
+
+---
+
 ## v1.0.1-rc1 — Production Readiness (Release Candidate)
 
 **Date:** 2026-04-28
