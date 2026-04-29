@@ -10,7 +10,7 @@ All timestamps are ISO 8601 in CET timezone.
 
 ---
 
-## v1.0.2-wip — Host Metadata Enrichment (Linux)
+## v1.0.2-wip — Host Metadata Enrichment (Linux + Windows)
 
 **Date:** 2026-04-29T08:59:00+02:00
 **Phase:** 7 — Host Info — Linux
@@ -46,6 +46,60 @@ All timestamps are ISO 8601 in CET timezone.
 - `TA-ODIN/bin/modules/_common.sh` (extended)
 - `TA-ODIN/bin/odin.sh` (source `_common.sh` after `export -f emit`; insert `emit_host_info` between `odin_start` and root warnings)
 - `tools/tests/check-host-info.sh` (new)
+
+### Windows implementation (Phase 8 / HOST-02)
+
+**Date:** 2026-04-29T10:01:08+02:00
+**Phase:** 8 — Host Info — Windows
+**Requirement:** HOST-02
+
+The same `type=odin_host_info` event is now emitted by the Windows orchestrator (`TA-ODIN/bin/odin.ps1`) with all 13 fields populated via Windows-native methods. Cross-platform parity (HARD-01 invariant) preserved.
+
+**Added:**
+
+- 8 PowerShell mirror helpers in `TA-ODIN/bin/modules/_common.ps1` (~178 → ~400 lines):
+  - `Get-OdinOsDistro` (mirrors bash `detect_os_distro`) — hardcoded "windows" + Win32_OperatingSystem.Version + .Caption
+  - `Get-OdinOsKernelArch` — Win32_OperatingSystem.BuildNumber + $env:PROCESSOR_ARCHITECTURE
+  - `Get-OdinHardware` — Win32_Processor.NumberOfCores (sum) + Win32_OperatingSystem.TotalVisibleMemorySize / 1024
+  - `Get-OdinRuntimeUptime` — (Get-Date) - Win32_OperatingSystem.LastBootUpTime
+  - `Get-OdinNetwork` — [System.Net.Dns]::GetHostByName + Get-NetRoute / Get-NetIPAddress
+  - `Get-OdinVirtualization` — Win32_ComputerSystem.Manufacturer + .Model cascade + OperatingSystemSKU container check
+  - `Invoke-OdinCloudImds` — sequential AWS/GCP/Azure with `Invoke-RestMethod -TimeoutSec 1 -UseBasicParsing`
+  - `Invoke-OdinEmitHostInfo` — calls all above + emits unified 13-field event via `Invoke-OdinEmit`
+- `ODIN_IMDS_TIMEOUT` environment variable (default 1) added to Initialize-OdinContext (parity with Phase 7's bash $ODIN_IMDS_TIMEOUT)
+- `tools/tests/check-host-info.ps1` regression test (mirrors `check-host-info.sh`, uses `[HOST-02 PASS/FAIL/SKIP]` token convention, includes WR-03 SKIP guards from Phase 7 lessons learned)
+
+**Locked decisions (from `.planning/phases/08-host-info-windows/08-CONTEXT.md`):**
+
+- **D-05:** IMDS timeout = 1s for parity with Phase 7 D-02 (mirror).
+- **D-06:** Use `Get-CimInstance` exclusively in new Phase 8 helpers (NEVER Get-WmiObject — deprecated).
+- **D-07:** PSCL best-effort with graceful degradation (try/catch + "unknown" sentinel per D-03).
+- D-01..D-04 inherited from Phase 7 unchanged (helper placement, IMDS sequential order, sentinel discipline, virtualization enum).
+
+**Decision change record (Windows IMDS timeout):**
+
+ROADMAP Phase 8 success criterion 2 was relaxed from "Invoke-RestMethod with explicit 2s timeout" to "1s timeout per probe" to align with Phase 7 D-02 and preserve cross-platform parity. Same precedence rule as Phase 7's bash 2s→3s relaxation: discuss-phase decisions override ROADMAP success criteria for HOW questions. Total Windows IMDS budget remains within the orchestrator's 90s per-module budget AND Splunk's 120s scripted-input timeout (worst case 3-4s on non-cloud hosts).
+
+**Implementation notes:**
+
+- `_common.ps1` is already dot-sourced by `odin.ps1:65` — Phase 8 needed NO idempotency guards (PowerShell's dot-sourcing semantics avoid the bash `export -f` / `declare -f` complication that Phase 7 had to address with `if ! declare -f` wrappers).
+- `Format-OdinValue` (existing helper) handles `os_pretty` space-quoting — no private helper needed (unlike Phase 7's bash `_safe_val_host_info` workaround for the additive principle).
+- Each new helper documents its bash mirror name in the comment header (e.g., `Get-OdinVirtualization` → `detect_virt`) for parity grep convenience.
+- All `Invoke-RestMethod` calls use `-UseBasicParsing` to avoid the legacy IE parsing engine (deprecated, removed in PowerShell Core 7+).
+- Existing `services.ps1` Get-WmiObject usage is NOT touched (HARD-01 invariant — defer cleanup to v1.1.0 cleanup phase per D-06 rationale).
+- Rule 1 fix during T7: function call result must be wrapped in parens before `-split` operator (`(Get-OdinOsDistro) -split '\|'` not `Get-OdinOsDistro -split '\|'`) — PowerShell operator precedence ambiguity.
+
+**Files changed:**
+
+- `TA-ODIN/bin/modules/_common.ps1` (extended)
+- `TA-ODIN/bin/odin.ps1` (insert single `Invoke-OdinEmitHostInfo` call between `type=odin_start` emit and modules-loop init)
+- `tools/tests/check-host-info.ps1` (new)
+
+**Phase 9 (Validation + Docs + Dashboard) prerequisites:**
+
+This entry COMPLETES the orchestrator-side work for v1.0.2. Phase 9 will: (a) update DATA-DICTIONARY.md with `type=odin_host_info` field reference, (b) add Splunk dashboard panels (OS Distribution pie chart, virtualization breakdown, cloud_provider stats), (c) add cross-platform parity test asserting Linux + Windows produce identical 13-field set. Once Phase 9 ships → tag v1.0.2 release → trigger v1.1.0 container observability seed.
+
+---
 
 ### Phase 8 (Windows mirror) prerequisites
 
