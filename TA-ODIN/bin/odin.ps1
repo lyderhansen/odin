@@ -94,6 +94,14 @@ $scanStart = Get-Date
 # --------------------------------------------------------------------------
 Invoke-OdinEmit "type=odin_start message=`"TA-ODIN Windows enumeration started`""
 
+# --- Host info event (Phase 8 / HOST-02) ---
+# Emit exactly one type=odin_host_info event with 13 host metadata fields
+# (OS, hardware, network, virtualization, cloud detection). Positioned
+# deterministically as event #2, between odin_start and any module events.
+# Helper lives in TA-ODIN/bin/modules/_common.ps1 (already dot-sourced at line 65).
+# Mirrors Linux odin.sh:99→102 contract (between odin_start and root warnings).
+Invoke-OdinEmitHostInfo
+
 # --------------------------------------------------------------------------
 # Module discovery + execution loop (WIN-01, WIN-12)
 # --------------------------------------------------------------------------
