@@ -85,6 +85,15 @@ emit() {
 export -f get_timestamp
 export -f emit
 
+# --- Source shared library (idempotent) ---
+# Pulls in Phase 7 helpers (detect_*, emit_host_info, ODIN_IMDS_TIMEOUT default).
+# _common.sh's own emit/get_timestamp definitions are gated by `if ! declare -f`
+# so the orchestrator's richer emit() (with ODIN_EVENTS_TRUNCATED flag, lines
+# 67-82) is preserved. See .planning/phases/07-host-info-linux/07-PATTERNS.md
+# Pattern 3 + Path A.
+# shellcheck source=modules/_common.sh
+source "$MODULES_DIR/_common.sh"
+
 # --- Privilege check ---
 export ODIN_RUNNING_AS_ROOT=0
 if [[ $EUID -eq 0 ]]; then
@@ -97,6 +106,13 @@ fi
 ODIN_START_MS=$(get_epoch_ms)
 run_user=$(id -un 2>/dev/null || echo "unknown")
 emit "type=odin_start run_as=$run_user euid=$EUID message=\"TA-ODIN enumeration started\""
+
+# --- Host info event (Phase 7 / HOST-01) ---
+# Emit exactly one type=odin_host_info event with 13 host metadata fields
+# (OS, hardware, network, virtualization, cloud detection). Positioned
+# deterministically as event #2, between odin_start and any warnings/module
+# events. Helper lives in TA-ODIN/bin/modules/_common.sh (sourced above).
+emit_host_info
 
 # Warn if not running as root — some modules return limited data
 if [[ $ODIN_RUNNING_AS_ROOT -eq 0 ]]; then
