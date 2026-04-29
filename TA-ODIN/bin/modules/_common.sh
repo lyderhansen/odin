@@ -90,12 +90,14 @@ fi
 # Detection: parse /etc/os-release per systemd spec.
 detect_os_distro() {
     local distro="unknown" version="unknown" pretty="unknown"
+    local _id _version_id _pretty_name
     if [[ -r /etc/os-release ]]; then
-        # Source in subshell to avoid polluting our env with NAME=, ID=, etc.
-        eval "$(grep -E '^(ID|VERSION_ID|PRETTY_NAME)=' /etc/os-release 2>/dev/null)"
-        [[ -n "${ID:-}" ]] && distro="$ID"
-        [[ -n "${VERSION_ID:-}" ]] && version="$VERSION_ID"
-        [[ -n "${PRETTY_NAME:-}" ]] && pretty="$PRETTY_NAME"
+        _id=$(grep '^ID=' /etc/os-release 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"')
+        _version_id=$(grep '^VERSION_ID=' /etc/os-release 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"')
+        _pretty_name=$(grep '^PRETTY_NAME=' /etc/os-release 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"')
+        [[ -n "$_id" ]] && distro="$_id"
+        [[ -n "$_version_id" ]] && version="$_version_id"
+        [[ -n "$_pretty_name" ]] && pretty="$_pretty_name"
     fi
     echo "${distro}|${version}|${pretty}"
 }
