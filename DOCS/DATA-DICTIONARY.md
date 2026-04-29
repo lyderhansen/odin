@@ -177,6 +177,46 @@ timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1
 - **Source (Windows):** Same endpoints, parsed via `Invoke-RestMethod`
 - **Example:** `cloud_region=eu-north-1` (AWS), `cloud_region=europe-west1` (GCP), `cloud_region=eastus` (Azure), `cloud_region=none` (when cloud_provider=none), `cloud_region=unknown`
 
+### Cloud detection timeout semantics
+
+The `cloud_provider` and `cloud_region` fields are populated by sequential
+IMDS (Instance Metadata Service) probes against AWS -> GCP -> Azure
+endpoints. Decisions D-02 (Linux) and D-05 (Windows) lock the timeout to
+**1 second per probe**.
+
+**Worst-case latency on a non-cloud host: 3-4 seconds total.**
+
+Why 4s and not 3s: AWS IMDSv2 requires a token-PUT call before the
+region-GET call. On a non-cloud host where the AWS token endpoint is
+unreachable, the first call fails on connect-timeout (~1s) and probe
+returns immediately — total AWS time = 1s. But on a host with partial
+IMDS reachability (e.g., link-local routing exists but IMDS returns
+404), the token call may succeed in <1s while the region call times out
+at 1s — total AWS time = 2s. Add GCP 1s + Azure 1s = 4s worst case.
+
+**Why sequential, not parallel:** Per D-02 trade-off note, sequential
+keeps the implementation pure-bash / pure-PowerShell with no temp files,
+no race conditions, no cleanup logic. Parallel would shave 2-3 seconds
+on non-cloud hosts but adds significant complexity. The 4s worst case is
+trivial within the orchestrator's 90s per-module timeout AND Splunk's
+120s scripted-input timeout.
+
+**Sentinel value semantics for cloud_provider:**
+
+| Value | Meaning |
+|---|---|
+| `aws` / `gcp` / `azure` | IMDS probe succeeded; `cloud_region` populated |
+| `none` | All three probes failed cleanly (host is not in supported cloud); `cloud_region=none` |
+| `unknown` | Detection raised an exception (curl/Invoke-RestMethod unavailable, PSCL block, or all probes errored); `cloud_region=unknown` |
+
+For Splunk dashboards: `where cloud_provider IN ("aws", "gcp", "azure")`
+filters to cloud hosts; `where cloud_provider="none"` filters to on-premise;
+the `unknown` value indicates an environmental issue worth investigating.
+
+**Override:** Set environment variable `ODIN_IMDS_TIMEOUT=N` (integer
+seconds) before invoking the orchestrator to change the per-probe
+timeout. Useful for slow networks where 1s causes false-positive timeouts.
+
 ## type=odin_complete
 
 Fires once per orchestrator invocation, after every module has either succeeded,
