@@ -56,6 +56,27 @@ before the first module dispatch.
 timestamp=2026-04-24T10:00:00Z hostname=web01.example.com os=linux run_id=1740100800-1234 odin_version=1.0.0 type=odin_start run_as=splunk euid=998 message="TA-ODIN enumeration started"
 ```
 
+## type=odin_host_info
+
+Fires once per orchestrator invocation, immediately after `type=odin_start`
+and before any module events. Provides rich host metadata for fleet
+classification: OS distribution, hardware profile, network identity,
+virtualization detection, and cloud-provider identification.
+
+This event is the foundation for v1.0.2 dashboards (`OS Distribution` and
+`Virtualization Breakdown` panels in `odin_overview.xml`) and the
+prerequisite for v1.1.0 container observability (the `virtualization=container`
+field hints whether a host is running INSIDE a container, before the
+v1.1.0 enumerator iterates the actual containers on a container host).
+
+**Worked example event line:**
+
+```
+timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1740100800-1234 odin_version=1.0.2 type=odin_host_info os_distro=rocky os_version=9.3 os_pretty="Rocky Linux 9.3 (Blue Onyx)" os_kernel=5.14.0-362.el9.x86_64 os_arch=x86_64 cpu_cores=8 mem_total_mb=16384 uptime_seconds=432000 fqdn=web01.prod.example.com ip_primary=10.0.5.123 virtualization=kvm cloud_provider=aws cloud_region=eu-north-1
+```
+
+**Fields:** Common envelope (timestamp, hostname, os, run_id, odin_version, type) plus the 13 host metadata fields documented below.
+
 ## type=odin_complete
 
 Fires once per orchestrator invocation, after every module has either succeeded,
