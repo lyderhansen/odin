@@ -218,3 +218,65 @@ detect_virt() {
     echo "unknown"
 }
 fi
+
+# --- Cloud IMDS probes (D-02: sequential AWS→GCP→Azure, 1s curl timeout each) ---
+# Internal helpers (single underscore prefix), called only by probe_cloud_imds.
+
+# AWS IMDSv2 (token-based, more secure than v1).
+_probe_aws_imds() {
+    command -v curl >/dev/null 2>&1 || return 1
+    local token region
+    token=$(timeout "$ODIN_IMDS_TIMEOUT" curl -s -X PUT \
+        -H "X-aws-ec2-metadata-token-ttl-seconds: 60" \
+        --connect-timeout "$ODIN_IMDS_TIMEOUT" --max-time "$ODIN_IMDS_TIMEOUT" \
+        http://169.254.169.254/latest/api/token 2>/dev/null) || return 1
+    [[ -z "$token" ]] && return 1
+    region=$(timeout "$ODIN_IMDS_TIMEOUT" curl -s \
+        -H "X-aws-ec2-metadata-token: $token" \
+        --connect-timeout "$ODIN_IMDS_TIMEOUT" --max-time "$ODIN_IMDS_TIMEOUT" \
+        http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null) || return 1
+    [[ -z "$region" ]] && return 1
+    echo "aws|$region"
+    return 0
+}
+
+# GCP metadata server (header-gated, requires Metadata-Flavor: Google).
+_probe_gcp_imds() {
+    command -v curl >/dev/null 2>&1 || return 1
+    local zone region
+    zone=$(timeout "$ODIN_IMDS_TIMEOUT" curl -s \
+        -H "Metadata-Flavor: Google" \
+        --connect-timeout "$ODIN_IMDS_TIMEOUT" --max-time "$ODIN_IMDS_TIMEOUT" \
+        http://metadata.google.internal/computeMetadata/v1/instance/zone 2>/dev/null) || return 1
+    [[ -z "$zone" ]] && return 1
+    # zone format: projects/PROJECT_NUM/zones/europe-west1-b → strip to region: europe-west1
+    region=$(echo "$zone" | awk -F/ '{print $NF}' | sed 's/-[a-z]$//')
+    [[ -z "$region" ]] && return 1
+    echo "gcp|$region"
+    return 0
+}
+
+# Azure IMDS (api-version param required).
+_probe_azure_imds() {
+    command -v curl >/dev/null 2>&1 || return 1
+    local region
+    region=$(timeout "$ODIN_IMDS_TIMEOUT" curl -s \
+        -H "Metadata: true" \
+        --connect-timeout "$ODIN_IMDS_TIMEOUT" --max-time "$ODIN_IMDS_TIMEOUT" \
+        "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text" 2>/dev/null) || return 1
+    [[ -z "$region" ]] && return 1
+    echo "azure|$region"
+    return 0
+}
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Invoke-OdinCloudImds
+# Returns: pipe-separated "provider|region" (2 of the 13 fields).
+# Sequential probe order: AWS → GCP → Azure (D-02). First success wins.
+# All three fail (non-cloud or no curl): returns "none|none" (semantic null per D-03).
+probe_cloud_imds() {
+    local out
+    out=$(_probe_aws_imds 2>/dev/null)   && [[ -n "$out" ]] && { echo "$out"; return; }
+    out=$(_probe_gcp_imds 2>/dev/null)   && [[ -n "$out" ]] && { echo "$out"; return; }
+    out=$(_probe_azure_imds 2>/dev/null) && [[ -n "$out" ]] && { echo "$out"; return; }
+    echo "none|none"
+}
