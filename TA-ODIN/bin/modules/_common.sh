@@ -26,6 +26,16 @@
 # 6 modules into a single shared file. The pre-refactor pattern duplicated
 # this 20-line block across cron.sh, mounts.sh, packages.sh, ports.sh,
 # processes.sh, services.sh.
+#
+# v1.0.2 (Phase 7 / HOST-01) extends this file with 8 host_info detection
+# helpers (detect_*, probe_cloud_imds, emit_host_info) appended after the
+# v1.0.1 standalone-fallback section. Those helpers are ORCHESTRATOR-ONLY:
+# they are sourced by odin.sh and called once from emit_host_info()
+# between odin_start and the modules loop. Modules MUST NOT call detect_*
+# or emit_host_info directly — they would emit duplicate type=odin_host_info
+# events outside the orchestrator's deterministic event sequence.
+# Each new helper documents its Phase 8 PowerShell mirror name in its own
+# comment header (e.g., detect_virt → Get-OdinVirtualization).
 
 # Standalone-context defaults — orchestrator pre-sets these via export, so the
 # parameter expansion is a no-op when invoked via odin.sh. Direct module
@@ -36,16 +46,20 @@ ODIN_RUN_ID="${ODIN_RUN_ID:-standalone-$$}"
 ODIN_VERSION="${ODIN_VERSION:-1.0.1}"
 ODIN_MAX_EVENTS="${ODIN_MAX_EVENTS:-50000}"
 ODIN_EVENT_COUNT=0
+ODIN_IMDS_TIMEOUT="${ODIN_IMDS_TIMEOUT:-1}"   # seconds per cloud probe (D-02: AWS→GCP→Azure)
 
+if ! declare -f get_timestamp &>/dev/null; then
 get_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
+fi
 
 # Emit a key=value event line with MAX_EVENTS guardrail.
 # Mirrors orchestrator emit() behavior: emits exactly one type=truncated marker
 # on first cap-breach, drops subsequent events. Counter is incremented past the
 # cap on the truncated emit so subsequent events match the -ge guard but not
 # the -eq re-emit guard, preventing duplicate truncation markers.
+if ! declare -f emit &>/dev/null; then
 emit() {
     if [[ $ODIN_EVENT_COUNT -ge $ODIN_MAX_EVENTS ]]; then
         if [[ $ODIN_EVENT_COUNT -eq $ODIN_MAX_EVENTS ]]; then
@@ -57,3 +71,4 @@ emit() {
     ODIN_EVENT_COUNT=$((ODIN_EVENT_COUNT + 1))
     echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"
 }
+fi
