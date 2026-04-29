@@ -147,3 +147,29 @@ detect_runtime_uptime() {
     fi
     echo "$uptime"
 }
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Get-OdinNetwork
+# Returns: pipe-separated "fqdn|ip_primary" (2 of the 13 fields).
+# Detection:
+#   - fqdn: hostname -f, fall back to `unknown` if not resolvable
+#   - ip_primary: `ip route get 1.1.1.1` extracted via awk src-keyword indexing
+#     (more robust than $7 — handles single-line and multi-word output formats)
+# Returns "none" for ip_primary when there is no default route (semantic null
+# per D-03), distinct from "unknown" (detection failure).
+detect_network() {
+    local fqdn ip
+    fqdn=$(timeout 2 hostname -f 2>/dev/null) || fqdn="unknown"
+    [[ -z "$fqdn" ]] && fqdn="unknown"
+
+    if command -v ip >/dev/null 2>&1; then
+        # Try default route to public IP. Empty/error → no route → semantic null.
+        ip=$(timeout 2 ip route get 1.1.1.1 2>/dev/null \
+            | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')
+        if [[ -z "$ip" ]]; then
+            ip="none"
+        fi
+    else
+        ip="unknown"
+    fi
+    echo "${fqdn}|${ip}"
+}
