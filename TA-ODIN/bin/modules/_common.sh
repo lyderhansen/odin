@@ -72,3 +72,42 @@ emit() {
     echo "timestamp=$(get_timestamp) hostname=$ODIN_HOSTNAME os=$ODIN_OS run_id=$ODIN_RUN_ID odin_version=$ODIN_VERSION $*"
 }
 fi
+
+# ============================================================================
+# Phase 7 / HOST-01: Host metadata detection helpers (v1.0.2)
+# ============================================================================
+# These helpers are called by emit_host_info() to populate the 13-field
+# type=odin_host_info event. Each helper:
+#   - Returns ONE pipe-separated string OR a single value
+#   - Returns "unknown" on detection failure (D-03 — system error sentinel)
+#   - Returns "none" only for semantic null (e.g., no cloud detected)
+#   - Wraps every external command with `timeout` (D-02 + project convention)
+#   - Documents its Phase 8 PowerShell mirror name in the comment header
+# ============================================================================
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Get-OdinOsDistro
+# Returns: pipe-separated "distro|version|pretty" (3 of the 13 fields).
+# Detection: parse /etc/os-release per systemd spec.
+detect_os_distro() {
+    local distro="unknown" version="unknown" pretty="unknown"
+    if [[ -r /etc/os-release ]]; then
+        # Source in subshell to avoid polluting our env with NAME=, ID=, etc.
+        eval "$(grep -E '^(ID|VERSION_ID|PRETTY_NAME)=' /etc/os-release 2>/dev/null)"
+        [[ -n "${ID:-}" ]] && distro="$ID"
+        [[ -n "${VERSION_ID:-}" ]] && version="$VERSION_ID"
+        [[ -n "${PRETTY_NAME:-}" ]] && pretty="$PRETTY_NAME"
+    fi
+    echo "${distro}|${version}|${pretty}"
+}
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Get-OdinOsKernelArch
+# Returns: pipe-separated "kernel|arch" (2 of the 13 fields).
+# Detection: uname -r and uname -m.
+detect_os_kernel_arch() {
+    local kernel arch
+    kernel=$(timeout 2 uname -r 2>/dev/null) || kernel="unknown"
+    arch=$(timeout 2 uname -m 2>/dev/null) || arch="unknown"
+    [[ -z "$kernel" ]] && kernel="unknown"
+    [[ -z "$arch" ]] && arch="unknown"
+    echo "${kernel}|${arch}"
+}
