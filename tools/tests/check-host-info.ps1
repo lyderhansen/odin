@@ -1,34 +1,39 @@
 #!/usr/bin/env pwsh
-# tools/tests/check-host-info.ps1 — HOST-02
+# tools/tests/check-host-info.ps1 - HOST-02
 #
 # Verifies Phase 8 / HOST-02 success criteria:
 #   1. Exactly ONE type=odin_host_info event per scan (Windows orchestrator)
 #   2. All 13 named fields present in that event
 #   3. Event positioned as #2 (between odin_start and module events)
-#   4. Total IMDS budget on non-cloud hosts is ≤3s (D-05: 1s × 3 sequential)
-#      NOTE: this script does NOT measure timing — that check lives in the
+#   4. Total IMDS budget on non-cloud hosts is <=3s (D-05: 1s * 3 sequential)
+#      NOTE: this script does NOT measure timing - that check lives in the
 #      plan-level <verification> block. This file verifies field correctness
 #      (event count, all 13 fields present, positioning, virt enum, cloud
 #      sentinel). Adding a runtime measurement here is a future enhancement.
 #
 # Exit 0 when all checks pass, non-zero otherwise.
 #
-# String convention (PS5.1 parser compatibility):
-#   Windows PowerShell 5.1 has a parser quirk where `Write-Host "[HOST-02 ...]"`
-#   (literal brackets at the start of a double-quoted string) intermittently
-#   triggers "MissingArrayIndexExpression" parse errors inside `if`-block
-#   contexts. To stay compatible with both PS5.1 and PS7+, this file uses:
-#     - Static literals  → single-quoted: '[HOST-02 PASS] ...'
-#     - Dynamic strings  → -f format:     ('[HOST-02 FAIL] ... {0}' -f $var)
-#   Both forms parse cleanly on every PowerShell version.
+# PS5.1 compatibility notes:
+#   1. String convention: `Write-Host "[HOST-02 ...]"` (literal brackets at
+#      the start of a double-quoted string) intermittently triggers
+#      "MissingArrayIndexExpression" parse errors inside `if`-block contexts.
+#      To stay compatible with both PS5.1 and PS7+, this file uses:
+#        - Static literals -> single-quoted: '[HOST-02 PASS] ...'
+#        - Dynamic strings -> -f format:     ('[HOST-02 FAIL] ... {0}' -f $var)
+#   2. Join-Path: PS5.1 only accepts 2 positional args (-Path, -ChildPath).
+#      `-AdditionalChildPath` was added in PS6+. Use [System.IO.Path]::Combine
+#      for n-segment paths (works identically on every PS version).
+#   3. ASCII-only output text: no em-dashes / smart quotes / non-ASCII glyphs.
+#      PS5.1 reads UTF-8 files without BOM as Windows-1252 codepage, so
+#      multi-byte UTF-8 sequences render as garbage. Stick to ASCII.
 
 $ErrorActionPreference = 'Continue'  # Don't halt on individual check failures
 
-# Platform guard — this test requires Windows (Windows-only CIM, odin.ps1 orchestrator)
+# Platform guard - this test requires Windows (Windows-only CIM, odin.ps1 orchestrator)
 # $IsLinux / $IsMacOS are PS7+ automatic variables. On PS5.1 (Windows-only) they are
-# undefined ($null), so ($IsLinux -or $IsMacOS) evaluates to $false — correct behaviour.
+# undefined ($null), so ($IsLinux -or $IsMacOS) evaluates to $false - correct behaviour.
 if ($IsLinux -or $IsMacOS) {
-    Write-Host ('[HOST-02 SKIP] Windows-only test — skipping on {0}' -f [System.Runtime.InteropServices.RuntimeInformation]::OSDescription)
+    Write-Host ('[HOST-02 SKIP] Windows-only test - skipping on {0}' -f [System.Runtime.InteropServices.RuntimeInformation]::OSDescription)
     exit 0
 }
 
@@ -37,7 +42,7 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $fail = 0
 
 # --- Run the orchestrator and capture output ---
-$orchestratorPath = Join-Path $RepoRoot 'TA-ODIN' 'bin' 'odin.ps1'
+$orchestratorPath = [System.IO.Path]::Combine($RepoRoot, 'TA-ODIN', 'bin', 'odin.ps1')
 # Use pwsh if available (PS Core 7+), fall back to powershell.exe (PS5.1 on Windows).
 # This avoids command-not-found on Linux/macOS CI that has pwsh but not powershell.exe.
 $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { 'pwsh' } else { 'powershell.exe' }
@@ -62,7 +67,7 @@ $hostInfoLine = ($out -split "`n" | Where-Object { $_ -match 'type=odin_host_inf
 # SKIP guard (WR-03): when no event was emitted, Check 1 already reported FAIL.
 # Iterating 13 fields against an empty string produces 13 misleading FAILs.
 if (-not $hostInfoLine) {
-    Write-Host '[HOST-02 SKIP] field presence check skipped — no event to inspect (see Check 1)'
+    Write-Host '[HOST-02 SKIP] field presence check skipped - no event to inspect (see Check 1)'
 } else {
     $missingFields = @()
     foreach ($field in $expectedFields) {
@@ -84,14 +89,14 @@ $event2 = if ($timestampLines.Count -ge 2) { $timestampLines[1] } else { '' }
 if ($event2 -match 'type=odin_host_info') {
     Write-Host '[HOST-02 PASS] host_info is event #2 (between odin_start and module events)'
 } else {
-    Write-Host '[HOST-02 FAIL] event #2 is not type=odin_host_info — positioning broken'
+    Write-Host '[HOST-02 FAIL] event #2 is not type=odin_host_info - positioning broken'
     Write-Host ('             event #2 was: {0}' -f $event2)
     $fail = 1
 }
 
 # --- Check 4: virtualization value is in D-04 enum (SKIP if event missing per WR-03) ---
 if (-not $hostInfoLine) {
-    Write-Host '[HOST-02 SKIP] virtualization enum check skipped — no event to inspect'
+    Write-Host '[HOST-02 SKIP] virtualization enum check skipped - no event to inspect'
 } else {
     $virtMatch = [regex]::Match($hostInfoLine, 'virtualization=(\S+)')
     $virtVal = if ($virtMatch.Success) { $virtMatch.Groups[1].Value } else { '' }
@@ -106,7 +111,7 @@ if (-not $hostInfoLine) {
 
 # --- Check 5: cloud_provider sentinel discipline (SKIP if event missing per WR-03) ---
 if (-not $hostInfoLine) {
-    Write-Host '[HOST-02 SKIP] cloud_provider sentinel check skipped — no event to inspect'
+    Write-Host '[HOST-02 SKIP] cloud_provider sentinel check skipped - no event to inspect'
 } else {
     $cloudMatch = [regex]::Match($hostInfoLine, 'cloud_provider=(\S+)')
     $cloudVal = if ($cloudMatch.Success) { $cloudMatch.Groups[1].Value } else { '' }
