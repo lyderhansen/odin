@@ -106,6 +106,13 @@
       "options": {
         "query": "index=odin_discovery sourcetype=odin:enumeration type=odin_host_info\n| dedup hostname sortby -_time"
       }
+    },
+    "ds_chain_os_distribution": {
+      "type": "ds.chain",
+      "options": {
+        "extend": "ds_host_info",
+        "query": "| stats count by os_distro, os_version\n| sort - count\n| eval label = os_distro . \" \" . os_version"
+      }
     }
   },
   "visualizations": {
@@ -226,6 +233,19 @@
       "options": {
         "count": 50,
         "showRowNumbers": false
+      }
+    },
+    "viz_os_distribution": {
+      "type": "splunk.pie",
+      "title": "OS Distribution",
+      "description": "Fleet-wide breakdown by OS distro and version. Source: latest type=odin_host_info per host.",
+      "dataSources": {
+        "primary": "ds_chain_os_distribution"
+      },
+      "options": {
+        "showDonutHole": true,
+        "showLegend": true,
+        "legendDisplay": "right"
       }
     }
   },
