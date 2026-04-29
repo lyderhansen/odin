@@ -77,6 +77,57 @@ timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1
 
 **Fields:** Common envelope (timestamp, hostname, os, run_id, odin_version, type) plus the 13 host metadata fields documented below.
 
+### Field reference
+
+#### `os_distro`
+
+- **Description:** OS family identifier — short lowercase string identifying the OS distribution. Stable enough to use as a `stats` grouping key.
+- **Source (Linux):** parse `/etc/os-release` `ID=` field
+- **Source (Windows):** hardcoded `windows` (Win32_OperatingSystem.Caption always starts with "Microsoft Windows")
+- **Example:** `os_distro=rocky`, `os_distro=ubuntu`, `os_distro=windows`, `os_distro=alpine`
+
+#### `os_version`
+
+- **Description:** OS version string. Format varies per distro/platform but is stable per OS family.
+- **Source (Linux):** parse `/etc/os-release` `VERSION_ID=` field
+- **Source (Windows):** `[System.Environment]::OSVersion.Version` formatted as `Major.Minor.Build`; PSCL fallback `(Get-CimInstance Win32_OperatingSystem).Version`
+- **Example:** `os_version=9.3` (Rocky), `os_version=22.04` (Ubuntu), `os_version=10.0.26100` (Windows 11)
+
+#### `os_pretty`
+
+- **Description:** Human-readable OS name including marketing string. Useful for tooltips and report headers; do NOT use as grouping key (high cardinality due to patch level differences).
+- **Source (Linux):** parse `/etc/os-release` `PRETTY_NAME=` field
+- **Source (Windows):** `(Get-CimInstance Win32_OperatingSystem).Caption.Trim()`
+- **Example:** `os_pretty="Rocky Linux 9.3 (Blue Onyx)"`, `os_pretty="Microsoft Windows 11 Pro"`. (Note: always quoted because contains spaces.)
+
+#### `os_kernel`
+
+- **Description:** Kernel/build identifier. Linux returns the `uname -r` string; Windows returns the OS BuildNumber.
+- **Source (Linux):** `uname -r`
+- **Source (Windows):** `(Get-CimInstance Win32_OperatingSystem).BuildNumber`
+- **Example:** `os_kernel=5.14.0-362.el9.x86_64` (Linux), `os_kernel=26100` (Windows)
+
+#### `os_arch`
+
+- **Description:** CPU architecture identifier. Lowercase to ensure parity-friendly comparison across platforms.
+- **Source (Linux):** `uname -m`
+- **Source (Windows):** `$env:PROCESSOR_ARCHITECTURE.ToLower()`
+- **Example:** `os_arch=x86_64` (Linux x86-64), `os_arch=amd64` (Windows x86-64), `os_arch=aarch64` (Linux ARM64), `os_arch=arm64` (Windows ARM64)
+
+#### `cpu_cores`
+
+- **Description:** Total physical CPU core count, summed across all sockets. Always a string per D-03 sentinel discipline (returns `"unknown"` on detection failure, never `-1` or empty).
+- **Source (Linux):** `nproc`
+- **Source (Windows):** `(Get-CimInstance Win32_Processor | Measure-Object NumberOfCores -Sum).Sum` (multi-socket aware)
+- **Example:** `cpu_cores=8`, `cpu_cores=64`, `cpu_cores=unknown`
+
+#### `mem_total_mb`
+
+- **Description:** Total physical RAM in megabytes (integer, no decimal). Always a string per D-03.
+- **Source (Linux):** `awk '/^MemTotal:/{print int($2/1024)}' /proc/meminfo` (kB -> MB)
+- **Source (Windows):** `[int]((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)` (KB -> MB)
+- **Example:** `mem_total_mb=16384`, `mem_total_mb=131072`, `mem_total_mb=unknown`
+
 ## type=odin_complete
 
 Fires once per orchestrator invocation, after every module has either succeeded,
