@@ -38,7 +38,7 @@ $out = & $psExe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
 # --- Check 1: exactly ONE type=odin_host_info event ---
 $hostInfoCount = ([regex]::Matches($out, 'type=odin_host_info')).Count
 if ($hostInfoCount -eq 1) {
-    Write-Host "[HOST-02 PASS] exactly 1 type=odin_host_info event emitted"
+    Write-Host '[HOST-02 PASS] exactly 1 type=odin_host_info event emitted'
 } else {
     Write-Host "[HOST-02 FAIL] expected 1 type=odin_host_info event, got $hostInfoCount"
     $fail = 1
@@ -97,7 +97,7 @@ if (-not $hostInfoLine) {
 
 # --- Check 5: cloud_provider sentinel discipline (SKIP if event missing per WR-03) ---
 if (-not $hostInfoLine) {
-    Write-Host "[HOST-02 SKIP] cloud_provider sentinel check skipped — no event to inspect"
+    Write-Host '[HOST-02 SKIP] cloud_provider sentinel check skipped — no event to inspect'
 } else {
     $cloudMatch = [regex]::Match($hostInfoLine, 'cloud_provider=(\S+)')
     $cloudVal = if ($cloudMatch.Success) { $cloudMatch.Groups[1].Value } else { '' }
