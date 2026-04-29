@@ -27,7 +27,7 @@ Three phases, executed strictly in order:
 
 - [x] **Phase 7: Host Info — Linux** — Linux orchestrator emits `type=odin_host_info` event once per scan with all 13 host metadata fields (OS identity, hardware, network, virtualization, cloud detection). **COMPLETE 2026-04-29** (1/1 plans — HOST-01 closed)
 - [x] **Phase 8: Host Info — Windows** — Windows orchestrator emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods (Get-CimInstance, Win32_OperatingSystem, etc.). **COMPLETE 2026-04-29** (1/1 plans — HOST-02 closed)
-- [ ] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown. **EXECUTING** (1/3 plans — 09-01 HOST-03 done; 09-02 HOST-04 and 09-03 HOST-05 pending)
+- [x] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown. **COMPLETE 2026-04-29** (3/3 plans — HOST-03..05 all closed; AppInspect failure=0 error=0 warning=0)
 
 ## Phase Details
 
@@ -105,7 +105,7 @@ Three phases, executed strictly in order:
   3. `ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` adds at least 2 new dashboard panels: (a) "OS Distribution" showing `count by os_distro,os_version` from the latest `type=odin_host_info` per host, (b) "Virtualization Breakdown" showing `count by virtualization`. Verified by `grep -c '<viz' ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` increases by ≥2 vs the v1.0.1-rc1 baseline.
   4. AppInspect on `ODIN_app_for_splunk` after dashboard changes still PASS with `failure=0, error=0, warning=0`. Saved as `.planning/artifacts/appinspect/odin-app-1.0.2-phase9.json`.
   5. UAT cycle (`/gsd-verify-work 9`) passes with all 5 v1.0.2 requirements (HOST-01..HOST-05) marked as DONE.
-**Plans:** 1 of 3 complete (09-01 HOST-03 done: check-host-info-parity.sh created; 09-02 HOST-04 pending: DATA-DICTIONARY.md; 09-03 HOST-05 pending: odin_overview.xml dashboard panels)
+**Plans:** 3 of 3 complete (09-01 HOST-03: check-host-info-parity.sh; 09-02 HOST-04: DATA-DICTIONARY.md type=odin_host_info; 09-03 HOST-05: odin_overview.xml +2 panels viz count 10→12)
 **UI hint:** yes (Dashboard Studio panels added to existing odin_overview.xml)
 
 ## Progress
