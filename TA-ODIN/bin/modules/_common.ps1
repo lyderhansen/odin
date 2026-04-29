@@ -43,6 +43,10 @@ $script:ODIN_MAX_EVENTS = [int]$env:ODIN_MAX_EVENTS
 if (-not $env:ODIN_MODULE_TIMEOUT) { $env:ODIN_MODULE_TIMEOUT = '90' }
 $script:ODIN_MODULE_TIMEOUT = [int]$env:ODIN_MODULE_TIMEOUT
 
+# D-05 (Phase 8 mirror of Phase 7 D-02): seconds per cloud probe (1s × 3 sequential = 3s worst case)
+if (-not $env:ODIN_IMDS_TIMEOUT) { $env:ODIN_IMDS_TIMEOUT = '1' }
+$script:ODIN_IMDS_TIMEOUT = [int]$env:ODIN_IMDS_TIMEOUT
+
 if (-not (Get-Variable -Name 'ODIN_EVENT_COUNT' -Scope Script -ErrorAction SilentlyContinue)) {
     $script:ODIN_EVENT_COUNT = 0
 }
