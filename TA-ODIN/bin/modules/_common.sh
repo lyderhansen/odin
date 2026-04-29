@@ -222,6 +222,10 @@ detect_virt() {
 fi
 
 # --- Cloud IMDS probes (D-02: sequential AWS→GCP→Azure, 1s curl timeout each) ---
+# AWS requires 2 sequential curl calls (IMDSv2 token + region query).
+# Worst-case total on a non-cloud host: 4s worst case (AWS IMDSv2 = 2 sequential calls:
+# token PUT 1s + region GET 1s; GCP: 1s; Azure: 1s). Non-cloud hosts typically
+# resolve in 3s as the IMDSv2 token endpoint fails immediately on first call.
 # Internal helpers (single underscore prefix), called only by probe_cloud_imds.
 
 # AWS IMDSv2 (token-based, more secure than v1).

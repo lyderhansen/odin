@@ -27,7 +27,7 @@ All timestamps are ISO 8601 in CET timezone.
 ### Locked decisions (from `.planning/phases/07-host-info-linux/07-CONTEXT.md`)
 
 - **D-01:** Helper placement — extend `_common.sh` (single shared library, mirrors PROD-07d pattern).
-- **D-02:** IMDS strategy — sequential AWS→GCP→Azure with 1s curl timeout (worst case 3s on non-cloud).
+- **D-02:** IMDS strategy — sequential AWS→GCP→Azure with 1s curl timeout (4s worst case on non-cloud; AWS IMDSv2 = 2 sequential calls: token PUT + region GET; non-cloud host typically resolves in 3s as token endpoint fails immediately).
 - **D-03:** Field error handling — all-strings sentinel (`unknown` for system failure, `none` for semantic null).
 - **D-04:** Virtualization — single field with 7-value enum (`baremetal|kvm|vmware|hyperv|xen|container|unknown`).
 
@@ -39,7 +39,7 @@ All timestamps are ISO 8601 in CET timezone.
 
 ### Decision change record
 
-**ROADMAP Phase 7 success criterion 2 was relaxed from "≤2s IMDS budget" to "≤3s IMDS budget"** to align with locked decision D-02 (sequential AWS→GCP→Azure with 1s curl timeout each = 3s worst case). The original 2s claim in ROADMAP predates the discuss-phase D-02 decision. Per discuss-phase precedence, CONTEXT.md decisions override ROADMAP success criteria for HOW questions. The 3s budget remains well within the orchestrator's 90s per-module budget AND Splunk's 120s scripted-input timeout.
+**ROADMAP Phase 7 success criterion 2 was relaxed from "≤2s IMDS budget" to "≤4s IMDS budget"** to align with locked decision D-02. AWS IMDSv2 requires 2 sequential curl calls (token PUT + region GET), making the true worst case 4s worst case (AWS IMDSv2 = 2 sequential calls; non-cloud host typically resolves in 3s as token endpoint fails immediately). GCP and Azure each add 1s. The original "3s" claim in earlier documentation assumed 1 call per provider. The 4s budget remains well within the orchestrator's 90s per-module budget AND Splunk's 120s scripted-input timeout.
 
 ### Files changed
 
