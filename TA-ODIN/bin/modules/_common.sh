@@ -173,3 +173,48 @@ detect_network() {
     fi
     echo "${fqdn}|${ip}"
 }
+
+# Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Get-OdinVirtualization
+# Returns one of: baremetal | kvm | vmware | hyperv | xen | container | unknown (D-04)
+# Single field, 7-value enum (D-04 explicitly rejects per-runtime sub-fields).
+# Detection cascade: systemd-detect-virt (preferred) → dmidecode → /proc/1/cgroup → unknown.
+# Picked at sourcing time per Pattern 4 — no per-call branching cost.
+if command -v systemd-detect-virt >/dev/null 2>&1; then
+detect_virt() {
+    local v
+    v=$(timeout 2 systemd-detect-virt 2>/dev/null) || { echo "unknown"; return; }
+    case "$v" in
+        none)                                              echo "baremetal" ;;
+        kvm|qemu)                                          echo "kvm" ;;
+        vmware)                                            echo "vmware" ;;
+        microsoft)                                         echo "hyperv" ;;
+        xen)                                               echo "xen" ;;
+        docker|podman|lxc|systemd-nspawn|wsl|rkt|openvz)   echo "container" ;;
+        *)                                                 echo "unknown" ;;
+    esac
+}
+else
+detect_virt() {
+    # Fallback chain when systemd-detect-virt is absent (RHEL 6, Alpine minimal, etc.)
+    local vendor
+    if command -v dmidecode >/dev/null 2>&1; then
+        vendor=$(timeout 2 dmidecode -s system-manufacturer 2>/dev/null)
+        case "$vendor" in
+            *"QEMU"*|*"KVM"*)        echo "kvm";    return ;;
+            *"VMware"*)              echo "vmware"; return ;;
+            *"Microsoft"*)           echo "hyperv"; return ;;
+            *"Xen"*)                 echo "xen";    return ;;
+            *"Amazon EC2"*)          echo "kvm";    return ;;
+            *"Google"*)              echo "kvm";    return ;;
+        esac
+    fi
+    # cgroup probe (works without root, world-readable on most kernels)
+    if [[ -r /proc/1/cgroup ]]; then
+        if grep -qE '/(docker|containerd|kubepods|lxc|podman)/' /proc/1/cgroup 2>/dev/null; then
+            echo "container"; return
+        fi
+    fi
+    # No DMI signal + no container hint + no systemd-detect-virt → can't decide
+    echo "unknown"
+}
+fi
