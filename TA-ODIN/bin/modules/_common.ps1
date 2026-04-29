@@ -303,3 +303,52 @@ function Get-OdinRuntimeUptime {
 
     return $uptime
 }
+
+# Mirror: TA-ODIN/bin/modules/_common.sh → detect_network
+# Returns: pipe-separated "fqdn|ip_primary" (2 of the 13 fields).
+# Detection:
+#   - fqdn: [System.Net.Dns]::GetHostByName($env:COMPUTERNAME).HostName
+#     PSCL fallback: just $env:COMPUTERNAME (unqualified) — better than "unknown"
+#   - ip_primary: Get-NetRoute → Get-NetIPAddress for default route's source IP
+#     Returns "none" semantic null when no default route exists, distinct from
+#     "unknown" (system error, e.g., NetTCPIP module unavailable).
+function Get-OdinNetwork {
+    $fqdn = "unknown"
+    $ip = "unknown"
+
+    try {
+        $hostName = [System.Net.Dns]::GetHostByName($env:COMPUTERNAME).HostName
+        if ($hostName) { $fqdn = $hostName }
+    } catch {
+        # PSCL or DNS failure — try unqualified COMPUTERNAME as fallback
+        try {
+            if ($env:COMPUTERNAME) { $fqdn = $env:COMPUTERNAME }
+        } catch {
+            $fqdn = "unknown"
+        }
+    }
+
+    try {
+        $route = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction Stop |
+                 Sort-Object -Property RouteMetric |
+                 Select-Object -First 1
+        if ($route) {
+            $netIp = Get-NetIPAddress -InterfaceIndex $route.InterfaceIndex `
+                                      -AddressFamily IPv4 -ErrorAction Stop |
+                     Select-Object -First 1
+            if ($netIp -and $netIp.IPAddress) {
+                $ip = $netIp.IPAddress
+            } else {
+                $ip = "none"
+            }
+        } else {
+            # No default route → semantic null per D-03
+            $ip = "none"
+        }
+    } catch {
+        # NetTCPIP module unavailable or PSCL block → system failure sentinel
+        $ip = "unknown"
+    }
+
+    return "${fqdn}|${ip}"
+}
