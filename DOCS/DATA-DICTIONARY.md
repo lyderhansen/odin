@@ -128,6 +128,55 @@ timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1
 - **Source (Windows):** `[int]((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)` (KB -> MB)
 - **Example:** `mem_total_mb=16384`, `mem_total_mb=131072`, `mem_total_mb=unknown`
 
+#### `uptime_seconds`
+
+- **Description:** Time since last boot in integer seconds. Always a string per D-03.
+- **Source (Linux):** `awk '{print int($1)}' /proc/uptime`
+- **Source (Windows):** `[int]((Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalSeconds`
+- **Example:** `uptime_seconds=432000` (5 days), `uptime_seconds=unknown`
+
+#### `fqdn`
+
+- **Description:** Fully qualified domain name of the host. On personal/lab hosts without domain configuration, this is the unqualified hostname (which IS the FQDN in that environment). Quoted only when it contains spaces (rare).
+- **Source (Linux):** `hostname -f`
+- **Source (Windows):** `[System.Net.Dns]::GetHostByName($env:COMPUTERNAME).HostName`; PSCL fallback `$env:COMPUTERNAME`
+- **Example:** `fqdn=web01.prod.example.com`, `fqdn=WIN-WEB01.contoso.local`, `fqdn=desktop-abc123` (unqualified — no domain)
+
+#### `ip_primary`
+
+- **Description:** Primary IPv4 address (the one used for the default route). Distinct from the `hostname` envelope field which may be FQDN-only.
+- **Source (Linux):** `ip route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}'`
+- **Source (Windows):** `(Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Sort-Object RouteMetric | Select-Object -First 1 | Get-NetIPAddress -AddressFamily IPv4).IPAddress`
+- **Example:** `ip_primary=10.0.5.123`, `ip_primary=192.168.1.50`, `ip_primary=none` (no default route configured), `ip_primary=unknown` (system tooling unavailable)
+
+#### `virtualization`
+
+- **Description:** Virtualization platform identifier. Single field with a 7-value enum per D-04. Used by `Virtualization Breakdown` dashboard panel.
+- **Source (Linux):** `systemd-detect-virt` (preferred), with fallback chain via `dmidecode -s system-manufacturer` and `/proc/1/cgroup` content inspection
+- **Source (Windows):** `Win32_ComputerSystem.Manufacturer`+`.Model` cascade matching against known hypervisor signatures (Microsoft Virtual, VMware, QEMU, Xen, Amazon EC2, Google Compute Engine), plus `Win32_OperatingSystem.OperatingSystemSKU` for Container OS edition detection
+- **Enum values:**
+  - `baremetal` — physical hardware
+  - `kvm` — KVM/QEMU/EC2 nitro/GCE (all collapsed)
+  - `vmware` — VMware ESXi/Workstation
+  - `hyperv` — Microsoft Hyper-V
+  - `xen` — Xen hypervisor
+  - `container` — Linux container (Docker/Podman/LXC/nspawn/WSL/rkt/openvz) OR Windows Container OS
+  - `unknown` — detection failed (PSCL block, missing tooling, unknown signature)
+
+#### `cloud_provider`
+
+- **Description:** Cloud platform identifier from IMDS probe. Used for fleet-by-cloud reporting and v1.1.0 cloud asset enrichment.
+- **Source (Linux):** sequential `curl` to AWS IMDSv2 -> GCP metadata.google.internal -> Azure IMDS, 1s timeout per probe (D-02)
+- **Source (Windows):** sequential `Invoke-RestMethod -TimeoutSec 1 -UseBasicParsing` to same endpoints (D-05)
+- **Enum values:** `aws`, `gcp`, `azure`, `none` (no IMDS responded — host is not in supported cloud), `unknown` (curl/Invoke-RestMethod unavailable or all probes raised exceptions)
+
+#### `cloud_region`
+
+- **Description:** Cloud region identifier from IMDS probe. Format is provider-specific.
+- **Source (Linux):** AWS = `/latest/meta-data/placement/region` (e.g., `eu-north-1`); GCP = derived from zone (zone `europe-west1-b` -> region `europe-west1`); Azure = `/metadata/instance/compute/location` (e.g., `eastus`)
+- **Source (Windows):** Same endpoints, parsed via `Invoke-RestMethod`
+- **Example:** `cloud_region=eu-north-1` (AWS), `cloud_region=europe-west1` (GCP), `cloud_region=eastus` (Azure), `cloud_region=none` (when cloud_provider=none), `cloud_region=unknown`
+
 ## type=odin_complete
 
 Fires once per orchestrator invocation, after every module has either succeeded,
