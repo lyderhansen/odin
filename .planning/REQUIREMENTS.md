@@ -208,3 +208,71 @@ The v1.0.0 deferred groups (D, E, F, G, Cloud Victoria, external audit, SLSA) re
 | HOST-05 | Phase 9 | odin_overview.xml dashboard panels (OS Distribution + Virtualization) | **CLOSED 2026-04-29** |
 
 ---
+
+## Milestone v1.1.0 — Container Observability
+
+**Goal:** Make TA-ODIN aware of containerized infrastructure — detect when running INSIDE a container, enumerate containers running ON a docker/k8s host, and classify container workloads by image so Splunk dashboards show container fleet composition + recommend appropriate Splunk TAs.
+
+**Trigger:** v1.0.2 released 2026-04-29 (https://github.com/lyderhansen/odin/releases/tag/v1.0.2). The `type=odin_host_info` event from v1.0.2 is the prerequisite building block; container enumeration extends rather than duplicates host-level observability.
+
+**In scope this milestone:** Container environment detection (`container_runtime`, `container_id`, `container_image_hint` fields enriching `type=odin_host_info`); container enumeration via Docker/podman/kubectl with one `type=container` event per running container; image-based classification via WILDCARD-pattern lookup with saved search aggregating per-host container inventory; dashboard panel showing container density per host. Cross-platform parity (Linux + Windows containers).
+
+**Not in scope this milestone:** Cloud auto-discovery (AWS/GCP/Azure metadata enrichment beyond what HOST-01/02 already do) — slipped to v1.1.1. Service mesh observability (Istio/Linkerd/Consul Connect), container security scanning (Trivy/Snyk/Aqua), container registry inventory, container resource utilization metrics (CPU/memory per container), build pipeline metadata, Kubernetes cluster topology beyond pods (services, ingress, networkpolicies), Helm release inventory — all deferred to v1.2+ or out of scope.
+
+**Risk:** MEDIUM — new modules (`bin/modules/containers.{sh,ps1}`), new lookup with WILDCARD pattern matching, k8s API integration is more complex than existing patterns. Container churn within scan cycle is a known semantic constraint. Windows containers may require deferral to v1.1.1 if test environment unavailable.
+
+### v1.1.0 Requirements
+
+#### Container environment detection
+
+- [ ] **CONT-01** — Linux orchestrator enriches `type=odin_host_info` event with three new fields when running INSIDE a container: `container_runtime` (one of `docker|podman|kubepods|unknown`), `container_id` (truncated SHA prefix from `/proc/1/cpuset` or Docker env), `container_image_hint` (parsed from `/etc/os-release` `IMAGE_ID` if present, else `none`). Detection must be silent on baremetal hosts (fields populated as `none` per D-03 sentinel discipline). Acceptance: `bash TA-ODIN/bin/odin.sh` running INSIDE `docker run --rm rocky:9` produces `virtualization=container container_runtime=docker container_id=<12-hex>` in the `type=odin_host_info` event. On baremetal Linux: `container_runtime=none container_id=none container_image_hint=none`.
+
+- [ ] **CONT-02** — Windows orchestrator emits parity container env detection when running INSIDE a Windows container (Process Isolation or Hyper-V isolation). Same three new fields populated via Windows-native methods (Get-CimInstance Win32_OperatingSystem ProductType + container env-var probing). Sentinel discipline matches Linux (`none` on baremetal Windows). Acceptance: `powershell.exe -ExecutionPolicy Bypass -File TA-ODIN\bin\odin.ps1` running INSIDE a Windows container produces `container_runtime=docker container_id=<id>` in the host_info event; baremetal Windows shows `none` values.
+
+- [ ] **CONT-03** — `DOCS/DATA-DICTIONARY.md` `## type=odin_host_info` section extended with the 3 new container fields (per-field 4-item structure mirroring HOST-04 D-10 convention: Description + Source (Linux) + Source (Windows) + Example). Worked example event line updated to include container scenario. Acceptance: `grep -c '^#### \`container_' DOCS/DATA-DICTIONARY.md` returns 3; both INSIDE-container and baremetal scenarios documented.
+
+#### Container enumeration module
+
+- [ ] **CONT-04** — New Linux module `TA-ODIN/bin/modules/containers.sh` enumerates running containers when host has accessible container runtime (docker, podman, or kubectl). Detects available runtimes via PATH probing + socket check. For each container/pod, emits one `type=container` event with 8 fields: `container_id`, `container_image`, `container_name`, `container_command`, `container_ports`, `container_runtime`, `container_state`, `container_started_at`. Auto-discoverable by orchestrator (drops into `bin/modules/` standard pattern). Acceptance: on a Linux host running 3 containers, `bash TA-ODIN/bin/odin.sh | grep -c 'type=container'` returns 3; each event has all 8 named fields populated.
+
+- [ ] **CONT-05** — New Windows module `TA-ODIN/bin/modules/containers.ps1` provides parity enumeration for Windows containers via `docker ps` (Windows containers are typically Docker Desktop or Mirantis-managed). Same 8-field event format as CONT-04. PowerShell 5.1 + 7+ compatible (per v1.0.2 lessons learned: ASCII-only output, `[System.IO.Path]::Combine` for paths, single-quote literals for static Write-Output strings). Acceptance: on a Windows host with Docker Desktop running 2 containers, `powershell.exe -File TA-ODIN\bin\odin.ps1 | Select-String 'type=container' | Measure-Object | Select-Object -Expand Count` returns 2.
+
+- [ ] **CONT-06** — Edge case handling: when no container runtime is available, module emits `type=none_found module=containers` (existing convention). When runtime daemon is unreachable (e.g., docker daemon stopped, k8s RBAC denies pod list), module emits `type=odin_warning module=containers reason=<short-message>` and continues without aborting. Acceptance: on a Linux host without docker installed, module exits 0 with `type=none_found module=containers`. With docker installed but daemon stopped, exits 0 with `type=odin_warning module=containers reason="docker daemon unreachable"`.
+
+- [ ] **CONT-07** — New regression test `tools/tests/check-container-enumeration.sh` validating CONT-04..06 invariants: (a) on host without docker, exits 0 with `type=none_found module=containers`; (b) on host with docker accessible, exits 0 with at least one `type=container` event having all 8 named fields; (c) follows existing `[CONT-04 PASS]`/`[CONT-04 FAIL]` token convention. Acceptance: `bash tools/tests/check-container-enumeration.sh` exits 0 on dev box with PASS markers; new CI gate added to `.github/workflows/ci.yml`.
+
+#### Image-based classification + dashboard
+
+- [ ] **CONT-08** — New lookup `ODIN_app_for_splunk/lookups/odin_classify_container_images.csv` mapping image-name patterns to host roles + recommended Splunk TAs. WILDCARD `match_type` (per existing `odin_classify_packages.csv` pattern). Initial coverage: top 30 common images across web servers (nginx, apache, caddy), databases (mysql, postgres, mongodb, redis), message brokers (rabbitmq, kafka), reverse proxies (haproxy, traefik), monitoring (prometheus, grafana), application runtimes (node, python, java, ruby). Format: `image_pattern,container_role,recommended_ta,host_role_inheritance`. Acceptance: `wc -l odin_classify_container_images.csv` returns ≥30 rows; lookup is bound via `transforms.conf` to `type=container` events.
+
+- [ ] **CONT-09** — New saved search `[ODIN - Container Inventory]` in `savedsearches.conf` aggregating `type=container` events into per-host container count + image-role distribution. Outputs `odin_container_inventory.csv` (parallel to existing `odin_host_inventory.csv` from PROD-04 work). Schedule: nightly. Acceptance: saved search produces inventory CSV with columns `hostname, container_count, top_roles, last_seen`; `| inputlookup odin_container_inventory.csv` returns per-host rows.
+
+- [ ] **CONT-10** — New dashboard panel on `ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` showing "Container Density per Host" (column chart, top 20 hosts by container count from `odin_container_inventory.csv`). Optional second panel "Container Role Distribution" (pie chart by `container_role` aggregating fleet-wide). Layout: appended below v1.0.2's OS Distribution + Virtualization Breakdown panels. Visualization count: 12 → 13 or 14 (TBD per scope decision in plan-phase). AppInspect on `ODIN_app_for_splunk` baseline preserved (failure=0, error=0, warning=0).
+
+### Deferred to v1.1.1+
+
+- **Cloud auto-discovery** — AWS Tags + IAM role + AZ; GCP labels + machine-type + zone; Azure subscription + resource-group + VM-size + tags. Originally Phase 4 of v1.1.0 seed; slipped to v1.1.1 to keep v1.1.0 container-focused.
+- **Kubernetes cluster topology** — services, ingress, networkpolicies, persistent volume claims. Pods only in v1.1.0.
+- **Container resource utilization** — CPU/memory/network per container via `docker stats` / k8s metrics-server. Snapshot inventory only in v1.1.0.
+- **Image registry resolution** — pulling image manifest/digest, registry inventory comparison. Just image name parsing in v1.1.0.
+- **Service mesh observability** — Istio/Linkerd/Consul Connect routing rules. Out of scope until concrete user demand.
+- **Container security scanning integration** — Trivy/Snyk/Aqua results joined to container events. Out of scope; security audit territory.
+- **Helm release inventory** — `helm list` aggregation. Out of scope; could become v1.2+ candidate.
+- **Build pipeline metadata** — which CI built this image, image provenance. Out of scope; supply chain territory.
+
+### Traceability (v1.1.0)
+
+| REQ-ID | Phase | Notes |
+|--------|-------|-------|
+| CONT-01 | Phase 10 | Linux container env detection — enrich type=odin_host_info |
+| CONT-02 | Phase 10 | Windows container env detection — parity |
+| CONT-03 | Phase 10 | DATA-DICTIONARY.md container fields documented |
+| CONT-04 | Phase 11 | Linux container enumeration module |
+| CONT-05 | Phase 11 | Windows container enumeration module |
+| CONT-06 | Phase 11 | Edge case handling (no runtime / daemon unreachable) |
+| CONT-07 | Phase 11 | Regression test check-container-enumeration.sh + CI gate |
+| CONT-08 | Phase 12 | odin_classify_container_images.csv lookup (WILDCARD pattern) |
+| CONT-09 | Phase 12 | [ODIN - Container Inventory] saved search + odin_container_inventory.csv |
+| CONT-10 | Phase 12 | odin_overview.xml +1-2 dashboard panels (Container Density + Role Distribution) |
+
+---
