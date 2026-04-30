@@ -8,29 +8,34 @@ TA-ODIN is a Splunk Technology Add-on that performs full metadata-only enumerati
 
 **Safe, dependency-free, cross-platform endpoint enumeration that ships to 10k+ hosts without breaking any of them** — if the agent ever breaks a production host or floods Splunk, the whole project is worthless.
 
-## Current Milestone: v1.0.1 — Production Readiness (RC1 RELEASED)
+## Current Milestone: v1.1.0 — Container Observability
 
-**Status:** **v1.0.1-rc1 released 2026-04-28** as GitHub prerelease. Full v1.0.1 (no `-rc` suffix) blocked on PROD-02 pilot acceptance.
+**Status:** Defining requirements (started 2026-04-30).
 
-**Goal:** Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, observability, and documentation gaps that block safe rollout beyond ~50 hosts.
+**Goal:** Make TA-ODIN aware of containerized infrastructure — detect when running INSIDE a container, enumerate containers running ON a docker/k8s host, and classify container workloads by image so Splunk dashboards show container fleet composition + recommend appropriate Splunk TAs.
 
-**Target requirement groups (this milestone):**
-- ✅ **PROD-01** Windows classification lookups (closed — Phase 4)
-- ⏳ **PROD-02** Pilot deployment + 7-day observation window on ≥5 Linux + ≥5 Windows real hosts (deferred — pending real infra; gates full v1.0.1 release)
-- ✅ **PROD-03** Operational runbook (closed — Phase 5)
-- ✅ **PROD-04** Admin + troubleshooting + data dictionary + upgrade docs (closed — Phase 5)
-- ✅ **PROD-05** Rollback procedure documented + dry-run validated (closed — Phase 5)
-- ✅ **PROD-06** Ops observability dashboard (closed — Phase 5)
-- ✅ **PROD-07** Linux module standalone-fallback hygiene incl. `_common.sh` consolidation (closed — Phase 5 + post-phase cleanup)
+**Target features:**
+- Container environment detection — refined `container_runtime`, `container_id`, `container_image_hint` fields enriching `type=odin_host_info`
+- Container enumeration module — new `bin/modules/containers.{sh,ps1}` emitting one `type=container` event per running container with image, name, command, ports, state, started_at
+- Image-based classification + dashboard panel — new `odin_classify_container_images.csv` lookup with WILDCARD pattern matching, saved search aggregating per-host container count + role distribution, dashboard panel showing container density per host
 
-**Post-Phase-5 cleanup landed in rc1:** D-04-01 + D-04-02 (data quality), orchestrator discovery filter fix (`_common.sh` exclusion), `duration_ms` cross-platform parity, container Nivå 1 (14 docker/k8s signals), strategic seeds for v1.0.2 + v1.1.0.
+**Scope:** 3 phases (Phase 10/11/12 continuing numbering from v1.0.2). Estimated 2-4 days total.
 
-**Explicitly deferred to v1.1+ (unchanged):** Automated bash test harness (group D residual), reproducible `.tar.gz` packaging (group G), Splunk Cloud Victoria compatibility (Phase 3 D9), external security audit, supply chain attestation / SLSA L2+.
+**Architectural decisions to lock during plan-phase:**
+- Container API access: direct binary (`docker ps`) vs unix-socket vs HTTP API → seed leaning: direct binary
+- K8s API: `kubectl` vs k8s API client → seed leaning: kubectl on PATH + ~/.kube/config
+- Permission model: root vs docker-group → document both
 
-## Next Milestones (planted as seeds during 2026-04-27 /gsd-explore)
+**Cross-cutting risks:** k8s RBAC complexity (mitigation: ship documented RBAC manifest), container churn within scan cycle (docs explain snapshot semantics), image name diversity (use Splunk WILDCARD match_type), Windows containers (defer to v1.1.1 if VM unavailable).
 
-- **v1.0.2 — Host Metadata Enrichment** (trigger: rc1 release ✅) — 13-field `type=odin_host_info` event covering OS distro/version, hardware, network, virtualization, cloud detection. See `.planning/seeds/v1.0.2-host-metadata-enrichment.md`.
-- **v1.1.0 — Container Observability** (trigger: v1.0.2 shipped) — env detection + container enumeration + image classification + optional cloud auto-discovery. See `.planning/seeds/v1.1.0-container-observability.md`.
+**Out of scope (DEFERRED to v1.1.1+):** Cloud auto-discovery (AWS/GCP/Azure metadata), service mesh observability, container security scanning, registry inventory, container resource utilization metrics, helm release inventory, k8s cluster topology beyond pods.
+
+**Reference:** `.planning/seeds/v1.1.0-container-observability.md` — comprehensive scope, decision context, risk profile, NOT-in-scope list. Authoritative source for milestone definition.
+
+## Past Milestones
+
+- **v1.0.2 — Host Metadata Enrichment** — RELEASED 2026-04-29 ([GitHub release](https://github.com/lyderhansen/odin/releases/tag/v1.0.2)). All 5 HOST-* requirements closed. 13-field `type=odin_host_info` event covering OS, hardware, network, virtualization, cloud. Phase 7 (Linux), Phase 8 (Windows), Phase 9 (validation+docs+dashboard). UAT signed off across 3 platforms (Linux container + Windows 11 ARM64 VM + macOS).
+- **v1.0.1 — Production Readiness** — v1.0.1-rc1 RELEASED 2026-04-28 as GitHub prerelease ([release page](https://github.com/lyderhansen/odin/releases/tag/v1.0.1-rc1)). 6/7 PROD-* requirements closed. Full v1.0.1 (no -rc suffix) still blocked on PROD-02 pilot acceptance pending real infrastructure — parallel/non-blocking path.
 
 ## Previous Milestone: v1.0.0 — First Production Delivery
 
@@ -198,4 +203,6 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 — milestone v1.0.0 kickoff (scope A–C)*
+*Last updated: 2026-04-30 — milestone v1.1.0 kickoff (Container Observability, 3 phases)*
+
+*Note: Active/Validated/Deferred requirement sections below still reflect v1.0.0 categorization. Per-milestone re-categorization deferred to next `/gsd-transition` cycle to avoid wholesale rewrite during milestone start.*
