@@ -59,6 +59,12 @@ Take v1.0.0 from pilot-ready to fleet-deployable by closing the operational, obs
 | 4 | Windows Classification Data | PROD-01 | **Complete** (2/2 plans — 04-01 services+ports, 04-02 packages+log_sources+regression-guard) |
 | 5 | Operational Readiness | PROD-03, PROD-04, PROD-05, PROD-06, PROD-07 | **Complete 2026-04-24** (4/4 plans: 05-01 PROD-07 closed, 05-02 PROD-05+06 closed, 05-03 PROD-03 closed, 05-04 PROD-04 closed) |
 | 6 | Pilot Validation | PROD-02 | Not started (release gate; the only requirement requiring real-host validation) |
+| 7 | Host Info — Linux | HOST-01 | **Complete 2026-04-29** (1/1 plans) |
+| 8 | Host Info — Windows | HOST-02 | **Complete 2026-04-29** (1/1 plans; UAT-verified on Windows 11 ARM64 / VMware / PS5.1) |
+| 9 | Validation + Docs + Dashboard | HOST-03, HOST-04, HOST-05 | **Complete 2026-04-29** (3/3 plans; UAT signed off; AppInspect failure=0 error=0 warning=0) |
+| 10 | Container Environment Detection | CONT-01, CONT-02, CONT-03 | Not started — defining plans |
+| 11 | Container Enumeration Module | CONT-04, CONT-05, CONT-06, CONT-07 | Not started — defining plans |
+| 12 | Image-based Classification + Dashboard | CONT-08, CONT-09, CONT-10 | Not started — defining plans |
 
 ## Accumulated Context
 

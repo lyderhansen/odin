@@ -29,6 +29,12 @@ Three phases, executed strictly in order:
 - [x] **Phase 8: Host Info — Windows** — Windows orchestrator emits the same `type=odin_host_info` event with all 13 fields populated via Windows-native methods (Get-CimInstance, Win32_OperatingSystem, etc.). **COMPLETE 2026-04-29** (1/1 plans — HOST-02 closed)
 - [x] **Phase 9: Validation + Docs + Dashboard** — Cross-platform parity validation, DATA-DICTIONARY.md update, and odin_overview.xml dashboard panels for OS distribution + virtualization breakdown. **COMPLETE 2026-04-29** (3/3 plans — HOST-03..05 all closed; AppInspect failure=0 error=0 warning=0)
 
+> **— v1.1.0 milestone begins (Container Observability) —**
+
+- [ ] **Phase 10: Container Environment Detection** — Linux + Windows orchestrators enrich `type=odin_host_info` event with 3 new container fields (`container_runtime`, `container_id`, `container_image_hint`) when running INSIDE a container; DATA-DICTIONARY.md extended.
+- [ ] **Phase 11: Container Enumeration Module** — New `bin/modules/containers.{sh,ps1}` enumerates running containers (docker/podman/kubectl) and emits one `type=container` event per container with 8 fields. Edge case handling for missing/unreachable runtimes. New regression test + CI gate.
+- [ ] **Phase 12: Image-based Classification + Dashboard** — New `odin_classify_container_images.csv` WILDCARD lookup (≥30 image patterns), new saved search producing `odin_container_inventory.csv`, new dashboard panel(s) for container density per host.
+
 ## Phase Details
 
 ### Phase 4: Windows Classification Data
@@ -108,6 +114,45 @@ Three phases, executed strictly in order:
 **Plans:** 3 of 3 complete (09-01 HOST-03: check-host-info-parity.sh; 09-02 HOST-04: DATA-DICTIONARY.md type=odin_host_info; 09-03 HOST-05: odin_overview.xml +2 panels viz count 10→12)
 **UI hint:** yes (Dashboard Studio panels added to existing odin_overview.xml)
 
+### Phase 10: Container Environment Detection
+**Goal:** Both orchestrators (Linux + Windows) detect when running INSIDE a container and enrich the existing `type=odin_host_info` event with 3 new fields (`container_runtime`, `container_id`, `container_image_hint`) so SOC analysts can immediately distinguish container workloads from host workloads in fleet dashboards. DATA-DICTIONARY.md documents the new fields with the same per-field 4-item structure (Description + Source (Linux) + Source (Windows) + Example) established by HOST-04 D-10 convention.
+**Depends on:** v1.0.2 milestone shipped (Phase 7+8+9 — orchestrators + DATA-DICTIONARY structure must exist as the base for additive enrichment).
+**Requirements:** CONT-01, CONT-02, CONT-03
+**Success Criteria** (what must be TRUE):
+  1. Running `bash TA-ODIN/bin/odin.sh` INSIDE a Linux container (e.g. `docker run --rm rocky:9 bash`) produces a `type=odin_host_info` event with `virtualization=container container_runtime=docker container_id=<12-hex-prefix>`. On baremetal Linux: same event has `container_runtime=none container_id=none container_image_hint=none` (D-03 sentinel discipline).
+  2. Running `powershell.exe -ExecutionPolicy Bypass -File TA-ODIN\bin\odin.ps1` INSIDE a Windows container produces parity output with the same 3 new fields populated. Baremetal Windows: same `none` sentinels.
+  3. `DOCS/DATA-DICTIONARY.md` `## type=odin_host_info` section contains 3 new field headings (`#### \`container_runtime\``, `#### \`container_id\``, `#### \`container_image_hint\``), each with the 4-item per-field structure. Verified by `grep -cE '^#### \`container_' DOCS/DATA-DICTIONARY.md` returns 3.
+  4. Worked example event line in DATA-DICTIONARY.md updated to include a container scenario (e.g. row showing rocky-on-docker with container_runtime=docker).
+  5. AppInspect on both apps after the orchestrator changes still PASS with `failure=0, error=0, warning=0` (no new findings introduced by the additive field enrichment).
+**Plans:** TBD (likely 1 plan covering Linux+Windows+docs since all 3 REQs share orchestrator+_common file paths and have natural sequential dependency Linux-then-Windows-then-docs)
+**UI hint:** no (event-emission + docs only; no dashboard changes in this phase)
+
+### Phase 11: Container Enumeration Module
+**Goal:** TA-ODIN can run on a Docker or Kubernetes host and enumerate every running container/pod, emitting one `type=container` event per container with 8 fields covering identity, image, name, command, ports, runtime, state, and start time. Cross-platform parity (Linux + Windows containers via Docker Desktop / Mirantis). Edge cases (no runtime / daemon unreachable / RBAC denied) handled gracefully without aborting the orchestrator. New regression test added to CI.
+**Depends on:** Phase 10 (container env detection establishes the runtime-detection helpers that the enumeration module reuses; sharing detection logic via `_common.{sh,ps1}` avoids duplication).
+**Requirements:** CONT-04, CONT-05, CONT-06, CONT-07
+**Success Criteria** (what must be TRUE):
+  1. On a Linux host running 3 containers via Docker, `bash TA-ODIN/bin/odin.sh | grep -c '^.*type=container'` returns 3, and each `type=container` event contains all 8 named fields (`container_id`, `container_image`, `container_name`, `container_command`, `container_ports`, `container_runtime`, `container_state`, `container_started_at`).
+  2. On a Windows host with Docker Desktop running 2 containers, `powershell.exe -ExecutionPolicy Bypass -File TA-ODIN\bin\odin.ps1 | Select-String 'type=container' | Measure-Object | Select-Object -Expand Count` returns 2. The `containers.ps1` module respects v1.0.2 PS5.1 lessons learned: ASCII-only output, `[System.IO.Path]::Combine` for paths, single-quote literals for static `Write-Output` strings, `-f` format for dynamic strings.
+  3. On a Linux host WITHOUT docker/podman/kubectl installed, the module exits 0 emitting `type=none_found module=containers` (existing convention). On a host WITH docker installed but daemon stopped, exits 0 emitting `type=odin_warning module=containers reason="docker daemon unreachable"` and orchestrator continues to next module.
+  4. `tools/tests/check-container-enumeration.sh` validates all 3 above scenarios with structured `[CONT-04 PASS]`/`[CONT-05 PASS]`/`[CONT-06 PASS]` token markers (mirroring HOST-01..05 test convention). Script exits 0 on dev box. New CI gate added to `.github/workflows/ci.yml`.
+  5. AppInspect on TA-ODIN after the new module addition still PASS with `failure=0, error=0, warning=0`. The new module is auto-discovered by the orchestrator's standard `bin/modules/*.{sh,ps1}` glob pattern (no orchestrator-level changes needed beyond the auto-discovery exclusion list if any).
+**Plans:** TBD (likely 2 parallel plans in Wave 1: 11-01 Linux module + edge cases, 11-02 Windows module + edge cases; then Wave 2: 11-03 regression test + CI gate. files_modified are disjoint between Linux and Windows modules, so Wave 1 parallelism is natural per Phase 8 lessons.)
+**UI hint:** no (new event-emitting module; no dashboard changes in this phase)
+
+### Phase 12: Image-based Classification + Dashboard
+**Goal:** Container events from Phase 11 are classified by image name into business roles (web_server, database, message_broker, etc.) and surfaced in a dedicated dashboard panel showing container density per host. Aggregated `odin_container_inventory.csv` parallel to existing `odin_host_inventory.csv` enables SOC analysts to query "which hosts are running which container roles" without writing custom SPL. AppInspect baseline preserved.
+**Depends on:** Phase 11 (`type=container` events must exist for classification to operate against; lookup binding in `transforms.conf` requires the event type as input).
+**Requirements:** CONT-08, CONT-09, CONT-10
+**Success Criteria** (what must be TRUE):
+  1. `ODIN_app_for_splunk/lookups/odin_classify_container_images.csv` exists with at least 30 rows covering web servers (nginx, apache, caddy), databases (mysql, postgres, mongodb, redis), message brokers (rabbitmq, kafka), reverse proxies (haproxy, traefik), monitoring (prometheus, grafana), and application runtimes (node, python, java, ruby). WILDCARD `match_type` declared in `transforms.conf` (mirrors existing `odin_classify_packages.csv` pattern). Verified by `wc -l` ≥ 30 and `grep -c WILDCARD ODIN_app_for_splunk/default/transforms.conf` increases by ≥1.
+  2. New saved search `[ODIN - Container Inventory]` in `savedsearches.conf` aggregates `type=container` events into per-host inventory. Schedule: nightly. Output: `odin_container_inventory.csv` with columns `hostname, container_count, top_roles, last_seen`. Verified by `splunk search '| inputlookup odin_container_inventory.csv | head 5'` returns rows after one nightly cycle.
+  3. `ODIN_app_for_splunk/default/data/ui/views/odin_overview.xml` adds at least 1 new dashboard panel "Container Density per Host" (column chart, top 20 hosts by container count). Optional second panel "Container Role Distribution" (pie chart aggregating `container_role` fleet-wide). Both panels appended below v1.0.2's OS Distribution + Virtualization Breakdown. Visualization count increases from 12 (v1.0.2) to 13 or 14. Verified by JSON parse + `grep -c 'Container Density'` returns 1.
+  4. AppInspect on `ODIN_app_for_splunk` after the dashboard + lookup + savedsearches.conf changes still PASS with `failure=0, error=0, warning=0`. Saved as `.planning/artifacts/appinspect/odin-app-1.1.0-phase12.json`.
+  5. UAT cycle (`/gsd-verify-work 12`) passes with all 10 v1.1.0 requirements (CONT-01..CONT-10) marked as DONE. Final HOST + CONT cross-check: a host running 5 containers produces 1 `type=odin_host_info` (with `container_runtime=none` if not INSIDE a container itself) + 5 `type=container` events, joinable via `run_id` for full host/container topology.
+**Plans:** TBD (likely 3 plans: 12-01 lookup + transforms.conf binding, 12-02 saved search + nightly schedule, 12-03 dashboard panels + AppInspect baseline; sequential — lookup must exist before saved search can reference it, saved search output must exist before dashboard can render it)
+**UI hint:** yes (Dashboard Studio panels added to existing odin_overview.xml)
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -118,6 +163,9 @@ Three phases, executed strictly in order:
 | 7. Host Info — Linux | 1/1 | Complete | 2026-04-29 |
 | 8. Host Info — Windows | 1/1 | Complete | 2026-04-29 |
 | 9. Validation + Docs + Dashboard | 3/3 | Complete (HOST-03/04/05 closed; UAT signed off 2026-04-29) | 2026-04-29 |
+| 10. Container Environment Detection | 0/TBD | Not started — defining plans | — |
+| 11. Container Enumeration Module | 0/TBD | Not started — defining plans | — |
+| 12. Image-based Classification + Dashboard | 0/TBD | Not started — defining plans | — |
 
 ## Coverage
 
@@ -130,6 +178,12 @@ Three phases, executed strictly in order:
 ### v1.0.2 — Host Metadata Enrichment
 - **Total requirements:** 5 (HOST-01..HOST-05)
 - **Mapped:** 5/5 (HOST-01 → Phase 7; HOST-02 → Phase 8; HOST-03..05 → Phase 9)
+- **Orphans:** 0
+- **Duplicates:** 0
+
+### v1.1.0 — Container Observability
+- **Total requirements:** 10 (CONT-01..CONT-10)
+- **Mapped:** 10/10 (CONT-01..03 → Phase 10; CONT-04..07 → Phase 11; CONT-08..10 → Phase 12)
 - **Orphans:** 0
 - **Duplicates:** 0
 
