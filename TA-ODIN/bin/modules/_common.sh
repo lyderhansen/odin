@@ -287,10 +287,66 @@ probe_cloud_imds() {
     echo "none|none"
 }
 
+# Phase 10 mirror: TA-ODIN/bin/modules/_common.ps1 → Invoke-OdinDetectContainer
+# Returns: pipe-separated "runtime|id|image_hint" (3 of the 16 host_info fields).
+# D-11 enum (5 values + 2 sentinels): docker|podman|containerd|unknown|none.
+# D-12 source order: /proc/self/cgroup → /proc/1/cpuset → $DOCKER_CONTAINER_ID env-var.
+# D-13 image_hint: /etc/os-release IMAGE_ID only; absent → "none".
+# D-03 sentinel discipline:
+#   not in container         → "none|none|none" (semantic null)
+#   in container, classified → "<runtime>|<12-hex>|<value-or-none>"
+#   in container, FAILED     → "unknown|unknown|none" (system failure)
+detect_container() {
+    local runtime="none" id="none" image_hint="none"
+    local cgroup_content="" cpuset_content="" env_id=""
+
+    # Read cgroup info — first-match source order per D-12
+    [[ -r /proc/self/cgroup ]] && cgroup_content=$(cat /proc/self/cgroup 2>/dev/null)
+    [[ -r /proc/1/cpuset ]] && cpuset_content=$(cat /proc/1/cpuset 2>/dev/null)
+    env_id="${DOCKER_CONTAINER_ID:-}"
+
+    # Detect runtime from cgroup content (D-11 enum)
+    if [[ "$cgroup_content" == *"/docker/"* ]] || [[ "$cgroup_content" == *"docker-"* ]] || [[ "$cpuset_content" == *"/docker/"* ]]; then
+        runtime="docker"
+    elif [[ "$cgroup_content" == *"/libpod-"* ]] || [[ "$cgroup_content" == *"/podman-"* ]] || [[ "$cgroup_content" == *"libpod_parent"* ]]; then
+        runtime="podman"
+    elif [[ "$cgroup_content" == *"/containerd/"* ]] || [[ "$cgroup_content" == *"cri-containerd"* ]]; then
+        runtime="containerd"
+    elif [[ "$cgroup_content" != "" && "$cgroup_content" != *"/init.scope"* && "$cgroup_content" != *"/user.slice"* && "$cgroup_content" != *"/system.slice"* ]] || [[ -n "$env_id" ]]; then
+        # Some container indicator present but doesn't match known runtimes
+        runtime="unknown"
+    else
+        # No container indicators → baremetal
+        echo "none|none|none"
+        return 0
+    fi
+
+    # Extract container ID — first 12-char hex prefix (D-12 format)
+    if [[ -n "$env_id" ]]; then
+        id=$(echo "$env_id" | grep -oE '[a-f0-9]{12,64}' | head -1 | cut -c1-12)
+    fi
+    if [[ -z "$id" || "$id" == "none" ]]; then
+        id=$(echo "$cgroup_content" | grep -oE '[a-f0-9]{12,64}' | head -1 | cut -c1-12)
+    fi
+    if [[ -z "$id" || "$id" == "none" ]]; then
+        id=$(echo "$cpuset_content" | grep -oE '[a-f0-9]{12,64}' | head -1 | cut -c1-12)
+    fi
+    [[ -z "$id" ]] && id="unknown"
+
+    # Extract image_hint from /etc/os-release IMAGE_ID (D-13)
+    if [[ -r /etc/os-release ]]; then
+        local hint
+        hint=$(grep -E '^IMAGE_ID=' /etc/os-release 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"' )
+        [[ -n "$hint" ]] && image_hint="$hint"
+    fi
+
+    echo "${runtime}|${id}|${image_hint}"
+}
+
 # Phase 8 mirror: TA-ODIN/bin/modules/_common.ps1 → Invoke-OdinEmitHostInfo
 # THE ONLY function that emits type=odin_host_info. Calls each detect_* helper
 # exactly once, splits pipe-separated returns, then issues a single emit() with
-# all 13 fields concatenated.
+# all 16 fields concatenated (13 v1.0.2 + 3 Phase 10 container fields).
 #
 # Field order in event (matches seed table v1.0.2-host-metadata-enrichment.md):
 #   os_distro os_version os_pretty os_kernel os_arch
