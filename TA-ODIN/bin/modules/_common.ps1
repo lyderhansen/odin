@@ -561,12 +561,13 @@ function Invoke-OdinDetectContainer {
 #   cpu_cores mem_total_mb uptime_seconds
 #   fqdn ip_primary virtualization
 #   cloud_provider cloud_region
+#   container_runtime container_id container_image_hint
 #
 # Counts toward $script:ODIN_MAX_EVENTS via Invoke-OdinEmit (1 event budget).
-# Truncation marker safety preserved (Pattern 3 — same as Phase 7 D-01).
+# Truncation marker safety preserved (Pattern 3 - same as Phase 7 D-01).
 function Invoke-OdinEmitHostInfo {
     # Detection (each helper returns pipe-separated values for its field group).
-    # Capture result first, then split — avoids PowerShell parsing -split as argument.
+    # Capture result first, then split - avoids PowerShell parsing -split as argument.
     $osPair = (Get-OdinOsDistro) -split '\|'
     $os_distro  = $osPair[0]
     $os_version = $osPair[1]
@@ -592,24 +593,32 @@ function Invoke-OdinEmitHostInfo {
     $cloud_provider = $cloudPair[0]
     $cloud_region   = $cloudPair[1]
 
-    # Build event line via Invoke-OdinEmit (NOT Write-Output — preserves
+    $containerPair = (Invoke-OdinDetectContainer) -split '\|'
+    $container_runtime    = $containerPair[0]
+    $container_id         = $containerPair[1]
+    $container_image_hint = $containerPair[2]
+
+    # Build event line via Invoke-OdinEmit (NOT Write-Output - preserves
     # MAX_EVENTS guardrail + standard timestamp/hostname/os/run_id envelope).
     # Format-OdinValue handles space-quoting for fields that may contain spaces
-    # (only os_pretty in practice — e.g., "Microsoft Windows 11 Pro").
-    $line = "type=odin_host_info " +
-            "os_distro=$(Format-OdinValue $os_distro) " +
-            "os_version=$(Format-OdinValue $os_version) " +
-            "os_pretty=$(Format-OdinValue $os_pretty) " +
-            "os_kernel=$(Format-OdinValue $os_kernel) " +
-            "os_arch=$os_arch " +
-            "cpu_cores=$cpu_cores " +
-            "mem_total_mb=$mem_total_mb " +
-            "uptime_seconds=$uptime_seconds " +
-            "fqdn=$(Format-OdinValue $fqdn) " +
-            "ip_primary=$ip_primary " +
-            "virtualization=$virtualization " +
-            "cloud_provider=$cloud_provider " +
-            "cloud_region=$(Format-OdinValue $cloud_region)"
+    # (os_pretty, fqdn, cloud_region, container_image_hint in practice).
+    $line = 'type=odin_host_info ' +
+            ('os_distro={0} ' -f (Format-OdinValue $os_distro)) +
+            ('os_version={0} ' -f (Format-OdinValue $os_version)) +
+            ('os_pretty={0} ' -f (Format-OdinValue $os_pretty)) +
+            ('os_kernel={0} ' -f (Format-OdinValue $os_kernel)) +
+            ('os_arch={0} ' -f $os_arch) +
+            ('cpu_cores={0} ' -f $cpu_cores) +
+            ('mem_total_mb={0} ' -f $mem_total_mb) +
+            ('uptime_seconds={0} ' -f $uptime_seconds) +
+            ('fqdn={0} ' -f (Format-OdinValue $fqdn)) +
+            ('ip_primary={0} ' -f $ip_primary) +
+            ('virtualization={0} ' -f $virtualization) +
+            ('cloud_provider={0} ' -f $cloud_provider) +
+            ('cloud_region={0} ' -f (Format-OdinValue $cloud_region)) +
+            ('container_runtime={0} ' -f $container_runtime) +
+            ('container_id={0} ' -f $container_id) +
+            ('container_image_hint={0}' -f (Format-OdinValue $container_image_hint))
 
     Invoke-OdinEmit $line
 }
