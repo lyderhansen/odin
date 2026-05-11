@@ -480,10 +480,80 @@ function Invoke-OdinCloudImds {
     return "none|none"
 }
 
-# Mirror: TA-ODIN/bin/modules/_common.sh → emit_host_info
+# Phase 10 mirror: TA-ODIN/bin/modules/_common.sh -> detect_container
+# Returns: pipe-separated 'runtime|id|image_hint' (3 of the 16 host_info fields).
+# D-11 enum (5 values + 2 sentinels): docker|podman|containerd|unknown|none.
+# D-12 source order (Windows): $env:CONTAINER_ID -> vmcompute parent process.
+# D-13 image_hint: $env:OS_RELEASE_IMAGE_ID only; absent -> 'none'.
+# D-07 PSCL graceful degradation: try/catch around reflection; never crash.
+# D-03 sentinel discipline:
+#   not in container         -> 'none|none|none'
+#   in container, classified -> '<runtime>|<12-hex>|<value-or-none>'
+#   in container, FAILED     -> 'unknown|unknown|none'
+function Invoke-OdinDetectContainer {
+    $runtime = 'none'
+    $id = 'none'
+    $imageHint = 'none'
+
+    try {
+        # Source 1: env-var direct (Docker Desktop / Mirantis sets these)
+        $envId = $env:CONTAINER_ID
+        if (-not $envId) { $envId = $env:DOCKER_CONTAINER_ID }
+
+        # Source 2: vmcompute parent process check (Windows containers run under vmcompute.exe)
+        $inContainer = $false
+        if ($envId) {
+            $inContainer = $true
+            $runtime = 'docker'
+        } else {
+            try {
+                $thisProc = Get-CimInstance Win32_Process -Filter ('ProcessId = {0}' -f $PID) -ErrorAction SilentlyContinue
+                if ($thisProc -and $thisProc.ParentProcessId) {
+                    $parentProc = Get-CimInstance Win32_Process -Filter ('ProcessId = {0}' -f $thisProc.ParentProcessId) -ErrorAction SilentlyContinue
+                    if ($parentProc -and ($parentProc.Name -match 'vmcompute|containerd|dockerd')) {
+                        $inContainer = $true
+                        $runtime = 'docker'
+                    }
+                }
+            } catch {
+                # PSCL or CIM access blocked - treat as undetectable
+                $inContainer = $false
+            }
+        }
+
+        if (-not $inContainer) {
+            return 'none|none|none'
+        }
+
+        # Extract container ID - 12-char hex prefix
+        if ($envId) {
+            $hexMatch = [regex]::Match($envId, '[a-f0-9]{12,64}')
+            if ($hexMatch.Success) {
+                $id = $hexMatch.Value.Substring(0, [Math]::Min(12, $hexMatch.Value.Length))
+            } else {
+                $id = 'unknown'
+            }
+        } else {
+            $id = 'unknown'
+        }
+
+        # Image hint from env (D-13)
+        $envImage = $env:OS_RELEASE_IMAGE_ID
+        if ($envImage) {
+            $imageHint = $envImage
+        }
+    } catch {
+        # Catch-all PSCL safety net
+        return 'unknown|unknown|none'
+    }
+
+    return ('{0}|{1}|{2}' -f $runtime, $id, $imageHint)
+}
+
+# Mirror: TA-ODIN/bin/modules/_common.sh -> emit_host_info
 # THE ONLY function that emits type=odin_host_info. Calls each detection helper
 # exactly once, splits pipe-separated returns, then issues a single Invoke-OdinEmit
-# with all 13 fields concatenated.
+# with all 16 fields concatenated (13 v1.0.2 + 3 Phase 10 container fields).
 #
 # Field order in event (matches seed table v1.0.2-host-metadata-enrichment.md
 # AND Phase 7's Linux emit_host_info — mandatory for cross-platform parity):
