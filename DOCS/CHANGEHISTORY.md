@@ -10,6 +10,34 @@ All timestamps are ISO 8601 in CET timezone.
 
 ---
 
+## v1.1.0-wip — Container Observability (Phase 10: Environment Detection)
+
+**Date:** 2026-05-07T10:00:00+02:00
+**Phase:** 10 — Container Environment Detection
+**Requirements:** CONT-01, CONT-02, CONT-03
+
+### Added
+
+- 3 new fields on `type=odin_host_info` event: `container_runtime`, `container_id`, `container_image_hint` (field count 13 -> 16).
+- New helper `detect_container()` in `TA-ODIN/bin/modules/_common.sh` (Linux) implementing D-11 enum + D-12 cgroup/cpuset/env-var source order + D-13 `/etc/os-release IMAGE_ID` single-source.
+- New function `Invoke-OdinDetectContainer` in `TA-ODIN/bin/modules/_common.ps1` (Windows parity, PSCL graceful degradation per D-07 carry-forward).
+- `DOCS/DATA-DICTIONARY.md` `## type=odin_host_info` section extended from 13 to 16 documented fields with per-field 4-item structure (HOST-04 D-10 convention). Second worked example added showing in-container scenario.
+
+### Decision change record (Phase 10)
+
+- **D-11:** `container_runtime` 5-value enum: `docker | podman | containerd | unknown | none`. Narrower than seed's original scope which mentioned `kubepods` — modern k8s pods detect as `containerd` at runtime level; splitting on path-vs-runtime adds confusion. LXC, cri-o, rkt, garden -> `unknown` sentinel (filterable in Splunk).
+- **D-12:** `container_id` parsing source-order: `/proc/self/cgroup` -> `/proc/1/cpuset` -> `$DOCKER_CONTAINER_ID` env-var (Linux); `$env:CONTAINER_ID` -> vmcompute parent (Windows). Format: 12-char hex prefix (matches `docker ps` short-id convention).
+- **D-13:** `container_image_hint` single source: `/etc/os-release IMAGE_ID` only. Docker labels via socket, k8s Downward API, HOSTNAME heuristics all deferred to Phase 11.
+
+### Technical notes
+
+- Sentinel discipline (D-03 carry-forward): `none` = baremetal (semantic null), `unknown` = in container but detection failed (system failure). Never confuse the two.
+- Cross-platform parity preserved: same 3 field NAMES emit on both Linux and Windows. Same enum values. Same sentinel semantics.
+- Backward compatible: 13 existing v1.0.2 fields unchanged and in same order. 3 new fields appended at end.
+- PS5.1 conventions applied to Windows code from day 1: ASCII-only output text, `-f` format strings (not subexpression interpolation), single-quote literals for static strings.
+
+---
+
 ## v1.0.2 — Host Metadata Enrichment (Linux + Windows)
 
 **Release Date:** 2026-04-29 (UAT signed off; v1.0.2-rc1 candidate)
