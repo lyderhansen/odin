@@ -348,11 +348,12 @@ detect_container() {
 # exactly once, splits pipe-separated returns, then issues a single emit() with
 # all 16 fields concatenated (13 v1.0.2 + 3 Phase 10 container fields).
 #
-# Field order in event (matches seed table v1.0.2-host-metadata-enrichment.md):
+# Field order in event (13 v1.0.2 fields + 3 Phase 10 container fields = 16 total):
 #   os_distro os_version os_pretty os_kernel os_arch
 #   cpu_cores mem_total_mb uptime_seconds
 #   fqdn ip_primary virtualization
 #   cloud_provider cloud_region
+#   container_runtime container_id container_image_hint
 #
 # Counts toward ODIN_MAX_EVENTS (1 event budget consumed before per-module
 # reset on odin.sh:132). Truncation marker safety preserved (Pattern 3).
@@ -376,6 +377,7 @@ emit_host_info() {
     local net_pair fqdn ip_primary
     local virtualization
     local cloud_pair cloud_provider cloud_region
+    local container_pair container_runtime container_id container_image_hint
 
     os_pair=$(detect_os_distro)
     IFS='|' read -r os_distro os_version os_pretty <<< "$os_pair"
@@ -396,5 +398,8 @@ emit_host_info() {
     cloud_pair=$(probe_cloud_imds)
     IFS='|' read -r cloud_provider cloud_region <<< "$cloud_pair"
 
-    emit "type=odin_host_info os_distro=$(_safe_val_host_info "$os_distro") os_version=$(_safe_val_host_info "$os_version") os_pretty=$(_safe_val_host_info "$os_pretty") os_kernel=$(_safe_val_host_info "$os_kernel") os_arch=$os_arch cpu_cores=$cpu_cores mem_total_mb=$mem_total_mb uptime_seconds=$uptime_seconds fqdn=$(_safe_val_host_info "$fqdn") ip_primary=$ip_primary virtualization=$virtualization cloud_provider=$cloud_provider cloud_region=$(_safe_val_host_info "$cloud_region")"
+    container_pair=$(detect_container)
+    IFS='|' read -r container_runtime container_id container_image_hint <<< "$container_pair"
+
+    emit "type=odin_host_info os_distro=$(_safe_val_host_info "$os_distro") os_version=$(_safe_val_host_info "$os_version") os_pretty=$(_safe_val_host_info "$os_pretty") os_kernel=$(_safe_val_host_info "$os_kernel") os_arch=$os_arch cpu_cores=$cpu_cores mem_total_mb=$mem_total_mb uptime_seconds=$uptime_seconds fqdn=$(_safe_val_host_info "$fqdn") ip_primary=$ip_primary virtualization=$virtualization cloud_provider=$cloud_provider cloud_region=$(_safe_val_host_info "$cloud_region") container_runtime=$container_runtime container_id=$container_id container_image_hint=$(_safe_val_host_info "$container_image_hint")"
 }
