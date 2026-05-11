@@ -72,10 +72,16 @@ v1.1.0 enumerator iterates the actual containers on a container host).
 **Worked example event line:**
 
 ```
-timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1740100800-1234 odin_version=1.0.2 type=odin_host_info os_distro=rocky os_version=9.3 os_pretty="Rocky Linux 9.3 (Blue Onyx)" os_kernel=5.14.0-362.el9.x86_64 os_arch=x86_64 cpu_cores=8 mem_total_mb=16384 uptime_seconds=432000 fqdn=web01.prod.example.com ip_primary=10.0.5.123 virtualization=kvm cloud_provider=aws cloud_region=eu-north-1
+timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1740100800-1234 odin_version=1.1.0 type=odin_host_info os_distro=rocky os_version=9.3 os_pretty="Rocky Linux 9.3 (Blue Onyx)" os_kernel=5.14.0-362.el9.x86_64 os_arch=x86_64 cpu_cores=8 mem_total_mb=16384 uptime_seconds=432000 fqdn=web01.prod.example.com ip_primary=10.0.5.123 virtualization=kvm cloud_provider=aws cloud_region=eu-north-1 container_runtime=none container_id=none container_image_hint=none
 ```
 
-**Fields:** Common envelope (timestamp, hostname, os, run_id, odin_version, type) plus the 13 host metadata fields documented below.
+**Worked example (in-container scenario):**
+
+```
+timestamp=2026-05-01T08:00:00Z hostname=e0c0ddd5630b os=linux run_id=1777500000-1 odin_version=1.1.0 type=odin_host_info os_distro=rocky os_version=9.3 os_pretty="Rocky Linux 9.3 (Blue Onyx)" os_kernel=6.12.76-linuxkit os_arch=x86_64 cpu_cores=12 mem_total_mb=11947 uptime_seconds=451178 fqdn=e0c0ddd5630b ip_primary=unknown virtualization=container cloud_provider=none cloud_region=none container_runtime=docker container_id=e0c0ddd5630b container_image_hint=none
+```
+
+**Fields:** Common envelope (timestamp, hostname, os, run_id, odin_version, type) plus 16 host metadata fields documented below (13 from v1.0.2 + 3 container fields added in v1.1.0 Phase 10).
 
 ### Field reference
 
@@ -176,6 +182,27 @@ timestamp=2026-04-29T10:00:00Z hostname=web01.prod.example.com os=linux run_id=1
 - **Source (Linux):** AWS = `/latest/meta-data/placement/region` (e.g., `eu-north-1`); GCP = derived from zone (zone `europe-west1-b` -> region `europe-west1`); Azure = `/metadata/instance/compute/location` (e.g., `eastus`)
 - **Source (Windows):** Same endpoints, parsed via `Invoke-RestMethod`
 - **Example:** `cloud_region=eu-north-1` (AWS), `cloud_region=europe-west1` (GCP), `cloud_region=eastus` (Azure), `cloud_region=none` (when cloud_provider=none), `cloud_region=unknown`
+
+#### `container_runtime`
+
+- **Description:** Container runtime name when TA-ODIN runs INSIDE a container. Closed enum from D-11 (5 values + 2 sentinels) for filtering Splunk searches to container vs baremetal workloads. Baremetal hosts always emit `none`. v1.1.0 Phase 10.
+- **Source (Linux):** parse `/proc/self/cgroup` for `docker`/`podman`/`containerd` tokens; fallback `/proc/1/cpuset` and `$DOCKER_CONTAINER_ID` env-var
+- **Source (Windows):** `$env:CONTAINER_ID` env-var; fallback `vmcompute` parent-process check via `Get-CimInstance Win32_Process` (PSCL graceful degradation per D-07)
+- **Example:** `container_runtime=docker`, `container_runtime=podman`, `container_runtime=containerd`, `container_runtime=none` (baremetal), `container_runtime=unknown` (in container but unclassifiable runtime)
+
+#### `container_id`
+
+- **Description:** Container identifier - first 12-char hex prefix of full container SHA. Matches `docker ps` short-id convention; saves event width vs full 64-char SHA while remaining unique within a single host's container fleet. v1.1.0 Phase 10.
+- **Source (Linux):** extracted from `/proc/self/cgroup` cgroup-path, or `/proc/1/cpuset`, or `$DOCKER_CONTAINER_ID` env-var (first-match wins per D-12)
+- **Source (Windows):** extracted from `$env:CONTAINER_ID` env-var; `unknown` if env-var present but no hex hash extractable
+- **Example:** `container_id=a1b2c3d4e5f6` (12-hex), `container_id=none` (baremetal), `container_id=unknown` (in container but ID extraction failed)
+
+#### `container_image_hint`
+
+- **Description:** Image identifier hint from the container image's own metadata - opportunistic enrichment when image author populated `IMAGE_ID` in `/etc/os-release`. NOT a guarantee: most base images leave this empty. Phase 11 `type=container` events provide authoritative `container_image` field via runtime-API queries. v1.1.0 Phase 10.
+- **Source (Linux):** parse `/etc/os-release IMAGE_ID=` field; absent -> `none`
+- **Source (Windows):** `$env:OS_RELEASE_IMAGE_ID` env-var if set; absent -> `none`
+- **Example:** `container_image_hint="registry.access.redhat.com/ubi9/ubi"`, `container_image_hint=alpine`, `container_image_hint=none` (most images and all baremetal hosts)
 
 ### Cloud detection timeout semantics
 
